@@ -26,3 +26,46 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+================================================================================
+THIRD-PARTY ATTRIBUTIONS
+================================================================================
+
+The BSD 3-Clause license above covers the original work in this repository
+(documentation, scripts, and Robotiq-authored asset content). Some asset files
+are derived from third-party sources and remain subject to their original
+licenses, as noted below.
+
+NVIDIA Isaac Sim asset library
+--------------------------------------------------------------------------------
+Portions of the PhysX 2F-85 gripper asset (grippers/Gripper_2F85/), including
+its materials (grippers/Gripper_2F85/materials/), were originally copied and
+adapted from the Robotiq 2F-85 asset in the NVIDIA Isaac Sim / SimReady asset
+library. These files were subsequently modified by Robotiq (physics tuning,
+joint-limit corrections, variant setup, and substitution of Robotiq's own CAD
+visual meshes).
+
+The original NVIDIA work is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.
+A copy of that license is included alongside the affected files at
+grippers/Gripper_2F85/LICENSE and grippers/Gripper_2F85/materials/LICENSE, and
+those files remain governed by it. Original author: NVIDIA Corporation.
+Modifications: Copyright (c) 2026, ROBOTIQ.
+
+MuJoCo Menagerie (Newton 2F-85 physics model)
+--------------------------------------------------------------------------------
+The physics model of the Newton 2F-85 gripper asset
+(grippers/Gripper_2F85_newton/) -- bodies, masses and inertias, joints, the
+five-bar loop closure, and the contact/friction tuning -- is derived from the
+Robotiq 2F-85 model in the MuJoCo Menagerie
+(https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotiq_2f85),
+which is in turn derived from the ROS-Industrial URDF description. The visual
+meshes in this asset are Robotiq's own CAD and are not from Menagerie.
+
+The Menagerie model is released under the BSD 3-Clause License:
+
+    Copyright (c) 2013, ROS-Industrial
+
+The full license text is available with the source above. Modifications and
+additions by Robotiq are Copyright (c) 2026, ROBOTIQ.
