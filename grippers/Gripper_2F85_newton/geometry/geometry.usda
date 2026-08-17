@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    subLayers = [
+        @./base.usd@,
+        @./base_mount.usd@,
+        @./left_coupler.usd@,
+        @./left_driver.usd@,
+        @./left_follower.usd@,
+        @./left_pad.usd@,
+        @./left_silicone_pad.usd@,
+        @./left_spring_link.usd@,
+        @./right_coupler.usd@,
+        @./right_driver.usd@,
+        @./right_follower.usd@,
+        @./right_pad.usd@,
+        @./right_silicone_pad.usd@,
+        @./right_spring_link.usd@
+    ]
+)
+
