@@ -63,6 +63,24 @@ To change it: select the root prim → Property panel → **Variants** section �
 `Physics` dropdown. See §2.1 for how to choose, and §5.2 for why the compliant variant
 is best served by Newton.
 
+The 2F-85 also has a second, independent **`Fingertip`** variant set on the same
+root prim. On the real gripper the fingertip is *screwed* onto the distal finger,
+so it can be swapped without taking the mechanism apart; this variant reproduces
+that. The fingertip is its own rigid body (`left_fingertip` / `right_fingertip`),
+welded to `inner_finger` by a `PhysicsFixedJoint`, and the variant swaps its
+geometry, collider and mass:
+
+| Variant | What it gives you |
+|---|---|
+| `Standard` | The stock plastic pad (`fingertipsstep`) — the default, behaves like the previous single-part finger |
+| `Tactile_TSF85` | The Robotiq **TSF-85** tactile-sensor case mounted in place of the pad |
+
+`Physics` and `Fingertip` are independent — any combination works. The
+`Tactile_TSF85` option mounts the **rigid sensor case** only (visual + convex
+collider); deformable tactile sensing is out of scope for this asset. Verify the
+sensor's mount pose visually in the viewport when you first load the tactile
+variant.
+
 ### 1.4 What is a mimic joint
 
 An **articulation** is a tree of rigid bodies (links) connected by joints, solved

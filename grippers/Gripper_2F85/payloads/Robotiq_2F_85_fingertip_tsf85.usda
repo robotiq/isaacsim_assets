@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    # "Tactile_TSF85" fingertip variant. Payloaded by the "Fingertip"
+    # variantSet on the root prim. Deactivates the stock plastic pad and mounts the
+    # Robotiq TSF-85 tactile-sensor case in its place, at the screw interface. The
+    # sensor sits at the same pose relative to inner_finger on both fingers, so a
+    # single shared mount transform on the instanced /Meshes/fingertip works for L
+    # and R.
+    # The fingertip bodies' mass/inertia are overridden to the sensor-case values by
+    # the variant opinions in Robotiq_2F_85_edit.usd.
+    defaultPrim = "Robotiq_2F_85"
+    metersPerUnit = 1
+    subLayers = [
+        @./Robotiq_2F_85_base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Meshes"
+{
+    over "fingertip"
+    {
+        over "tip_standard" (
+            active = false
+        )
+        {
+        }
+
+        def Xform "tip_tsf85" (
+            instanceable = false
+            kind = "subcomponent"
+            prepend references = @../parts/TSF_85_case.usd@
+        )
+        {
+            quatd xformOp:orient = (0.5, -0.5, 0.5, 0.5)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.062755, 0.11042, 0.0142)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "TSF_85_case" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+    }
+}

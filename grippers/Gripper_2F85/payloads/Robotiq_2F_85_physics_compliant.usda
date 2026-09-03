@@ -35,7 +35,7 @@
     metersPerUnit = 1
     startTimeCode = -1
     subLayers = [
-        @./Robotiq_2F_85_base.usda@
+        @./Robotiq_2F_85_fingertip_physics.usda@
     ]
     upAxis = "Z"
 )
@@ -376,6 +376,10 @@ def Xform "Robotiq_2F_85" (
         )
         {
         }
+
+        # Fingertip rigid bodies + PhysicsFixedJoints are shared with the
+        # parallel_grip variant; see the sublayered
+        # Robotiq_2F_85_fingertip_physics.usda.
     }
 }
 
@@ -400,17 +404,6 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger4step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger4step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "Defeatured_2F_85_PAD_OPEN_fingertipsstep_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
                 prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {

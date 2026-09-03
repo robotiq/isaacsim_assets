@@ -35,7 +35,7 @@
     metersPerUnit = 1
     startTimeCode = -1
     subLayers = [
-        @./Robotiq_2F_85_base.usda@
+        @./Robotiq_2F_85_fingertip_physics.usda@
     ]
     upAxis = "Z"
 )
@@ -316,14 +316,19 @@ def Xform "Robotiq_2F_85" (
             }
         }
 
+        # Mass split for the screwed-on fingertip: inner_finger now carries
+        # only the distal body (finger4step); the pad's mass/inertia moved to
+        # left_fingertip below. Mass ratio matches the CAD parts (distal 11.29 g /
+        # pad 22.10 g), with the per-side total preserved at 0.039254718 kg and each
+        # body's inertia scaled with its mass. See git history / plan.
         over "left_inner_finger" (
             prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
         )
         {
-            point3f physics:centerOfMass = (1.2590098e-8, -0.05424156, 0.11390199)
-            float3 physics:diagonalInertia = (0.000011577923, 0.00000896224, 0.0000039778333)
-            float physics:mass = 0.039254718
-            quatf physics:principalAxes = (0.9914449, -0.13052619, 0, 0)
+            point3f physics:centerOfMass = (-0.00000139, -0.05940770, 0.10376717)
+            float3 physics:diagonalInertia = (8.956112865e-07, 1.209160565e-06, 1.440650775e-06)
+            float physics:mass = 0.01327301
+            quatf physics:principalAxes = (0.1989801, 0.6786246, -0.6783625, -0.1992485)
         }
 
         over "left_inner_knuckle" (
@@ -371,10 +376,10 @@ def Xform "Robotiq_2F_85" (
             kind = "group"
         )
         {
-            point3f physics:centerOfMass = (-1.2590098e-8, 0.05424156, 0.11390199)
-            float3 physics:diagonalInertia = (0.000011577923, 0.00000896224, 0.0000039778333)
-            float physics:mass = 0.039254718
-            quatf physics:principalAxes = (0.9914449, 0.13052619, 0, 0)
+            point3f physics:centerOfMass = (0.00000139, 0.05940770, 0.10376717)
+            float3 physics:diagonalInertia = (8.956112865e-07, 1.209160565e-06, 1.440650775e-06)
+            float physics:mass = 0.01327301
+            quatf physics:principalAxes = (-0.6783625, -0.1992485, 0.1989801, 0.6786246)
         }
 
         over "right_inner_knuckle" (
@@ -387,6 +392,9 @@ def Xform "Robotiq_2F_85" (
             float physics:mass = 0.027306942
             quatf physics:principalAxes = (0.9063078, 0.42261827, 0, 0)
         }
+
+        # Fingertip rigid bodies + PhysicsFixedJoints are shared with the compliant
+        # variant; see the sublayered Robotiq_2F_85_fingertip_physics.usda.
     }
 }
 
@@ -411,17 +419,6 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger4step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger4step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "Defeatured_2F_85_PAD_OPEN_fingertipsstep_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
                 prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {

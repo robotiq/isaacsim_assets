@@ -1,0 +1,77 @@
+#usda 1.0
+(
+    # Shared fingertip physics for the 2F-85: the screwed-on fingertip
+    # rigid bodies, their PhysicsFixedJoints (welded to inner_finger, rigid like a
+    # screw), and the Standard-pad collider. This is identical for the parallel_grip
+    # and compliant physics variants, so it lives here once and is sublayered by
+    # both (instead of being duplicated in each). Link frames coincide with
+    # inner_finger (identity), so the joint anchors are at the origin. Mass/inertia
+    # are supplied by the "Fingertip" variantSet (pad vs sensor-case values) in
+    # Robotiq_2F_85_edit.usd, so they are NOT set here — this keeps the tactile
+    # override unambiguous.
+    defaultPrim = "Robotiq_2F_85"
+    metersPerUnit = 1
+    subLayers = [
+        @./Robotiq_2F_85_base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Robotiq_2F_85"
+{
+    over "Robotiq_2F_85"
+    {
+        over "left_fingertip" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            kind = "group"
+        )
+        {
+            def PhysicsFixedJoint "FixedJoint"
+            {
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_fingertip>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+
+        over "right_fingertip" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            kind = "group"
+        )
+        {
+            def PhysicsFixedJoint "FixedJoint"
+            {
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_fingertip>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+    }
+}
+
+over "Meshes"
+{
+    over "fingertip"
+    {
+        over "tip_standard"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+    }
+}
