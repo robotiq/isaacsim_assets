@@ -457,6 +457,21 @@ def Scope "Meshes"
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            # The current gripper revision ships all-black fingertips. The
+            # stock CAD material "Nobel" is aluminium-grey (diffuse ~0.70); override
+            # it to black here so the default tip renders black. (The small
+            # "Rangoon_Green" subset is already ~0.12, effectively black.)
+            over "Looks"
+            {
+                over "Nobel"
+                {
+                    over "Shader"
+                    {
+                        color3f inputs:diffuse_color_constant = (0.03, 0.03, 0.03)
+                    }
+                }
+            }
         }
     }
 
