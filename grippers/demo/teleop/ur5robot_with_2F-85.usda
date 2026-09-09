@@ -1,0 +1,1048 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (5, 0, 0)
+                double radius = 5
+            }
+            dictionary Perspective = {
+                double3 position = (0.3456455084407365, -0.5910717696357303, 0.09675893013832454)
+                double3 target = (0.2828101564497821, -0.12634026860069564, 0.06627363247955476)
+            }
+            dictionary Right = {
+                double3 position = (0, -5, 0)
+                double radius = 5
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 5)
+                double radius = 5
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary omni_layer = {
+            string authoring_layer = "./ur5robot_with_2F-85.usda"
+            dictionary locked = {
+            }
+            dictionary muteness = {
+            }
+        }
+        int refinementOverrideImplVersion = 0
+        dictionary renderSettings = {
+            double "rtx:directLighting:sampledLighting:maxRayUnexposedIntensity" = 6399.9990234375
+            double "rtx:indirectDiffuse:maxRayUnexposedIntensity" = 6399.9990234375
+            double "rtx:pathtracing:fireflyFilter:maxPerEmissiveUnexposedIntensity" = 3199.99951171875
+            double "rtx:pathtracing:fireflyFilter:maxUnexposedIntensityPerSample" = 3199.99951171875
+            double "rtx:pathtracing:fireflyFilter:maxUnexposedIntensityPerSampleDiffuse" = 3199.99951171875
+            double "rtx:raytracing:inscattering:maxRTSampleUnexposedIntensity" = 204799.96875
+            token "rtx:rendermode" = "MinimalRendering"
+            double "rtx:translucency:maxRayUnexposedIntensity" = 19199.998046875
+            bool "rtx:useViewLightingMode" = 1
+        }
+    }
+    defaultPrim = "World"
+    endTimeCode = 1000000
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Cube "Cube" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        rel material:binding:physics = </World/PhysicsMaterial> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        point3f physics:centerOfMass = (0, 0, 0)
+        bool physics:collisionEnabled = 1
+        float physics:density = 0
+        float3 physics:diagonalInertia = (0, 0, 0)
+        bool physics:kinematicEnabled = 0
+        float physics:mass = 0.1
+        quatf physics:principalAxes = (1, 0, 0, 0)
+        bool physics:rigidBodyEnabled = 1
+        float physxCollision:contactOffset = 0.002
+        float physxCollision:restOffset = 0.0005
+        bool physxRigidBody:enableCCD = 0
+        bool physxRigidBody:enableSpeculativeCCD = 0
+        float physxRigidBody:linearDamping = 0.1
+        int physxRigidBody:solverVelocityIterationCount = 4
+        double size = 1
+        quatd xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:scale = (0.02, 0.02, 0.02)
+        double3 xformOp:translate = (0.3703595735293894, -0.101588296036721, 0.009946728221864697)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+    }
+
+    def Material "PhysicsMaterial" (
+        prepend apiSchemas = ["PhysicsMaterialAPI"]
+    )
+    {
+        float physics:dynamicFriction = 0.9
+        float physics:staticFriction = 1
+    }
+
+    def "ur5e" (
+        prepend payload = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Robots/UniversalRobots/ur5e/ur5e.usd@
+    )
+    {
+        rel isaac:robot:namedPoses = </World/ur5e/NamedPoses/pose_1>
+        quatd xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (-0.2035122960805893, -0.21649867296218872, 6.986141887210806e-9)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        over "base_link"
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+            )
+            rel physics:simulationOwner
+            quatd xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "shoulder_link"
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+            )
+            rel physics:simulationOwner
+            quatd xformOp:orient = (5.351996462178767e-7, 0, 0, 0.9999999999998568)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.16249999403953552)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "upper_arm_link"
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+            )
+            rel physics:simulationOwner
+            quatd xformOp:orient = (0.3668284013468218, -0.3668277669076424, 0.6045141801971133, 0.604513787544585)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.16249999403953552)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "forearm_link"
+        {
+            rel physics:simulationOwner
+            quatd xformOp:orient = (-0.2705974481913155, 0.2705981399939478, 0.6532814487383302, 0.6532817281988781)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.19624317188672705, -2.0356767971296819e-7, 0.5394796057171234)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "wrist_1_link"
+        {
+            rel physics:simulationOwner
+            quatd xformOp:orient = (0.4978139782441824, -0.49781345299766183, 0.5021770311836061, 0.5021765012730736)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.47357080459556744, 0.1332995076360575, 0.2621525470904258)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "wrist_2_link"
+        {
+            rel physics:simulationOwner
+            quatd xformOp:orient = (-0.477884725568426, 0.5215055552759394, -0.48207361790486725, 0.516975020484391)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5732670051870548, 0.13329940241542676, 0.2612825631113354)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "wrist_3_link"
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+            )
+            rel physics:simulationOwner
+            quatd xformOp:orient = (0.036710289177032715, 0.8822766505341342, -0.46907086172075146, 0.014587435530611538)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5724005640310641, 0.1254845440202843, 0.16199340106344012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "flange"
+            {
+            }
+
+            def "Robotiq_2F_85_edit" (
+                prepend payload = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Robots/Robotiq/2F-85/Robotiq_2F_85_edit.usd@
+                variants = {
+                    string Physics = "Physx_Loop"
+                }
+            )
+            {
+                string isaac:namespace (
+                    displayName = "Namespace"
+                    doc = "Namespace of the prim in Isaac Sim"
+                )
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                over "Robotiq_2F_85" (
+                    delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+                )
+                {
+                    over "base_link"
+                    {
+                        string isaac:nameOverride (
+                            displayName = "Name Override"
+                        )
+                        rel physics:simulationOwner
+                    }
+
+                    over "left_outer_knuckle"
+                    {
+                        rel physics:simulationOwner
+                    }
+
+                    over "left_outer_finger" (
+                        prepend apiSchemas = ["PhysxRigidBodyAPI"]
+                    )
+                    {
+                        rel physics:simulationOwner
+                        int physxRigidBody:solverPositionIterationCount = 64
+                        int physxRigidBody:solverVelocityIterationCount = 8
+                    }
+
+                    over "left_inner_finger" (
+                        prepend apiSchemas = ["PhysxRigidBodyAPI"]
+                    )
+                    {
+                        rel physics:simulationOwner
+                        int physxRigidBody:solverPositionIterationCount = 64
+                        int physxRigidBody:solverVelocityIterationCount = 8
+                    }
+
+                    over "left_inner_knuckle"
+                    {
+                        rel physics:simulationOwner
+                    }
+
+                    over "right_outer_knuckle"
+                    {
+                        rel physics:simulationOwner
+                    }
+
+                    over "right_outer_finger" (
+                        prepend apiSchemas = ["PhysxRigidBodyAPI"]
+                    )
+                    {
+                        rel physics:simulationOwner
+                        int physxRigidBody:solverPositionIterationCount = 64
+                        int physxRigidBody:solverVelocityIterationCount = 8
+                    }
+
+                    over "right_inner_finger" (
+                        prepend apiSchemas = ["PhysxRigidBodyAPI"]
+                    )
+                    {
+                        rel physics:simulationOwner
+                        int physxRigidBody:solverPositionIterationCount = 64
+                        int physxRigidBody:solverVelocityIterationCount = 8
+                    }
+
+                    over "right_inner_knuckle"
+                    {
+                        rel physics:simulationOwner
+                    }
+
+                    over "Joints"
+                    {
+                        over "finger_joint"
+                        {
+                            float drive:angular:physics:damping = 3.0
+                            float drive:angular:physics:maxForce = 5.0
+                            float drive:angular:physics:stiffness = 50.0
+                            float drive:angular:physics:targetPosition = 0
+                            bool[] isaac:actuator (
+                                displayName = "Actuator"
+                            )
+                            string isaac:NameOverride (
+                                displayName = "Joint Name Override"
+                            )
+                            token[] isaac:physics:DofOffsetOpOrder (
+                                displayName = "Dof Offset Op Order"
+                            )
+                            float physics:lowerLimit = 0
+                            float physics:upperLimit = 75
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "right_outer_knuckle_joint"
+                        {
+                            bool[] isaac:actuator (
+                                displayName = "Actuator"
+                            )
+                            string isaac:NameOverride (
+                                displayName = "Joint Name Override"
+                            )
+                            token[] isaac:physics:DofOffsetOpOrder (
+                                displayName = "Dof Offset Op Order"
+                            )
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "left_inner_finger_joint"
+                        {
+                            float drive:angular:physics:damping = 0.00001
+                            float drive:angular:physics:stiffness = 0.0004
+                            float drive:angular:physics:targetPosition = 92
+                            bool[] isaac:actuator (
+                                displayName = "Actuator"
+                            )
+                            string isaac:NameOverride (
+                                displayName = "Joint Name Override"
+                            )
+                            token[] isaac:physics:DofOffsetOpOrder (
+                                displayName = "Dof Offset Op Order"
+                            )
+                            uniform bool physics:excludeFromArticulation = 1
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "right_inner_finger_joint"
+                        {
+                            float drive:angular:physics:damping = 0.00001
+                            float drive:angular:physics:stiffness = 0.0004
+                            float drive:angular:physics:targetPosition = -92
+                            bool[] isaac:actuator (
+                                displayName = "Actuator"
+                            )
+                            string isaac:NameOverride (
+                                displayName = "Joint Name Override"
+                            )
+                            token[] isaac:physics:DofOffsetOpOrder (
+                                displayName = "Dof Offset Op Order"
+                            )
+                            uniform bool physics:excludeFromArticulation = 1
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "left_inner_finger_knuckle_joint"
+                        {
+                            bool[] isaac:actuator (
+                                displayName = "Actuator"
+                            )
+                            string isaac:NameOverride (
+                                displayName = "Joint Name Override"
+                            )
+                            token[] isaac:physics:DofOffsetOpOrder (
+                                displayName = "Dof Offset Op Order"
+                            )
+                            uniform bool physics:excludeFromArticulation = 0
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "right_inner_finger_knuckle_joint"
+                        {
+                            bool[] isaac:actuator (
+                                displayName = "Actuator"
+                            )
+                            string isaac:NameOverride (
+                                displayName = "Joint Name Override"
+                            )
+                            token[] isaac:physics:DofOffsetOpOrder (
+                                displayName = "Dof Offset Op Order"
+                            )
+                            uniform bool physics:excludeFromArticulation = 0
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "left_outer_finger_joint"
+                        {
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "right_outer_finger_joint"
+                        {
+                            uniform bool physics:excludeFromArticulation = 0
+                            float physics:lowerLimit = -45
+                            float physics:upperLimit = 0
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "left_inner_knuckle_joint"
+                        {
+                            uniform bool physics:excludeFromArticulation = 0
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+
+                        over "right_inner_knuckle_joint"
+                        {
+                            uniform bool physics:excludeFromArticulation = 0
+                            float state:angular:physics:position = 0
+                            float state:angular:physics:velocity = 0
+                        }
+                    }
+                }
+            }
+        }
+
+        over "joints"
+        {
+            over "shoulder_pan_joint"
+            {
+                float drive:angular:physics:targetPosition = -0.00006633832
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float physics:lowerLimit = -360
+                float physics:upperLimit = 360
+                float state:angular:physics:position = -0.00006633832
+                float state:angular:physics:velocity = 0
+            }
+
+            over "shoulder_lift_joint"
+            {
+                float drive:angular:physics:targetPosition = -63.2
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.70710677, 0.70710677, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 360
+                float state:angular:physics:position = -62.5
+                float state:angular:physics:velocity = 0
+            }
+
+            over "elbow_joint"
+            {
+                float drive:angular:physics:targetPosition = 107.499954
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 107.499954
+                float state:angular:physics:velocity = 0
+            }
+
+            over "wrist_1_joint"
+            {
+                float drive:angular:physics:targetPosition = -134.49998
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float physics:lowerLimit = -360
+                float physics:upperLimit = 360
+                float state:angular:physics:position = -134.49998
+                float state:angular:physics:velocity = 0
+            }
+
+            over "wrist_2_joint"
+            {
+                float drive:angular:physics:targetPosition = -94.50019
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float physics:lowerLimit = -360
+                float physics:upperLimit = 360
+                float state:angular:physics:position = -94.50019
+                float state:angular:physics:velocity = 0
+            }
+
+            over "wrist_3_joint"
+            {
+                float drive:angular:physics:targetPosition = -33.984856
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float physics:lowerLimit = -360
+                float physics:upperLimit = 360
+                float state:angular:physics:position = -33.984856
+                float state:angular:physics:velocity = 0
+            }
+
+            over "robot_gripper_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+            }
+        }
+
+        def Scope "NamedPoses"
+        {
+            def IsaacNamedPose "pose_1"
+            {
+                rel isaac:robot:pose:endLink = </World/ur5e/wrist_3_link>
+                bool[] isaac:robot:pose:jointFixed = [1, 1, 1, 1, 1, 1]
+                rel isaac:robot:pose:joints = [
+                    </World/ur5e/joints/shoulder_pan_joint>,
+                    </World/ur5e/joints/shoulder_lift_joint>,
+                    </World/ur5e/joints/elbow_joint>,
+                    </World/ur5e/joints/wrist_1_joint>,
+                    </World/ur5e/joints/wrist_2_joint>,
+                    </World/ur5e/joints/wrist_3_joint>,
+                ]
+                float[] isaac:robot:pose:jointValues = [-0.00006633832, -62.5, 107.499954, -134.49998, -94.50019, -33.984856]
+                rel isaac:robot:pose:startLink = </World/ur5e/base_link>
+                bool isaac:robot:pose:valid = 1
+                quatd xformOp:orient = (-0.03671026138999425, -0.882276624687919, 0.4690709156717055, -0.014587333850984041)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0.5724005553678944, 0.12548452413006292, 0.16199343205253497)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        over "Gripper"
+        {
+            quatd xformOp:orient = (0.5000000000000001, -0.49999999999999994, -0.5, -0.5)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        over "root_joint"
+        {
+            bool[] isaac:actuator (
+                displayName = "Actuator"
+            )
+            string isaac:NameOverride (
+                displayName = "Joint Name Override"
+            )
+            token[] isaac:physics:DofOffsetOpOrder (
+                displayName = "Dof Offset Op Order"
+            )
+            int physxArticulation:solverPositionIterationCount = 255
+            int physxArticulation:solverVelocityIterationCount = 8
+            quatd xformOp:orient = (1, 0, 0, 0)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+
+    def PhysicsFixedJoint "FixedJoint"
+    {
+        rel physics:body0 = </World/ur5e/wrist_3_link>
+        rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/base_link>
+        float physics:breakForce = 3.4028235e38
+        float physics:breakTorque = 3.4028235e38
+        point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)
+        point3f physics:localPos1 = (-0.3129819, 0.27369457, 0.19359241)
+        quatf physics:localRot0 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+        quatf physics:localRot1 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+    }
+
+    def Xform "Environment"
+    {
+        quatd xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def DistantLight "defaultLight" (
+            prepend apiSchemas = ["ShapingAPI"]
+        )
+        {
+            float inputs:angle = 1
+            float inputs:exposure = 1.5
+            float inputs:intensity = 3000
+            bool inputs:normalize = 1
+            float inputs:shaping:cone:angle = 180
+            float inputs:shaping:cone:softness
+            float inputs:shaping:focus
+            color3f inputs:shaping:focusTint
+            asset inputs:shaping:ies:file
+            custom int omni:rtx:usdluxVersion = 2505
+            quatd xformOp:orient = (0.6532814824381883, 0.2705980500730985, 0.27059805007309845, 0.6532814824381882)
+            double3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+
+    def "FlatGrid" (
+        prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Grid/default_environment.usd@
+    )
+    {
+        over "Environment"
+        {
+            over "Geometry" (
+                instanceable = false
+            )
+            {
+            }
+        }
+    }
+
+    def OmniGraph "ROS_JointControl"
+    {
+        token evaluationMode = "Automatic"
+        token evaluator:type = "execution"
+        token fabricCacheBacking = "StageWithoutHistory"
+        int2 fileFormatVersion = (1, 9)
+        token pipelineStage = "pipelineStageSimulation"
+
+        def OmniGraphNode "OnTick"
+        {
+            token node:type = "omni.graph.action.OnPlaybackTick"
+            int node:typeVersion = 2
+            custom double outputs:deltaSeconds
+            custom double outputs:frame
+            custom uint outputs:tick (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            custom double outputs:time
+        }
+
+        def OmniGraphNode "SimTime"
+        {
+            custom uint64 inputs:referenceTimeDenominator
+            custom int64 inputs:referenceTimeNumerator
+            custom bool inputs:resetOnStop
+            token node:type = "isaacsim.core.nodes.IsaacReadSimulationTime"
+            int node:typeVersion = 1
+            custom double outputs:simulationTime
+        }
+
+        def OmniGraphNode "PubClock"
+        {
+            custom uint64 inputs:context
+            custom uint inputs:execIn (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            prepend uint inputs:execIn.connect = </World/ROS_JointControl/OnTick.outputs:tick>
+            custom string inputs:nodeNamespace
+            custom string inputs:qosProfile
+            custom uint64 inputs:queueSize
+            custom double inputs:timeStamp
+            prepend double inputs:timeStamp.connect = </World/ROS_JointControl/SimTime.outputs:simulationTime>
+            custom string inputs:topicName = "clock"
+            token node:type = "isaacsim.ros2.bridge.ROS2PublishClock"
+            int node:typeVersion = 1
+        }
+
+        def OmniGraphNode "SubJointState"
+        {
+            custom uint64 inputs:context
+            custom uint inputs:execIn (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            prepend uint inputs:execIn.connect = </World/ROS_JointControl/OnTick.outputs:tick>
+            custom string inputs:nodeNamespace
+            custom string inputs:qosProfile
+            custom uint64 inputs:queueSize
+            custom string inputs:topicName = "joint_command"
+            token node:type = "isaacsim.ros2.bridge.ROS2SubscribeJointState"
+            int node:typeVersion = 2
+            custom double[] outputs:effortCommand
+            custom uint outputs:execOut (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            custom token[] outputs:jointNames
+            custom double[] outputs:positionCommand
+            custom double outputs:timeStamp
+            custom double[] outputs:velocityCommand
+        }
+
+        def OmniGraphNode "ArtController"
+        {
+            custom double[] inputs:effortCommand
+            prepend double[] inputs:effortCommand.connect = </World/ROS_JointControl/SubJointState.outputs:effortCommand>
+            custom uint inputs:execIn (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            prepend uint inputs:execIn.connect = </World/ROS_JointControl/OnTick.outputs:tick>
+            custom int[] inputs:jointIndices
+            custom token[] inputs:jointNames
+            prepend token[] inputs:jointNames.connect = </World/ROS_JointControl/SubJointState.outputs:jointNames>
+            custom double[] inputs:positionCommand
+            prepend double[] inputs:positionCommand.connect = </World/ROS_JointControl/SubJointState.outputs:positionCommand>
+            custom string inputs:robotPath
+            custom rel inputs:targetPrim = </World/ur5e/root_joint> (
+                customData = {
+                    dictionary omni = {
+                        dictionary graph = {
+                            string relType = "target"
+                        }
+                    }
+                }
+            )
+            custom double[] inputs:velocityCommand
+            prepend double[] inputs:velocityCommand.connect = </World/ROS_JointControl/SubJointState.outputs:velocityCommand>
+            token node:type = "isaacsim.core.nodes.IsaacArticulationController"
+            int node:typeVersion = 1
+        }
+
+        def OmniGraphNode "ReadJointState"
+        {
+            custom uint inputs:execIn (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            prepend uint inputs:execIn.connect = </World/ROS_JointControl/OnTick.outputs:tick>
+            custom rel inputs:prim = </World/ur5e/root_joint> (
+                customData = {
+                    dictionary omni = {
+                        dictionary graph = {
+                            string relType = "target"
+                        }
+                    }
+                }
+            )
+            token node:type = "isaacsim.sensors.physics.IsaacReadJointState"
+            int node:typeVersion = 1
+            custom uint outputs:execOut (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            custom uchar[] outputs:jointDofTypes
+            custom double[] outputs:jointEfforts
+            custom token[] outputs:jointNames
+            custom double[] outputs:jointPositions
+            custom double[] outputs:jointVelocities
+            custom float outputs:sensorTime
+            custom float outputs:stageMetersPerUnit
+        }
+
+        def OmniGraphNode "PubJointState"
+        {
+            custom uint64 inputs:context
+            custom uint inputs:execIn (
+                customData = {
+                    bool isExecution = 1
+                }
+            )
+            prepend uint inputs:execIn.connect = </World/ROS_JointControl/ReadJointState.outputs:execOut>
+            custom uchar[] inputs:jointDofTypes
+            prepend uchar[] inputs:jointDofTypes.connect = </World/ROS_JointControl/ReadJointState.outputs:jointDofTypes>
+            custom double[] inputs:jointEfforts
+            prepend double[] inputs:jointEfforts.connect = </World/ROS_JointControl/ReadJointState.outputs:jointEfforts>
+            custom token[] inputs:jointNames
+            prepend token[] inputs:jointNames.connect = </World/ROS_JointControl/ReadJointState.outputs:jointNames>
+            custom double[] inputs:jointPositions
+            prepend double[] inputs:jointPositions.connect = </World/ROS_JointControl/ReadJointState.outputs:jointPositions>
+            custom double[] inputs:jointVelocities
+            prepend double[] inputs:jointVelocities.connect = </World/ROS_JointControl/ReadJointState.outputs:jointVelocities>
+            custom string inputs:nodeNamespace
+            custom string inputs:qosProfile
+            custom uint64 inputs:queueSize
+            custom float inputs:sensorTime
+            prepend float inputs:sensorTime.connect = </World/ROS_JointControl/ReadJointState.outputs:sensorTime>
+            custom float inputs:stageMetersPerUnit
+            prepend float inputs:stageMetersPerUnit.connect = </World/ROS_JointControl/ReadJointState.outputs:stageMetersPerUnit>
+            custom rel inputs:targetPrim (
+                customData = {
+                    dictionary omni = {
+                        dictionary graph = {
+                            string relType = "target"
+                        }
+                    }
+                }
+            )
+            custom double inputs:timeStamp
+            prepend double inputs:timeStamp.connect = </World/ROS_JointControl/SimTime.outputs:simulationTime>
+            custom string inputs:topicName = "joint_states"
+            token node:type = "isaacsim.ros2.bridge.ROS2PublishJointState"
+            int node:typeVersion = 1
+        }
+    }
+
+    def Cylinder "Cylinder" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMassAPI", "PhysxCollisionAPI", "PhysxRigidBodyAPI", "MaterialBindingAPI"]
+    )
+    {
+        uniform token axis = "Z"
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double height = 1
+        rel material:binding:physics = </World/PhysicsMaterial>
+        point3f physics:centerOfMass = (0, 0, 0)
+        float physics:density = 0
+        float3 physics:diagonalInertia = (0, 0, 0)
+        float physics:mass = 0.1
+        quatf physics:principalAxes = (1, 0, 0, 0)
+        float physxCollision:contactOffset = 0.002
+        float physxCollision:restOffset = 0.0005
+        float physxRigidBody:angularDamping = 0.05
+        bool physxRigidBody:enableCCD = 0
+        bool physxRigidBody:enableSpeculativeCCD = 0
+        float physxRigidBody:linearDamping = 0.1
+        float physxRigidBody:sleepThreshold = 0.00005
+        int physxRigidBody:solverPositionIterationCount = 16
+        int physxRigidBody:solverVelocityIterationCount = 4
+        float physxRigidBody:stabilizationThreshold = 0.00001
+        double radius = 0.5
+        custom bool refinementEnableOverride = 1
+        custom int refinementLevel = 2
+        quatd xformOp:orient = (0.7071067811865476, 0.7071067811865475, 0, 0)
+        double3 xformOp:scale = (0.05, 0.05, 0.1)
+        double3 xformOp:translate = (0.2538029387070952, 0, 0.024002205408456715)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+    }
+}
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:ambientOcclusion:denoiserMode = "none"
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:debug:view:pixelDebug:enableFixedTextPos = 1
+                token omni:rtx:directLighting:sampledLighting:denoisingTechnique = "None"
+                bool omni:rtx:dlss:frameGeneration = 0
+                float3 omni:rtx:domeLight:rotationAxis = (0, 0, 1)
+                bool omni:rtx:indirectDiffuse:denoiser:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:adaptiveSampling:filterError = 0
+                uint omni:rtx:pt:adaptiveSampling:fixedSppIterations = 2
+                float omni:rtx:pt:fireflyFilter:maxPerEmissiveUnexposedIntensity = 3199.9995
+                float omni:rtx:pt:fireflyFilter:maxUnexposedIntensityPerSample = 3199.9995
+                float omni:rtx:pt:fireflyFilter:maxUnexposedIntensityPerSampleDiffuse = 3199.9995
+                uint omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                uint omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                bool omni:rtx:reflections:denoiser:enabled = 0
+                token omni:rtx:rendermode = "MinimalRendering"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                float omni:rtx:rt:directLighting:maxRayUnexposedIntensity = 6399.999
+                bool omni:rtx:rt:ecoMode:enabled
+                float omni:rtx:rt:indirectdiffuse:maxRayUnexposedIntensity = 6399.999
+                float omni:rtx:rt:inscattering:maxRTSampleUnexposedIntensity = 204799.97
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                float omni:rtx:rt:refractions:maxRayUnexposedIntensity = 19199.998
+                int omni:rtx:rt:sss:samples = 1
+                uint omni:rtx:rtpt:maxVolumeBounces = 15
+                float omni:rtx:rtpt:modulatingRoughnessThreshold = 0.08
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                bool omni:rtx:scene:useViewLightingMode = 1
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+            uniform token sourceType = "raw"
+        }
+    }
+}
+
+over "OmniverseKit_Persp" (
+    prepend apiSchemas = ["OmniRtxCameraAutoExposureAPI_1", "OmniRtxCameraExposureAPI_1"]
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (0.01, 10000000)
+    float exposure:fStop = 5
+    float exposure:responsivity = 1.1026709
+    float exposure:time = 0.02
+    float focalLength = 18.147562
+    float focusDistance = 400
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -0.46995000041222185)
+    float3 xformOp:rotateXYZ = (86.280655, -1.3755899e-13, 7.700144)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0.3456455084407365, -0.5910717696357303, 0.09675893013832454)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+def PhysicsScene "PhysicsScene" (
+    prepend apiSchemas = ["NewtonSceneAPI", "PhysxSceneAPI"]
+)
+{
+    uniform token physxScene:broadphaseType = "MBP"
+    bool physxScene:enableGPUDynamics = 0
+    bool physxScene:enableStabilization = 1
+    uint physxScene:timeStepsPerSecond = 120
+}
+
+over "OmniverseKit_Front" (
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (1, 10000000)
+    float horizontalAperture = 50
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -5)
+    token projection = "orthographic"
+    float verticalAperture = 50
+    float3 xformOp:rotateXYZ = (90, -1.2722219e-14, 90)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (5, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+over "OmniverseKit_Right" (
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (1, 10000000)
+    float horizontalAperture = 50
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -5)
+    token projection = "orthographic"
+    float verticalAperture = 50
+    float3 xformOp:rotateXYZ = (90, -1.41245e-30, 1.2722219e-14)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, -5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+over "OmniverseKit_Top" (
+    customData = {
+        dictionary omni = {
+            dictionary kit = {
+                bool hide_in_stage_window = 1
+                bool no_delete = 1
+            }
+        }
+    }
+    hide_in_stage_window = true
+    kind = "component"
+    no_delete = true
+)
+{
+    float2 clippingRange = (1, 10000000)
+    float horizontalAperture = 50
+    custom uniform vector3d omni:kit:centerOfInterest = (0, 0, -5)
+    token projection = "orthographic"
+    float verticalAperture = 50
+    float3 xformOp:rotateXYZ = (-1.2722219e-14, -7.016709e-15, -90)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, 0, 5)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
