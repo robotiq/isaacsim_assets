@@ -1,0 +1,54 @@
+# The Isaac teleop stack has to run on both Ubuntu 22.04 / ROS 2 Humble and
+# 24.04 / Jazzy, and resolves the differences at runtime rather than by pinning
+# a distro (see grippers/demo/teleop/_servo_compat.py). That only stays true if
+# both are exercised. The launch file just assembles parameters, so this needs
+# no GPU and no Isaac Sim — a container with the ROS packages is enough to catch
+# a wrong executable name, a changed config layout, a renamed planning group, or
+# a Servo left without idle protection.
+#
+# Ported from the monorepo's isaac-teleop-launch-smoke GitLab CI job when the
+# teleop demo moved here.
+name: teleop-launch-smoke
+
+on:
+  # Post-merge run on main; PR branches run via pull_request below (scoping
+  # push to main avoids a duplicate run on every PR-branch push).
+  push:
+    branches: [main]
+    paths:
+      - 'grippers/demo/teleop/**'
+      - '.github/workflows/teleop-launch-smoke.yml'
+  pull_request:
+    paths:
+      - 'grippers/demo/teleop/**'
+      - '.github/workflows/teleop-launch-smoke.yml'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [humble, jazzy]
+    container:
+      image: osrf/ros:${{ matrix.ros_distro }}-desktop
+    steps:
+      # actions/checkout runs inside the container and needs git present.
+      - name: Install git for checkout
+        run: apt-get update -qq && apt-get install -y -qq git
+      - uses: actions/checkout@v4
+      - name: Install ROS packages
+        run: |
+          apt-get install -y -qq \
+            ros-${{ matrix.ros_distro }}-moveit-servo \
+            ros-${{ matrix.ros_distro }}-ur-moveit-config \
+            ros-${{ matrix.ros_distro }}-ur-description
+      - name: Smoke-check the teleop launch
+        working-directory: grippers/demo/teleop
+        run: |
+          . /opt/ros/${{ matrix.ros_distro }}/setup.sh
+          python3 smoke_launch_check.py
+          # The frontends are what call switch_command_type; make sure they
+          # import against each distro's messages, and that _servo_compat
+          # resolves there.
+          python3 -c "import gamepad_teleop, servo_keyboard_teleop, set_servo_command_type"
