@@ -56,8 +56,11 @@ try:
 
     # ------------------------------------------------------------------ paths
     ROBOT_ROOT="/World/ur5e"
-    LEFT_PAD ="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/left_inner_finger"
-    RIGHT_PAD="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/right_inner_finger"
+    # The 2F-85 fingertip pad is now its own rigid body
+    # (left/right_fingertip), split out of inner_finger, so the grasp contact
+    # (and its force) lands on the fingertip body — watch that, not inner_finger.
+    LEFT_PAD ="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/left_fingertip"
+    RIGHT_PAD="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/right_fingertip"
     SCAN_INTERVAL=2.0      # Newton: re-find the live Data at most this often (s)
 
     def A(x):
