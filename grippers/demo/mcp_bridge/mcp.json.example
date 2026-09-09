@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "isaac-sim": {
+      "command": "/absolute/path/to/isaacsim-mcp-server-venv/bin/isaacsim-mcp-server"
+    }
+  }
+}

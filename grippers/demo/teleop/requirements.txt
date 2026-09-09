@@ -1,0 +1,10 @@
+# Host-side Python deps for the DualSense trigger force-feedback node
+# (trigger_force_feedback.py). The ROS launch runs these scripts with the
+# system python3, so install into that interpreter's user site:
+#
+#   python3 -m pip install --user -r requirements.txt
+#
+# hidapi additionally needs the system libhidapi-hidraw library
+# (Ubuntu: sudo apt install libhidapi-hidraw0).
+pydualsense
+hidapi
