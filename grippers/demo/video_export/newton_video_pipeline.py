@@ -23,6 +23,9 @@ Typical session:
 To REUSE a saved baked layer next session (see CAVEAT in setup_replay):
     setup_replay("/home/louschr/robotiq/ROS/grasp_recording_fabric_3.usda")
     render_frames(...)
+
+One-off high-quality STILL of the current view (no recording/baking needed):
+    capture_still("/tmp/hero.png", resolution=(3840, 2160))   # inside Isaac
 """
 
 import sys, types, os
@@ -227,6 +230,27 @@ def render_frames(out_dir, start, end, tcps=30.0, sub=96):
         vpu.capture_viewport_to_file(vp, os.path.join(out_dir, "f%05d.png" % fr))
         for _ in range(4): app.update()
     print("rendered", start, "..", end - 1, "->", out_dir)
+
+
+def capture_still(out_path, resolution=(3840, 2160), sub=200, pathtracing=True):
+    """Capture the CURRENT viewport view as one high-quality image.
+
+    Frame the shot in the viewport first — this renders whatever the active
+    viewport camera sees. sub = convergence iterations (more = cleaner; 200 is a
+    good 4K start, raise if you still see path-tracing noise). No timeline scrub,
+    so it works on a paused/baked scene or a live one alike."""
+    import omni.kit.app
+    import omni.kit.viewport.utility as vpu
+    if pathtracing:
+        set_pathtracing(True)
+    vp = vpu.get_active_viewport()
+    try: vp.resolution = resolution
+    except Exception: pass
+    app = omni.kit.app.get_app()
+    for _ in range(sub): app.update()          # let path tracing converge
+    vpu.capture_viewport_to_file(vp, out_path)
+    for _ in range(4): app.update()            # flush the async capture
+    print("captured", vp.resolution, "->", out_path)
 
 
 # ---- run OUTSIDE Isaac (system python + opencv; no ffmpeg on this box) --------
