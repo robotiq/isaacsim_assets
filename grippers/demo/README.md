@@ -39,10 +39,13 @@ grippers/demo/
 │   ├── keyboard_jog.py              ← servo-less fallback (direct /joint_command)
 │   ├── send_joint_command.py        ← one-shot test publisher / "go to pose" helper
 │   └── keydump.py                   ← diagnostic (shows raw terminal keycodes)
-└── mcp_bridge/               ← OPTIONAL — Claude Code (or other MCP client) live control
-    ├── README.md                    ← setup guide
-    ├── launch_isaac_with_mcp.sh     ← Isaac Sim launcher with the MCP extension wired in
-    └── mcp.json.example             ← template for your MCP client's config file
+├── mcp_bridge/               ← OPTIONAL — Claude Code (or other MCP client) live control
+│   ├── README.md                    ← setup guide
+│   ├── launch_isaac_with_mcp.sh     ← Isaac Sim launcher with the MCP extension wired in
+│   └── mcp.json.example             ← template for your MCP client's config file
+└── video_export/            ← record & export a video of the Newton sim motion
+    ├── NEWTON_VIDEO_RECORDING.md    ← the write-up (why Stage Recorder fails, the working pipeline)
+    └── newton_video_pipeline.py     ← reusable recorder → bake → render → encode pipeline
 ```
 
 ## Prerequisites
