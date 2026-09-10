@@ -176,9 +176,9 @@ def Xform "World"
             }
 
             def "Robotiq_2F_85_edit" (
-                prepend payload = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Robots/Robotiq/2F-85/Robotiq_2F_85_edit.usd@
+                prepend payload = @../../Gripper_2F85/Robotiq_2F_85_edit.usd@
                 variants = {
-                    string Physics = "Physx_Loop"
+                    string Physics = "Physx_compliant"
                 }
             )
             {
