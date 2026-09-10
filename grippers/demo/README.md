@@ -8,6 +8,14 @@ If you just want to grasp things in the sim and drive them around with a
 controller, follow the **Quick start** below. If something breaks or you
 want the full picture, read **[teleop/README.md](teleop/README.md)**.
 
+There is a second, independent rig in
+**[newton_teleop/](newton_teleop/README.md)** that runs the gripper on Isaac's
+**Newton (MuJoCo-Warp)** backend, so the four-bar's real compliance is simulated
+instead of PhysX's `Physx_Loop` approximation. It drives a *kinematic* arm from
+Kit's update tick and uses no ROS at all — a different stack, not a variant of
+this one. It is not as solid as the PhysX rig yet; read its "Known problems"
+before demoing.
+
 ## What's in this folder
 
 ```
@@ -39,6 +47,15 @@ grippers/demo/
 │   ├── keyboard_jog.py              ← servo-less fallback (direct /joint_command)
 │   ├── send_joint_command.py        ← one-shot test publisher / "go to pose" helper
 │   └── keydump.py                   ← diagnostic (shows raw terminal keycodes)
+├── newton_teleop/            ← ALTERNATIVE rig on the Newton (MuJoCo-Warp) backend
+│   ├── README.md                    ← why the arm is kinematic, known problems
+│   ├── ur5e_2F85_newton.usda        ← UR5e + Newton 2F-85 scene
+│   ├── author_scene.py              ← regenerates that scene (pure USD, no running Isaac)
+│   ├── setup_demo.py                ← one-call in-Isaac setup (patch check, open, play, tune)
+│   ├── newton_kinematic_teleop.py   ← DualSense teleop on Kit's tick, reads /dev/input/js0
+│   ├── apply_newton_2736_patch.py   ← fixes Newton's angular limit-gain unit bug
+│   ├── isaac-demo-dds.sh            ← DDS env for the demo
+│   └── 70-dualsense-hidraw.rules    ← udev rule for DualSense hidraw access
 ├── mcp_bridge/               ← OPTIONAL — Claude Code (or other MCP client) live control
 │   ├── README.md                    ← setup guide
 │   ├── launch_isaac_with_mcp.sh     ← Isaac Sim launcher with the MCP extension wired in
