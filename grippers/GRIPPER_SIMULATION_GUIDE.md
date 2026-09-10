@@ -49,37 +49,16 @@ gripper asset:
 ### 1.3 What are variants
 
 A USD **variant set** lets a single prim carry several interchangeable
-configurations, selected by a dropdown in the Property panel. The 2F-85 has a
-`Physics` variant set on its root prim (`.../Robotiq_2F_85_edit`) with these
-options:
+configurations — different geometry, materials, physics setups, levels of
+detail — behind one named selector, instead of duplicating the prim. A single
+prim can hold several **independent** variant sets (say, one for physics and one
+for appearance), each switched on its own.
 
-| Variant | What it gives you |
-|---|---|
-| `None` | No physics at all — pure kinematic geometry |
-| `Physx_parallel_grip` | One driven joint + **mimic** coupling for the passive joints |
-| `Physx_compliant` | The real five-bar linkage modelled as a closed kinematic loop |
-
-To change it: select the root prim → Property panel → **Variants** section →
-`Physics` dropdown. See §2.1 for how to choose, and §5.2 for why the compliant variant
-is best served by Newton.
-
-The 2F-85 also has a second, independent **`Fingertip`** variant set on the same
-root prim. On the real gripper the fingertip is *screwed* onto the distal finger,
-so it can be swapped without taking the mechanism apart; this variant reproduces
-that. The fingertip is its own rigid body (`left_fingertip` / `right_fingertip`),
-welded to `inner_finger` by a `PhysicsFixedJoint`, and the variant swaps its
-geometry, collider and mass:
-
-| Variant | What it gives you |
-|---|---|
-| `Standard` | The stock plastic pad (`fingertipsstep`) — the default, behaves like the previous single-part finger |
-| `Tactile_TSF85` | The Robotiq **TSF-85** tactile-sensor case mounted in place of the pad |
-
-`Physics` and `Fingertip` are independent — any combination works. The
-`Tactile_TSF85` option mounts the **rigid sensor case** only (visual + convex
-collider); deformable tactile sensing is out of scope for this asset. Verify the
-sensor's mount pose visually in the viewport when you first load the tactile
-variant.
+Select a variant in the UI with the prim selected → Property panel → **Variants**
+section → the variant-set dropdown. Under the hood it is just an authored
+selection on the prim, so it can equally be set from Python or overridden by a
+referencing layer; switching it recomposes the prim to that configuration's
+opinions.
 
 ### 1.4 What is a mimic joint
 
@@ -167,7 +146,20 @@ This clears a wedged `nvidia_uvm` state without a full reboot.
 Goal: attach a 2F-85 to a robot (e.g. a UR5e) and have it driven as part of the
 robot's articulation.
 
-### 2.1 Choose the variant: mimic or loop
+### 2.1 Choose the variants
+
+The 2F-85 exposes two **independent** variant sets on its root prim
+(`.../Robotiq_2F_85_edit`), selected in the Property panel → **Variants** section
+(see §1.3). Pick one option from each:
+
+- **`Physics`** — how the finger linkage is simulated: `None` (kinematic only),
+  `Physx_parallel_grip`, or `Physx_compliant`.
+- **`Fingertip`** — what is mounted on the finger tip: `Standard` or
+  `Tactile_TSF85`.
+
+Any `Physics` × `Fingertip` combination works.
+
+#### Physics: mimic or loop
 
 The 2F-85 finger is a **closed five-bar linkage** — two kinematic DOF, one
 driven and one underactuated compliance DOF that a pin limits (see §4.1) — which
@@ -179,7 +171,7 @@ resolve this differently:
 *The 2F-85 finger linkage: the blue and red links close a kinematic loop (red
 arrow). `out_knuckle` is the driven joint*
 
-#### **`Physx_parallel_grip`**
+##### **`Physx_parallel_grip`**
 
 Cuts the loop to leave a tree, then re-imposes the coupling
   with **mimic joints**: you drive `finger_joint` and the passive joints follow
@@ -211,7 +203,7 @@ loop-closure constraint.)
 the **fixed** weld (out_finger), and the two mimic joints (magenta arrows) that
 follow it.*
 
-#### **`Physx_compliant`**
+##### **`Physx_compliant`**
 
 Keeps every joint and closes the five-bar as a
   maximal-coordinate **loop-closure constraint** (the extra joints are marked
@@ -256,6 +248,24 @@ parallel pinch; reach for **loop** when the grip's realism (compliance, the
 encompassing grip of §4.1, sim-to-real fidelity) is what you're after — and run
 it under Newton (§5), which tames the residual compliance and limit instability
 that the compliant variant shows under PhysX (§3.2).
+
+#### Fingertip: standard pad or TSF-85 tactile
+
+On the real gripper the fingertip is *screwed* onto the distal finger, so it can
+be swapped without taking the mechanism apart; the `Fingertip` variant set
+reproduces that. The fingertip is its own rigid body (`left_fingertip` /
+`right_fingertip`), welded to `inner_finger` by a `PhysicsFixedJoint`, and the
+variant swaps its geometry, collider and mass:
+
+| Variant | What it gives you |
+|---|---|
+| `Standard` | The stock plastic pad (`fingertipsstep`) — the default, behaves like the previous single-part finger |
+| `Tactile_TSF85` | The Robotiq **TSF-85** tactile-sensor case mounted in place of the pad |
+
+The `Tactile_TSF85` option mounts the **rigid sensor case** only (visual + convex
+collider); deformable tactile sensing is out of scope for this asset. Verify the
+sensor's mount pose visually in the viewport when you first load the tactile
+variant.
 
 ### 2.2 Reference the gripper onto the robot
 
