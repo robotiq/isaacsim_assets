@@ -533,8 +533,8 @@ time, calls `/servo_node/start_servo`, then prints the mapping. Default:
 | **Right stick** | linear x/y (tool0; x sign flipped for intuitive push‑forward = +x) |
 | **D-pad up/down** | linear -z / +z |
 | **Left stick** | angular roll / pitch |
-| **L2 / R2** | yaw − / yaw + |
-| **D-pad left/right** | gripper close / open |
+| **L1 / R1** | yaw − / yaw + |
+| **R2 (analog)** | gripper (released = open → fully pressed = closed) |
 | **Triangle (△)** | speed × 1.25 |
 | **Cross (×)** | speed ÷ 1.25 |
 | **Circle (○)** | resync servo (stop→start + zero-twist warmup) — use after Stop→Play |

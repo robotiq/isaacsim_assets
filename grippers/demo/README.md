@@ -19,7 +19,7 @@ grippers/demo/
 │   ├── README.md                    ← detailed doc, data flow, gotchas
 │   ├── PHYSICS_TUNING.md            ← USD changes on 2F-85 + cube for stable gripping
 │   ├── ur5robot_with_2F-85.usda      ← tuned UR5e + 2F-85 scene, ASCII, text-diffable
-│   ├── teleop.launch.py             ← ONE-SHOT: brings up servo + gamepad together
+│   ├── teleop.launch.py             ← ONE-SHOT: brings up servo + gamepad + haptics together
 │   ├── ur5e_servo.launch.py         ← MoveIt Servo + bridge + filter + robot_state_publisher
 │   ├── _servo_compat.py             ← Humble/Jazzy differences, resolved from what's installed
 │   ├── Dockerfile                   ← OPTIONAL containerised ROS side (either distro)
@@ -88,6 +88,17 @@ Isaac Sim stays on the host regardless, since it needs the GPU.
   ```
 - **(Gamepad only)** A DualShock 4 or DualSense controller connected — the
   Linux kernel's `hid-playstation` driver exposes it on `/dev/input/js0`.
+- **(Haptics, optional)** The R2 adaptive-trigger force feedback needs a
+  **DualSense** specifically (DualShock 4 has no adaptive triggers), plus
+  `pydualsense` + `hidapi` for the system `python3` and read/write access to
+  the controller's `hidraw` node (a `uaccess` udev rule for `054c:0ce6`,
+  otherwise run as root):
+  ```bash
+  pip install -r teleop/requirements.txt   # pydualsense + hidapi
+  sudo apt install libhidapi-hidraw0
+  ```
+  Best-effort — `teleop.launch.py` starts it, but the rest of the stack runs
+  fine without it.
 
 ## Quick start
 
@@ -116,8 +127,9 @@ Press **Play** in Isaac Sim's Timeline (the graph only ticks during playback).
 
 ### Step 2 — ROS side: launch the whole teleop stack
 
-One command brings up everything (Servo + bridge + filter + robot_state_publisher,
-plus joy_node and the gamepad mapper 10 s later):
+One command brings up everything: Servo + bridge + filter + robot_state_publisher
+immediately, joy_node and the gamepad mapper at 10 s, then the DualSense R2
+haptic feedback at 12 s:
 
 ```bash
 source /opt/ros/$ROS_DISTRO/setup.bash
@@ -128,16 +140,25 @@ Look for `bridging /forward_position_controller/commands -> /joint_command`
 (bridge) and `servo started` (gamepad) — that's the "ready to drive"
 handshake.
 
+The R2 haptic feedback is best-effort — if Isaac, the deps, or a DualSense
+aren't present it just logs and the rest of the stack is unaffected. **On a
+freshly launched Isaac, do one Stop→Play once the stack is up**: PhysX only
+starts reporting the gripper pad contacts after a replay, so without it the
+trigger stays slack even on a firm grasp.
+
 If you only want the Servo side and will drive it from something other
 than the gamepad, use `ur5e_servo.launch.py` alone; if you already have
-Servo running and just want the gamepad, use `gamepad.launch.py`.
+Servo running and just want the gamepad, use `gamepad.launch.py` — neither
+of those starts the haptics, only `teleop.launch.py` does.
 
 ### Step 3 — Frontend: pick one
 
 **Gamepad** — already launched by step 2. See the mapping cheat-sheet in
 the console output. Left stick: roll/pitch. Right stick: linear X/Y.
-D-pad up/down: Z. L2/R2: yaw. D-pad left/right: gripper close/open.
-Circle: resync servo after a Stop→Play cycle. Options: go to ready pose.
+D-pad up/down: Z. **L1/R1: yaw −/+**. **R2 (analog): gripper** (released =
+open, fully pressed = closed). Triangle/Cross: speed ×/÷ 1.25. Circle: resync
+servo after a Stop→Play cycle. Options: go to ready pose. On a DualSense, R2
+also pushes back proportionally to grip force (see step 2).
 
 **Keyboard:**
 ```bash
@@ -161,6 +182,8 @@ Graph subscriber is alive.
 | Robot moves without any input, values wrap madly | Servo emitted NaN, drives chased it | Stop→Play the sim to reset joints. The bridge now drops NaN so this shouldn't recur, but if it does, see teleop/README.md gotcha *"Servo drift loop when idle output isn't suppressed"*. |
 | First move after Stop→Play feels wrong (arm snaps to a stale pose) | Servo's `internal_joint_state_` is stale from before Stop→Play | Press **Circle (○)** on the gamepad before the first real input, or send any zero-magnitude twist to warm Servo up. |
 | Sticks feel sluggish | Servo's `scale.rotational` cap clips you | `ur5e_servo.launch.py` overrides `scale.rotational=3.0`; `scale.linear` keeps the `ur_servo.yaml` default (0.6 m/s). Bump either in the launch file if needed. |
+| R2 trigger doesn't stiffen when gripping | Haptics not running, deps/controller missing, or PhysX not yet reporting contacts | Confirm it's a **DualSense** (not DS4) with `pydualsense`/`hidapi` installed. On a fresh Isaac, do one **Stop→Play** so PhysX reports pad contacts. Make sure no stale `trigger_force_feedback.py` from an earlier session is still holding UDP `8770`. Only `teleop.launch.py` starts the haptics. |
+| `/joint_command` is received but the robot never moves | Physics/articulation handle went stale — usually after reopening the stage in an already-running Isaac (e.g. over MCP) | **Relaunch Isaac fresh** and reload the scene — a Stop→Play does *not* recover this. |
 
 Deeper explanations for each of the above in [teleop/README.md](teleop/README.md).
 
