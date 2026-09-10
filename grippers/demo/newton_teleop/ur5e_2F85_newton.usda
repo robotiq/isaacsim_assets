@@ -1,0 +1,113 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1000000
+    framesPerSecond = 60
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def PhysicsScene "PhysicsScene" (
+        prepend apiSchemas = ["NewtonSceneAPI", "MjcSceneAPI"]
+    )
+    {
+        int newton:timeStepsPerSecond = 1000
+    }
+
+    def Xform "Environment"
+    {
+        def DistantLight "defaultLight"
+        {
+            float inputs:angle = 1
+            float inputs:exposure = 1.5
+            float inputs:intensity = 3000
+            bool inputs:normalize = 1
+            quatf xformOp:orient = (0.6532815, 0.27059805, 0.27059805, 0.65328145)
+            uniform token[] xformOpOrder = ["xformOp:orient"]
+        }
+    }
+
+    def "FlatGrid" (
+        prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Grid/default_environment.usd@
+    )
+    {
+    }
+
+    def Plane "GroundPlane" (
+        prepend apiSchemas = ["PhysicsCollisionAPI"]
+    )
+    {
+        uniform token axis = "Z"
+        double length = 10
+        token visibility = "invisible"
+        double width = 10
+    }
+
+    def Material "PhysicsMaterial" (
+        prepend apiSchemas = ["PhysicsMaterialAPI"]
+    )
+    {
+        float physics:dynamicFriction = 0.9
+        float physics:staticFriction = 1
+    }
+
+    def Cube "Cube" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMassAPI"]
+    )
+    {
+        rel material:binding:physics = </World/PhysicsMaterial>
+        float physics:mass = 0.1
+        double size = 0.02
+        double3 xformOp:translate = (0.3703595735293894, -0.101588296036721, 0.009946728221864697)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cylinder "Cylinder" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMassAPI"]
+    )
+    {
+        uniform token axis = "Z"
+        double height = 0.1
+        rel material:binding:physics = </World/PhysicsMaterial>
+        float physics:mass = 0.1
+        double radius = 0.025
+        quatf xformOp:orient = (0.70710677, 0.70710677, 0, 0)
+        double3 xformOp:translate = (0.2538029387070952, 0, 0.024002205408456715)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+    }
+
+    def Xform "ur5e" (
+        prepend references = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Robots/UniversalRobots/ur5e/ur5e.usd@
+        variants = {
+            string Physics = "None"
+        }
+    )
+    {
+        double3 xformOp:translate = (-0.2035122960805893, -0.21649867296218872, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def "wrist_3_link"
+        {
+            def Xform "gripper_2f85" (
+                prepend references = @../../Gripper_2F85_newton/Robotiq_2F85_newton.usda@
+            )
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    def Camera "DemoCam"
+    {
+        float2 clippingRange = (0.01, 1000)
+        float focalLength = 30
+        matrix4d xformOp:transform = ( (-0.7863183388224229, -0.6178215519319036, 0, 0), (0.23711741079555324, -0.30178579555797685, 0.9234179265625355, -0), (-0.5705074964706062, 0.7261004500534988, 0.38379595217113505, 0), (-0.25, 0.6500000000000001, 0.4500000000000001, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
