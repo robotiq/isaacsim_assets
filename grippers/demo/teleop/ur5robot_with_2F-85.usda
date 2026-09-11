@@ -50,11 +50,66 @@
 
 def Xform "World"
 {
+    def Scope "Looks"
+    {
+        def Material "Veneer_UX_Walnut_Cherry"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Veneer_UX_Walnut_Cherry/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Veneer_UX_Walnut_Cherry/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Veneer_UX_Walnut_Cherry/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @https://omniverse-content-production.s3.us-west-2.amazonaws.com/Materials/2023_1/Base/Plastics/Veneer_UX_Walnut_Cherry.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "Veneer_UX_Walnut_Cherry"
+                token outputs:out (
+                    renderType = "material"
+                )
+            }
+        }
+
+        def Material "Metal_Seamed_Roof"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Metal_Seamed_Roof/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Metal_Seamed_Roof/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Metal_Seamed_Roof/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @https://omniverse-content-production.s3.us-west-2.amazonaws.com/Materials/2023_1/Base/Metals/Metal_Seamed_Roof.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "Metal_Seamed_Roof"
+                token outputs:out (
+                    renderType = "material"
+                )
+            }
+        }
+
+        def Material "Cloth_Gray"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Cloth_Gray/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Cloth_Gray/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Cloth_Gray/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @https://omniverse-content-production.s3.us-west-2.amazonaws.com/Materials/2023_1/Base/Textiles/Cloth_Gray.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "Cloth_Gray"
+                token outputs:out (
+                    renderType = "material"
+                )
+            }
+        }
+    }
+
     def Cube "Cube" (
         prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
     )
     {
         float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        rel material:binding = </World/Looks/Veneer_UX_Walnut_Cherry>
         rel material:binding:physics = </World/PhysicsMaterial> (
             bindMaterialAs = "weakerThanDescendants"
         )
@@ -626,9 +681,11 @@ def Xform "World"
         over "Environment"
         {
             over "Geometry" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
                 instanceable = false
             )
             {
+                rel material:binding = </World/Looks/Cloth_Gray>
             }
         }
     }
@@ -825,6 +882,7 @@ def Xform "World"
         uniform token axis = "Z"
         float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
         double height = 1
+        rel material:binding = </World/Looks/Metal_Seamed_Roof>
         rel material:binding:physics = </World/PhysicsMaterial>
         point3f physics:centerOfMass = (0, 0, 0)
         float physics:density = 0
