@@ -92,6 +92,31 @@ If you want to use a different stage, see
 [Building a compatible stage](#building-a-compatible-stage) at the
 bottom of this doc.
 
+### Gripper backend variant — PhysX vs Newton
+
+The scene carries a `Gripper` variant set on `/World` (Stage panel →
+select `/World` → *Variants* → `Gripper`), so one file can test either
+gripper without maintaining a second stage:
+
+| `Gripper` | Gripper asset | Launch with | After every Stop→Play |
+| --------- | ------------- | ----------- | --------------------- |
+| `physx` *(default)* | `Gripper_2F85/Robotiq_2F_85_edit.usd` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
+| `newton` | `Gripper_2F85_newton/Robotiq_2F85_newton.usda` | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Gripper_2F85_newton/apply_gripper_tuning.py` once |
+
+Each variant swaps the gripper payload *and* its mount joint. The
+`newton` variant deletes the Newton gripper's own
+`PhysicsArticulationRootAPI` so it merges into the arm articulation
+(finger DOF stays named `finger_joint`), and mounts it on `wrist_3_link`
+with a stiff `gripper_mount_lock` revolute. The scene's `/PhysicsScene`
+carries `MjcSceneAPI` (inert under PhysX) so no scene edit is needed when
+switching.
+
+**The Newton runtime step is not optional.** Two Newton/MuJoCo settings
+cannot be persisted in USD (`opt.impratio` and the finger loop-closure
+equality `solref`); run `apply_gripper_tuning.py` from the Script Editor
+or MCP bridge once after each Stop→Play, or the fingers go floppy. See
+[the Newton asset README](../../Gripper_2F85_newton/README.md).
+
 The articulation we drive contains the UR5e arm and the Robotiq 2F-85
 gripper as one assembly. The non-obvious detail:
 
