@@ -199,9 +199,7 @@ def Xform "Robotiq_2F85" (
                                 float physics:density = 1000
                                 prepend rel physics:filteredPairs = [
                                     </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_silicone_pad/silicone_pad/silicone_pad>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_pad1>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_pad2>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/pad/pad>,
+                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_pad1>,                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/pad/pad>,
                                     </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/follower/follower>,
                                     </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/follower_1/follower>,
                                 ]
@@ -282,9 +280,7 @@ def Xform "Robotiq_2F85" (
                                 float physics:density = 1000
                                 prepend rel physics:filteredPairs = [
                                     </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_silicone_pad/silicone_pad/silicone_pad>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_pad1>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_pad2>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/pad/pad>,
+                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/right_pad1>,                                    </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/right_pad/pad/pad>,
                                     </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/follower/follower>,
                                     </Robotiq_2F85/Geometry/base_mount/base/right_spring_link/right_follower/follower_1/follower>,
                                 ]
@@ -1386,37 +1382,8 @@ def Xform "Robotiq_2F85" (
                                 uniform token purpose = "guide"
                                 double size = 2
                                 quatf xformOp:orient = (1, 0, 0, 0)
-                                float3 xformOp:scale = (0.011, 0.004, 0.009375)
-                                double3 xformOp:translate = (0, -0.0026, 0.028125)
-                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-                            }
-
-                            def Cube "right_pad2" (
-                                apiSchemas = ["MjcCollisionAPI", "NewtonCollisionAPI", "PhysicsMassAPI", "PhysicsCollisionAPI", "MaterialBindingAPI"]
-                            )
-                            {
-                                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
-                                rel material:binding:physics = </Robotiq_2F85/Physics/PhysicsMaterial_2>
-                                uniform int mjc:group = 3
-                                uniform int mjc:priority = 1
-                                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                                uniform double[] mjc:solref = [0.004, 2]
-                                float newton:contactGap = 0
-                                float physics:density = 1000
-                                float physics:mass = 0
-                                color3f[] primvars:displayColor = [(0.45, 0.45, 0.45)] (
-                                    interpolation = "constant"
-                                )
-                                int[] primvars:displayColor:indices = None
-                                float[] primvars:displayOpacity = [1] (
-                                    interpolation = "constant"
-                                )
-                                int[] primvars:displayOpacity:indices = None
-                                uniform token purpose = "guide"
-                                double size = 2
-                                quatf xformOp:orient = (1, 0, 0, 0)
-                                float3 xformOp:scale = (0.011, 0.004, 0.009375)
-                                double3 xformOp:translate = (0, -0.0026, 0.009375)
+                                float3 xformOp:scale = (0.011, 0.004, 0.01875)
+                                double3 xformOp:translate = (0, -0.0026, 0.01875)
                                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
                             }
 
@@ -3011,9 +2978,7 @@ def Xform "Robotiq_2F85" (
                                 float physics:density = 1000
                                 prepend rel physics:filteredPairs = [
                                     </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_silicone_pad/silicone_pad/silicone_pad>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_pad1>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_pad2>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/pad/pad>,
+                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_pad1>,                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/pad/pad>,
                                     </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/follower/follower>,
                                     </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/follower_1/follower>,
                                 ]
@@ -3094,9 +3059,7 @@ def Xform "Robotiq_2F85" (
                                 float physics:density = 1000
                                 prepend rel physics:filteredPairs = [
                                     </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_silicone_pad/silicone_pad/silicone_pad>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_pad1>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_pad2>,
-                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/pad/pad>,
+                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/left_pad1>,                                    </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/left_pad/pad/pad>,
                                     </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/follower/follower>,
                                     </Robotiq_2F85/Geometry/base_mount/base/left_spring_link/left_follower/follower_1/follower>,
                                 ]
@@ -4206,37 +4169,8 @@ def Xform "Robotiq_2F85" (
                                 uniform token purpose = "guide"
                                 double size = 2
                                 quatf xformOp:orient = (1, 0, 0, 0)
-                                float3 xformOp:scale = (0.011, 0.004, 0.009375)
-                                double3 xformOp:translate = (0, -0.0026, 0.028125)
-                                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-                            }
-
-                            def Cube "left_pad2" (
-                                apiSchemas = ["MjcCollisionAPI", "NewtonCollisionAPI", "PhysicsMassAPI", "PhysicsCollisionAPI", "MaterialBindingAPI"]
-                            )
-                            {
-                                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
-                                rel material:binding:physics = </Robotiq_2F85/Physics/PhysicsMaterial_2>
-                                uniform int mjc:group = 3
-                                uniform int mjc:priority = 1
-                                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                                uniform double[] mjc:solref = [0.004, 2]
-                                float newton:contactGap = 0
-                                float physics:density = 1000
-                                float physics:mass = 0
-                                color3f[] primvars:displayColor = [(0.45, 0.45, 0.45)] (
-                                    interpolation = "constant"
-                                )
-                                int[] primvars:displayColor:indices = None
-                                float[] primvars:displayOpacity = [1] (
-                                    interpolation = "constant"
-                                )
-                                int[] primvars:displayOpacity:indices = None
-                                uniform token purpose = "guide"
-                                double size = 2
-                                quatf xformOp:orient = (1, 0, 0, 0)
-                                float3 xformOp:scale = (0.011, 0.004, 0.009375)
-                                double3 xformOp:translate = (0, -0.0026, 0.009375)
+                                float3 xformOp:scale = (0.011, 0.004, 0.01875)
+                                double3 xformOp:translate = (0, -0.0026, 0.01875)
                                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
                             }
 
@@ -6585,15 +6519,6 @@ def Xform "Robotiq_2F85" (
             float newton:rollingFriction = 0.0001
             float newton:torsionalFriction = 0.005
             float physics:dynamicFriction = 0.7
-        }
-
-        def Material "PhysicsMaterial_2" (
-            apiSchemas = ["MjcMaterialAPI", "PhysicsMaterialAPI", "NewtonMaterialAPI"]
-        )
-        {
-            float newton:rollingFriction = 0.0001
-            float newton:torsionalFriction = 0.005
-            float physics:dynamicFriction = 0.6
         }
 
         def PhysicsSphericalJoint "Equality" (
