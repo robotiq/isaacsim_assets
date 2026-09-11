@@ -335,6 +335,53 @@ def Xform "Robotiq_2F_85" (
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
             }
         }
+
+        # Swappable fingertip links. Each is fixed-jointed to its
+        # inner_finger in the physics payloads. The identity link frame + matching
+        # visuals orient keep the pad in exactly its original pose after the split.
+        def Xform "left_fingertip" (
+            kind = "group"
+        )
+        {
+            quatd xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip>
+            )
+            {
+                quatd xformOp:orient = (0.4999999999999999, 0.5000000000000001, 0.5000000000000001, 0.5000000000000001)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "right_fingertip" (
+            kind = "group"
+        )
+        {
+            quatd xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip>
+            )
+            {
+                quatd xformOp:orient = (0.4999999999999999, 0.5000000000000001, -0.5000000000000001, -0.5000000000000001)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
     }
 }
 
@@ -384,8 +431,23 @@ def Scope "Meshes"
             double3 xformOp:translate = (0, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
+    }
 
-        def Xform "Defeatured_2F_85_PAD_OPEN_fingertipsstep_01" (
+    # Fingertip geometry — split out of "inner_finger" so it can be swapped as a
+    # separate, screwed-on rigid body (HW-324). Referenced by the
+    # left_fingertip / right_fingertip links. The "Fingertip" variantSet on the
+    # root prim toggles which child is active: "tip_standard" is the stock plastic
+    # pad (default), "tip_tsf85" is the Robotiq TSF-85 tactile-sensor case.
+    def Xform "fingertip" (
+        kind = "group"
+    )
+    {
+        quatd xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Xform "tip_standard" (
             instanceable = false
             kind = "subcomponent"
             prepend references = @../parts/Defeatured_2F_85_PAD_OPEN_fingertipsstep_JFD.usd@
@@ -395,6 +457,21 @@ def Scope "Meshes"
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            # The current gripper revision ships all-black fingertips. The
+            # stock CAD material "Nobel" is aluminium-grey (diffuse ~0.70); override
+            # it to black here so the default tip renders black. (The small
+            # "Rangoon_Green" subset is already ~0.12, effectively black.)
+            over "Looks"
+            {
+                over "Nobel"
+                {
+                    over "Shader"
+                    {
+                        color3f inputs:diffuse_color_constant = (0.03, 0.03, 0.03)
+                    }
+                }
+            }
         }
     }
 

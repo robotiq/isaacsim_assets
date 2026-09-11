@@ -2,7 +2,7 @@
 Live gripper pad contact-force plot, overlaid in the running Isaac Sim viewport.
 
 Draws a "Gripper Pad Contact Force" window with two traces — left and right
-inner-finger (pad) force in Newtons against whatever object is being gripped —
+fingertip (pad) force in Newtons against whatever object is being gripped —
 scrolling over the last ~500 physics frames with an auto-scaling y-axis.
 
 Run it from a host shell (NOT inside Isaac) while a session with the MCP
@@ -20,7 +20,7 @@ exact same signal. Broadcasting to a port with no listener is a harmless no-op.
 Works on BOTH physics backends; the backend is detected once at creation:
   * Newton (mujoco_warp): reads per-contact `efc.force`. Re-attaches to the live
     solver Data on a 2 s throttle so it survives an Isaac Stop -> Play.
-  * PhysX: applies `PhysxContactReportAPI` to the two inner fingers and reads
+  * PhysX: applies `PhysxContactReportAPI` to the two fingertip bodies and reads
     `get_physx_simulation_interface().get_contact_report()` each frame, summing
     impulse / physics_dt for pad-vs-external-object contacts.
 
@@ -56,8 +56,11 @@ try:
 
     # ------------------------------------------------------------------ paths
     ROBOT_ROOT="/World/ur5e"
-    LEFT_PAD ="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/left_inner_finger"
-    RIGHT_PAD="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/right_inner_finger"
+    # The 2F-85 fingertip pad is now its own rigid body
+    # (left/right_fingertip), split out of inner_finger, so the grasp contact
+    # (and its force) lands on the fingertip body — watch that, not inner_finger.
+    LEFT_PAD ="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/left_fingertip"
+    RIGHT_PAD="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/right_fingertip"
     SCAN_INTERVAL=2.0      # Newton: re-find the live Data at most this often (s)
 
     def A(x):
