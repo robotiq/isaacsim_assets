@@ -6,8 +6,11 @@
     # sensor sits at the same pose relative to inner_finger on both fingers, so a
     # single shared mount transform on the instanced /Meshes/fingertip works for L
     # and R.
-    # The fingertip bodies' mass/inertia are overridden to the sensor-case values by
-    # the variant opinions in Robotiq_2F_85_edit.usd.
+    # This layer carries the tactile geometry only. The sensor-case collider is
+    # authored in Robotiq_2F_85_fingertip_physics.usda (so it composes only with a
+    # Physics variant, never under "None"); the fingertip bodies' mass/inertia are
+    # overridden to the sensor-case values by the variant opinions in
+    # Robotiq_2F_85_edit.usd.
     defaultPrim = "Robotiq_2F_85"
     metersPerUnit = 1
     subLayers = [
@@ -36,14 +39,6 @@ over "Meshes"
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (-0.062755, 0.11042, 0.0142)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-            over "TSF_85_case" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
         }
     }
 }

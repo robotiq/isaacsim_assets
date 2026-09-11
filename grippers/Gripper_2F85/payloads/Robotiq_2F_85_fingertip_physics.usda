@@ -1,14 +1,20 @@
 #usda 1.0
 (
-    # Shared fingertip physics for the 2F-85: the screwed-on fingertip
-    # rigid bodies, their PhysicsFixedJoints (welded to inner_finger, rigid like a
-    # screw), and the Standard-pad collider. This is identical for the parallel_grip
-    # and compliant physics variants, so it lives here once and is sublayered by
-    # both (instead of being duplicated in each). Link frames coincide with
-    # inner_finger (identity), so the joint anchors are at the origin. Mass/inertia
-    # are supplied by the "Fingertip" variantSet (pad vs sensor-case values) in
-    # Robotiq_2F_85_edit.usd, so they are NOT set here — this keeps the tactile
-    # override unambiguous.
+    # Shared fingertip physics for the 2F-85: the screwed-on fingertip rigid
+    # bodies, their PhysicsFixedJoints (welded to inner_finger, rigid like a
+    # screw), the Standard-pad mass/inertia, and both tip colliders. This is
+    # identical for the parallel_grip and compliant physics variants, so it lives
+    # here once and is sublayered by both (instead of being duplicated in each).
+    # Link frames coincide with inner_finger (identity), so the joint anchors are
+    # at the origin.
+    #
+    # Mass/inertia for the Standard pad are authored here (not in the "Fingertip"
+    # variantSet) so they are reachable on the configuration/ integration path,
+    # which sublayers this payload + base.usda but never Robotiq_2F_85_edit.usd.
+    # The "Tactile_TSF85" Fingertip variant overrides them with the sensor-case
+    # values. The tip colliders are authored here too so they compose only when a
+    # Physics variant is selected — never under Physics = "None", which keeps that
+    # variant pure kinematic geometry.
     defaultPrim = "Robotiq_2F_85"
     metersPerUnit = 1
     subLayers = [
@@ -22,10 +28,17 @@ over "Robotiq_2F_85"
     over "Robotiq_2F_85"
     {
         over "left_fingertip" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
+            # Standard pad mass/inertia (default); overridden with the sensor-case
+            # values by the "Tactile_TSF85" Fingertip variant in the edit layer.
+            point3f physics:centerOfMass = (0, -0.05063447, 0.12616345)
+            float3 physics:diagonalInertia = (0.0000013906384, 0.0000033053761, 0.0000037298817)
+            float physics:mass = 0.02598171
+            quatf physics:principalAxes = (0.550085, -0.4443045, -0.4443045, 0.550085)
+
             def PhysicsFixedJoint "FixedJoint"
             {
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
@@ -40,10 +53,15 @@ over "Robotiq_2F_85"
         }
 
         over "right_fingertip" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
+            point3f physics:centerOfMass = (0, 0.05063447, 0.12616345)
+            float3 physics:diagonalInertia = (0.0000013906384, 0.0000033053761, 0.0000037298817)
+            float physics:mass = 0.02598171
+            quatf physics:principalAxes = (0.550085, 0.4443045, 0.4443045, 0.550085)
+
             def PhysicsFixedJoint "FixedJoint"
             {
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
@@ -67,6 +85,22 @@ over "Meshes"
         {
             over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
                 prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        # Only present when Fingertip = "Tactile_TSF85" (the tactile payload adds
+        # tip_tsf85); this over is inert otherwise. Authored here rather than in the
+        # tactile payload so the sensor-case collider never composes under
+        # Physics = "None" (which would otherwise leave a world-static actor with no
+        # rigid-body ancestor).
+        over "tip_tsf85"
+        {
+            over "TSF_85_case" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
