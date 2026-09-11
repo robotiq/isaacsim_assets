@@ -108,7 +108,7 @@ def Xform "World"
         prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysxRigidBodyAPI", "PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
     )
     {
-        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        float3[] extent = [(-0.01, -0.01, -0.01), (0.01, 0.01, 0.01)]
         rel material:binding = </World/Looks/Veneer_UX_Walnut_Cherry>
         rel material:binding:physics = </World/PhysicsMaterial> (
             bindMaterialAs = "weakerThanDescendants"
@@ -127,9 +127,9 @@ def Xform "World"
         bool physxRigidBody:enableSpeculativeCCD = 0
         float physxRigidBody:linearDamping = 0.1
         int physxRigidBody:solverVelocityIterationCount = 4
-        double size = 1
+        double size = 0.02
         quatd xformOp:orient = (1, 0, 0, 0)
-        double3 xformOp:scale = (0.02, 0.02, 0.02)
+        double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (0.3703595735293894, -0.101588296036721, 0.009946728221864697)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
     }
@@ -880,8 +880,8 @@ def Xform "World"
     )
     {
         uniform token axis = "Z"
-        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
-        double height = 1
+        float3[] extent = [(-0.025, -0.025, -0.05), (0.025, 0.025, 0.05)]
+        double height = 0.1
         rel material:binding = </World/Looks/Metal_Seamed_Roof>
         rel material:binding:physics = </World/PhysicsMaterial>
         point3f physics:centerOfMass = (0, 0, 0)
@@ -899,11 +899,11 @@ def Xform "World"
         int physxRigidBody:solverPositionIterationCount = 16
         int physxRigidBody:solverVelocityIterationCount = 4
         float physxRigidBody:stabilizationThreshold = 0.00001
-        double radius = 0.5
+        double radius = 0.025
         custom bool refinementEnableOverride = 1
         custom int refinementLevel = 2
         quatd xformOp:orient = (0.7071067811865476, 0.7071067811865475, 0, 0)
-        double3 xformOp:scale = (0.05, 0.05, 0.1)
+        double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (0.2538029387070952, 0, 0.024002205408456715)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
     }
