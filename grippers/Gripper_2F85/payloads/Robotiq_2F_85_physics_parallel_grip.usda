@@ -316,11 +316,11 @@ def Xform "Robotiq_2F_85" (
             }
         }
 
-        # Mass split for the screwed-on fingertip: inner_finger now carries
-        # only the distal body (finger4step); the pad's mass/inertia moved to
-        # left_fingertip below. Mass ratio matches the CAD parts (distal 11.29 g /
-        # pad 22.10 g), with the per-side total preserved at 0.039254718 kg and each
-        # body's inertia scaled with its mass. See git history / plan.
+        # Distal body (finger4step) only — the pad is the separate
+        # left_fingertip rigid body. Mass is the CAD part ratio (11.29 g distal
+        # / 22.10 g pad) applied to the 0.039254718 kg per-side total, so it is
+        # not the raw CAD part mass. Inertia is the part's own tensor about its
+        # own CoM.
         over "left_inner_finger" (
             prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
         )

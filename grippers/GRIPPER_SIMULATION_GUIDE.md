@@ -159,6 +159,11 @@ The 2F-85 exposes two **independent** variant sets on its root prim
 
 Any `Physics` × `Fingertip` combination works.
 
+Both variant sets live on the `edit` layer. If you integrate via the
+`configuration/` files (§2.2) you get the `Physx_parallel_grip` /
+`Physx_compliant` build with the `Standard` fingertip fixed — reference
+`Robotiq_2F_85_edit.usd` instead when you need to switch fingertips.
+
 #### Physics: mimic or loop
 
 The 2F-85 finger is a **closed five-bar linkage** — two kinematic DOF, one
@@ -274,7 +279,10 @@ variant.
    `/World/ur5e/wrist_3_link/Robotiq_2F_85_edit`.
 2. Reference the *config* file for your chosen variant
    (`configuration/Robotiq_2F_85_config_physics_parallel_grip.usda` or
-   `…_compliant.usda`), not the `edit`/`robot` authoring files.
+   `…_compliant.usda`), not the `edit`/`robot` authoring files. These config
+   files bake in the `Standard` fingertip; to switch fingertips (§2.1) at
+   integration time, reference `Robotiq_2F_85_edit.usd` instead — it carries
+   both variant sets.
 
 ### 2.3 Attach it with a fixed joint
 
