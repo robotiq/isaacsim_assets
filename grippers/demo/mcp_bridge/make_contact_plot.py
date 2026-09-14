@@ -87,13 +87,19 @@ try:
         if live is None and datas: live=datas[0]
         return (models[0] if models else None), live
 
-    OBJ_GEOMS={22,23}; OBJ_BODIES={22,23}
+    # Graspable objects = the free-jointed rigid bodies (cube, cylinder), and their
+    # geoms. Derived live rather than hardcoded so this survives geom re-indexing —
+    # e.g. the fingertip-collider merge that shifted the object geoms 22,23 -> 20,21.
     def newton_seed(st):
         mjm,mjd=find_live()
         st["mjm"]=mjm; st["mjd"]=mjd
         if mjm is not None:
             gb=flat(mjm.geom_bodyid).astype(int); jb=flat(mjm.jnt_bodyid).astype(int)
+            jt=flat(mjm.jnt_type).astype(int)
             st["gb"]=gb; st["par"]=flat(mjm.body_parentid).astype(int)
+            obj_bodies={int(jb[j]) for j in range(jt.size) if int(jt[j])==0}  # 0 = mjJNT_FREE
+            st["obj_bodies"]=obj_bodies
+            st["obj_geoms"]={g for g in range(gb.size) if int(gb[g]) in obj_bodies}
             st["lseed"]={int(jb[j]) for j in (9,10,11,12)}
             st["rseed"]={int(jb[j]) for j in (15,16,17,18)}
     def newton_side(st,b):
@@ -111,13 +117,14 @@ try:
         if nacon>0:
             geom=np.asarray(mjd.contact.geom.numpy()); ea=np.asarray(mjd.contact.efc_address.numpy())
             ef=flat(mjd.efc.force); gb=st["gb"]
+            og=st["obj_geoms"]; obs=st["obj_bodies"]
             for k in range(nacon):
                 g0,g1=int(geom[k,0]),int(geom[k,1])
-                if g0 in OBJ_GEOMS: other=g1
-                elif g1 in OBJ_GEOMS: other=g0
+                if g0 in og: other=g1
+                elif g1 in og: other=g0
                 else: continue
                 ob=int(gb[other])
-                if ob==0 or ob in OBJ_BODIES: continue
+                if ob==0 or ob in obs: continue
                 s=newton_side(st,ob)
                 if s is None: continue
                 addr=int(ea[k,0])
