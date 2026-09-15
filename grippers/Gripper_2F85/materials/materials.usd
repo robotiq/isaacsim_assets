@@ -1,3 +1,349 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:be51967b16cff7e79fd00d84c903d1319978419ea3c908396ff7e5d053c72acc
-size 3275
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Looks"
+    {
+        def Material "Nobel"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Nobel/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Nobel/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Nobel/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.7019608, 0.7019608, 0.7019608)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Rangoon_Green"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Rangoon_Green/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Rangoon_Green/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Rangoon_Green/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.11764706, 0.11764706, 0.11764706)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Pumice"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Pumice/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Pumice/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Pumice/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.78431374, 0.78431374, 0.78431374)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Cod_Gray"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Cod_Gray/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Cod_Gray/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Cod_Gray/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.039215688, 0.039215688, 0.039215688)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Stack"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Stack/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Stack/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Stack/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.5294118, 0.54901963, 0.54901963)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Periwinkle_Gray"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Periwinkle_Gray/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Periwinkle_Gray/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Periwinkle_Gray/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.7921569, 0.81960785, 0.93333334)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Celeste"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Celeste/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Celeste/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Celeste/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.8, 0.80784315, 0.8)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Chateau_Green"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Chateau_Green/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Chateau_Green/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Chateau_Green/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.28627452, 0.6627451, 0.32941177)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Gravel"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Gravel/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Gravel/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Gravel/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.29803923, 0.29803923, 0.29803923)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Silver_Rust"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Silver_Rust/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Silver_Rust/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Silver_Rust/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.7764706, 0.75686276, 0.7372549)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Gallery"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Gallery/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Gallery/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Gallery/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.9372549, 0.9372549, 0.9372549)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Blue_Ribbon"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Blue_Ribbon/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Blue_Ribbon/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Blue_Ribbon/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.13333334, 0.33333334, 1)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Dawn"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Dawn/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Dawn/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Dawn/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.64705884, 0.61960787, 0.5882353)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "White"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/White/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/White/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/White/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (1, 1, 1)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Gray"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Gray/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Gray/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Gray/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.49411765, 0.49411765, 0.49411765)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+
+        def Material "Mystic"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Mystic/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Mystic/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Mystic/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.8980392, 0.91764706, 0.92941177)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.5
+                token outputs:out
+            }
+        }
+    }
+}
+
