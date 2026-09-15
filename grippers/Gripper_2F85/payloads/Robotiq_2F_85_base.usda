@@ -458,18 +458,24 @@ def Scope "Meshes"
             double3 xformOp:translate = (0, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
-            # The current gripper revision ships all-black fingertips. The
-            # stock CAD material "Nobel" is aluminium-grey (diffuse ~0.70); override
-            # it to black here so the default tip renders black. (The small
-            # "Rangoon_Green" subset is already ~0.12, effectively black.)
-            over "Looks"
+            # The current gripper revision ships all-black fingertips. The stock CAD
+            # pad uses two materials: "Nobel" (aluminium-grey ~0.70, not used anywhere
+            # else on the gripper) and "Rangoon_Green" (~0.12, already near-black and
+            # also used on the body). Rebind both subsets to the shared "Cod_Gray" so
+            # the whole tip matches the gripper body's black exactly. Cod_Gray is
+            # defined once in materials/materials.usd, which is sublayered by every
+            # geometry part (including this fingertip, via the JFD part) — so it stays
+            # a single source of truth. The stock CAD part file is left untouched.
+            over "Defeatured_2F_85_PAD_OPEN_fingertipsstep"
             {
                 over "Nobel"
                 {
-                    over "Shader"
-                    {
-                        color3f inputs:diffuse_color_constant = (0.03, 0.03, 0.03)
-                    }
+                    rel material:binding = </Meshes/fingertip/tip_standard/Looks/Cod_Gray>
+                }
+
+                over "Rangoon_Green"
+                {
+                    rel material:binding = </Meshes/fingertip/tip_standard/Looks/Cod_Gray>
                 }
             }
         }
