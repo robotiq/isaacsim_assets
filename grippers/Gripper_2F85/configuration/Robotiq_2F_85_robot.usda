@@ -21,7 +21,7 @@
             string boundCamera = "/OmniverseKit_Persp"
         }
         dictionary omni_layer = {
-            string authoring_layer = "./Robotiq_2F_85_edit.usd"
+            string authoring_layer = "../Robotiq_2F_85_edit.usda"
         }
         dictionary renderSettings = {
         }

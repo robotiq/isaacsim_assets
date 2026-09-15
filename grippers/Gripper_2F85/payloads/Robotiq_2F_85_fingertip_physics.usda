@@ -10,7 +10,7 @@
     #
     # Mass/inertia for the Standard pad are authored here (not in the "Fingertip"
     # variantSet) so they are reachable on the configuration/ integration path,
-    # which sublayers this payload + base.usda but never Robotiq_2F_85_edit.usd.
+    # which sublayers this payload + base.usda but never Robotiq_2F_85_edit.usda.
     # The "Tactile_TSF85" Fingertip variant overrides them with the sensor-case
     # values. The tip colliders are authored here too so they compose only when a
     # Physics variant is selected — never under Physics = "None", which keeps that

@@ -1,7 +1,7 @@
 *.usd filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
 
-# Config layers kept as ASCII text under their original .usd name (diffable, not LFS).
-# These overrides must stay AFTER the blanket *.usd rule so they win.
-grippers/Gripper_2F85/Robotiq_2F_85_edit.usd  !filter !diff !merge text
+# materials.usd is kept ASCII under its original .usd name (7 binary CAD parts
+# sublayer it by name, so renaming it would force re-saving those crates).
+# This override must stay AFTER the blanket *.usd rule so it wins.
 grippers/Gripper_2F85/materials/materials.usd !filter !diff !merge text

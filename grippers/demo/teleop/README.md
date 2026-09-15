@@ -100,7 +100,7 @@ gripper without maintaining a second stage:
 
 | `Gripper` | Gripper asset | Launch with | After every Stop→Play |
 | --------- | ------------- | ----------- | --------------------- |
-| `physx` *(default)* | `Gripper_2F85/Robotiq_2F_85_edit.usd` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
+| `physx` *(default)* | `Gripper_2F85/Robotiq_2F_85_edit.usda` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
 | `newton` | `Gripper_2F85_newton/Robotiq_2F85_newton.usda` | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Gripper_2F85_newton/apply_gripper_tuning.py` once |
 
 Each variant swaps the gripper payload *and* its mount joint. The
