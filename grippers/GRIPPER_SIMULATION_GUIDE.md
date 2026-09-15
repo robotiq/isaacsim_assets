@@ -162,7 +162,7 @@ Any `Physics` × `Fingertip` combination works.
 Both variant sets live on the `edit` layer. If you integrate via the
 `configuration/` files (§2.2) you get the `Physx_parallel_grip` /
 `Physx_compliant` build with the `Standard` fingertip fixed — reference
-`Robotiq_2F_85_edit.usd` instead when you need to switch fingertips.
+`Robotiq_2F_85_edit.usda` instead when you need to switch fingertips.
 
 #### Physics: mimic or loop
 
@@ -281,7 +281,7 @@ variant.
    (`configuration/Robotiq_2F_85_config_physics_parallel_grip.usda` or
    `…_compliant.usda`), not the `edit`/`robot` authoring files. These config
    files bake in the `Standard` fingertip; to switch fingertips (§2.1) at
-   integration time, reference `Robotiq_2F_85_edit.usd` instead — it carries
+   integration time, reference `Robotiq_2F_85_edit.usda` instead — it carries
    both variant sets.
 
 ### 2.3 Attach it with a fixed joint
@@ -726,7 +726,7 @@ Use it to validate an asset you maintain before shipping it.
 **Running it:** the 2F-85 asset has no `profile_id` metadata, so profile
 inference fails and you must specify one. Since it's a gripper (robot body with
 driven joints + articulation), run the three **Robot-Body-\*** profiles against
-the root `Robotiq_2F_85_edit.usd`.
+the root `Robotiq_2F_85_edit.usda`.
 
 **Result — all three profiles FAILED, but most checks pass.**
 Robot-Body-Neutral is closest: everything passes *except* the driven-joints
