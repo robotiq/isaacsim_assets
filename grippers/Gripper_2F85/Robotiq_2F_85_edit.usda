@@ -149,7 +149,7 @@ def Xform "Robotiq_2F_85" (
             customData = {
                 string[] variantPrimPaths = ["."]
             }
-            prepend payload = @./payloads/Robotiq_2F_85_physics_compliant.usda@
+            prepend payload = @./payloads/Robotiq_2F_85_compliant_physics.usda@
         ) {
 
         }
@@ -157,7 +157,7 @@ def Xform "Robotiq_2F_85" (
             customData = {
                 string[] variantPrimPaths = ["."]
             }
-            prepend payload = @./payloads/Robotiq_2F_85_physics_parallel_grip.usda@
+            prepend payload = @./payloads/Robotiq_2F_85_parallel_grip_physics.usda@
         ) {
 
         }
