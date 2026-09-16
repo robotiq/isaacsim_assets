@@ -848,7 +848,7 @@ def Xform "World" (
                                 over "finger_joint"
                                 {
                                     float drive:angular:physics:damping = 3
-                                    float drive:angular:physics:maxForce = 5
+                                    float drive:angular:physics:maxForce = 1
                                     float drive:angular:physics:stiffness = 50
                                     float drive:angular:physics:targetPosition = 0
                                     bool[] isaac:actuator (
