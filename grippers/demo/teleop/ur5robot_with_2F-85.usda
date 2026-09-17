@@ -779,6 +779,15 @@ def Xform "World" (
                             delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
                         )
                         {
+                            # Gripper is mounted on the UR5e wrist (gripper_mount joint
+                            # below), so deactivate the asset's world-pinning root_joint
+                            # to avoid double-constraining base_link.
+                            over "root_joint" (
+                                active = false
+                            )
+                            {
+                            }
+
                             over "base_link"
                             {
                                 string isaac:nameOverride (

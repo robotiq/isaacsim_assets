@@ -33,65 +33,66 @@
     upAxis = "Z"
 )
 
-over "Robotiq_2F_85"
+over "Robotiq_2F_85" (
+    prepend apiSchemas = ["IsaacRobotAPI"]
+)
 {
+    string[] isaac:changelog (
+        displayName = "Changelog"
+    )
+    string isaac:description = "Robotiq 2F-85 adaptive parallel-jaw gripper (2 fingers, 85 mm stroke)." (
+        displayName = "Description"
+    )
+    token isaac:license (
+        displayName = "License"
+    )
     string isaac:namespace (
         displayName = "Namespace"
         doc = "Namespace of the prim in Isaac Sim"
     )
-
-    over "Robotiq_2F_85" (
-        prepend apiSchemas = ["IsaacRobotAPI"]
+    rel isaac:physics:robotJoints (
+        displayName = "Robot Joints"
     )
+    prepend rel isaac:physics:robotJoints = [
+        </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
+        </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
+        </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
+        </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
+        </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
+        </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
+        </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
+        </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
+        </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
+    ]
+    rel isaac:physics:robotLinks (
+        displayName = "Robot Links"
+    )
+    prepend rel isaac:physics:robotLinks = [
+        </Robotiq_2F_85/Robotiq_2F_85/base_link>,
+        </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>,
+        </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>,
+        </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>,
+        </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>,
+        </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>,
+        </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>,
+        </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>,
+        </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>,
+    ]
+    token isaac:robotType = "End Effector" (
+        displayName = "Robot Type"
+    )
+    string isaac:source = "Robotiq" (
+        displayName = "Source"
+    )
+    string isaac:version = "1.0.0" (
+        displayName = "Version"
+    )
+
+    over "Robotiq_2F_85"
     {
-        string[] isaac:changelog (
-            displayName = "Changelog"
-        )
-        string isaac:description (
-            displayName = "Description"
-        )
-        token isaac:license (
-            displayName = "License"
-        )
         string isaac:namespace (
             displayName = "Namespace"
             doc = "Namespace of the prim in Isaac Sim"
-        )
-        rel isaac:physics:robotJoints (
-            displayName = "Robot Joints"
-        )
-        prepend rel isaac:physics:robotJoints = [
-            </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
-            </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
-            </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
-            </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
-            </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
-            </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
-            </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
-            </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
-        ]
-        rel isaac:physics:robotLinks (
-            displayName = "Robot Links"
-        )
-        prepend rel isaac:physics:robotLinks = [
-            </Robotiq_2F_85/Robotiq_2F_85/base_link>,
-            </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>,
-            </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>,
-            </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>,
-            </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>,
-            </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>,
-            </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>,
-            </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>,
-            </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>,
-        ]
-        token isaac:robotType (
-            displayName = "Robot Type"
-        )
-        string isaac:source (
-            displayName = "Source"
-        )
-        string isaac:version (
-            displayName = "Version"
         )
 
         over "base_link" (
@@ -107,10 +108,10 @@ over "Robotiq_2F_85"
                 prepend apiSchemas = ["IsaacSiteAPI"]
             )
             {
-                string isaac:Description (
+                string isaac:Description = "Tool center point (grasp frame) centered between the fingertips." (
                     displayName = "Reference Description"
                 )
-                uniform token isaac:forwardAxis (
+                uniform token isaac:forwardAxis = "Z" (
                     displayName = "Forward Axis"
                 )
             }

@@ -21,7 +21,7 @@
             string boundCamera = "/OmniverseKit_Persp"
         }
         dictionary omni_layer = {
-            string authoring_layer = "./Robotiq_2F_85_physics_parallel_grip.usda"
+            string authoring_layer = "./Robotiq_2F_85_parallel_grip_physics.usda"
             dictionary locked = {
             }
             dictionary muteness = {
@@ -114,6 +114,18 @@ def Xform "Robotiq_2F_85" (
     {
         bool physxArticulation:enabledSelfCollisions = 0
         int physxArticulation:solverPositionIterationCount = 64
+
+        # Root/mount joint pinning the gripper base to the world (body0 empty).
+        # Makes this a fixed-base articulation, as expected for an End Effector
+        # interface asset. When mounting on an arm, retarget or deactivate this joint.
+        def PhysicsFixedJoint "root_joint"
+        {
+            rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
 
         def Scope "Joints"
         {
