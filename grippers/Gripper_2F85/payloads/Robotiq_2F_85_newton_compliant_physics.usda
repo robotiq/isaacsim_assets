@@ -523,5 +523,25 @@ over "Meshes"
                 float newton:contactGap = 0
             }
         }
+
+        # TSF tactile sensor case -- the grip surface when Fingertip = "Tactile_TSF85"
+        # (that payload deactivates tip_standard and adds tip_tsf85). Same treatment
+        # as the standard pad. Inert when Fingertip = "Standard" (no tip_tsf85).
+        over "tip_tsf85"
+        {
+            over "TSF_85_case" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "MjcCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_85/Robotiq_2F_85/Physics/GripMaterial>
+                uniform int mjc:group = 3
+                uniform int mjc:priority = 1
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.004, 2]
+                float newton:contactGap = 0
+            }
+        }
     }
 }
