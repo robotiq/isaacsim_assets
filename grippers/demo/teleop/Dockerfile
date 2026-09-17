@@ -21,7 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-${ROS_DISTRO}-ur-moveit-config \
         ros-${ROS_DISTRO}-joy \
         ros-${ROS_DISTRO}-xacro \
+        python3-pip \
+        libhidapi-hidraw0 \
+    && { pip3 install --no-cache-dir pydualsense hidapi \
+         || pip3 install --no-cache-dir --break-system-packages pydualsense hidapi; } \
     && rm -rf /var/lib/apt/lists/*
+# python3-pip + libhidapi + pydualsense/hidapi drive the DualSense R2
+# adaptive-trigger haptics (trigger_force_feedback.py). Needs /dev/hidraw*
+# passed into the container by run.sh. The pip fallback covers both distros:
+# humble's older pip has no --break-system-packages; jazzy (Ubuntu 24.04, PEP 668)
+# requires it.
 
 COPY entrypoint.sh /teleop_entrypoint.sh
 ENTRYPOINT ["/teleop_entrypoint.sh"]
