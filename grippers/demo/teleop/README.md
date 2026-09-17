@@ -101,13 +101,14 @@ gripper without maintaining a second stage:
 | `Gripper` | Gripper asset | Launch with | After every Stop→Play |
 | --------- | ------------- | ----------- | --------------------- |
 | `physx` *(default)* | `Gripper_2F85/Robotiq_2F_85_edit.usda` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
-| `newton` | `Gripper_2F85_newton/Robotiq_2F85_newton.usda` | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Gripper_2F85_newton/apply_gripper_tuning.py` once |
+| `newton` | `Gripper_2F85/Robotiq_2F_85_edit.usda` (`Physics = Newton_compliant`) | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Gripper_2F85/newton/apply_gripper_tuning.py` once |
 
-Each variant swaps the gripper payload *and* its mount joint. The
-`newton` variant deletes the Newton gripper's own
+Both variants payload the same unified asset and differ only in the
+`Physics` variant they select (`Physx_compliant` vs `Newton_compliant`).
+The `newton` variant additionally deletes the variant's
 `PhysicsArticulationRootAPI` so it merges into the arm articulation
-(finger DOF stays named `finger_joint`), and mounts it on `wrist_3_link`
-with a stiff `gripper_mount_lock` revolute. The scene's `/PhysicsScene`
+(finger DOF stays named `finger_joint`), and welds `base_link` to
+`wrist_3_link` with a `FixedJoint`. The scene's `/PhysicsScene`
 carries `MjcSceneAPI` (inert under PhysX) so no scene edit is needed when
 switching.
 
@@ -115,7 +116,8 @@ switching.
 cannot be persisted in USD (`opt.impratio` and the finger loop-closure
 equality `solref`); run `apply_gripper_tuning.py` from the Script Editor
 or MCP bridge once after each Stop→Play, or the fingers go floppy. See
-[the Newton asset README](../../Gripper_2F85_newton/README.md).
+[the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
+Newton tuning details.
 
 The articulation we drive contains the UR5e arm and the Robotiq 2F-85
 gripper as one assembly. The non-obvious detail:

@@ -11,8 +11,8 @@ The gripper assets referenced throughout live in this repo alongside this guide:
 
 | Asset | Backend | Path |
 |---|---|---|
-| 2F-85 (PhysX, parallel_grip + compliant variants) | PhysX | [`Gripper_2F85/`](Gripper_2F85/) |
-| 2F-85 (Newton / MuJoCo-Warp) | Newton | [`Gripper_2F85_newton/`](Gripper_2F85_newton/) |
+| 2F-85 (PhysX: `Physx_parallel_grip` + `Physx_compliant`) | PhysX | [`Gripper_2F85/`](Gripper_2F85/) |
+| 2F-85 (Newton: `Newton_compliant`) | Newton | [`Gripper_2F85/`](Gripper_2F85/) |
 
 The exact tuned USD values are given inline with each fix in §3.
 
@@ -607,14 +607,14 @@ Sim 6 ships it bundled. You select the Newton backend on the physics scene; the
 gripper asset is authored with Newton-specific (`mjc:`) attributes and MuJoCo
 contact tuning rather than PhysX ones.
 
-Our Newton 2F-85 asset ([`Gripper_2F85_newton/`](Gripper_2F85_newton/))
-is standalone (gripper at the origin, its own articulation root) — drop it in a
-scene with a `PhysicsScene` and play. It is **open by default**
+The Newton 2F-85 is the `Newton_compliant` variant of the unified asset
+([`Gripper_2F85/`](Gripper_2F85/)) — select `Physics = Newton_compliant`, drop
+it in a scene with a `PhysicsScene`, and play. It is **open by default**
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
 
 **One runtime step after every stop → play:** run
-[`apply_gripper_tuning.py`](Gripper_2F85_newton/apply_gripper_tuning.py)
+[`newton/apply_gripper_tuning.py`](Gripper_2F85/newton/apply_gripper_tuning.py)
 once (Script Editor or MCP bridge). It re-applies the only two settings that
 cannot be persisted in USD:
 
@@ -686,10 +686,11 @@ The loop (five-bar) variant is where Newton earns its place:
 
 ### 5.3 Where to find the asset
 
-- **Newton 2F-85:** [`Gripper_2F85_newton/`](Gripper_2F85_newton/)
-  — `Robotiq_2F85_newton.usda` (structure + tuning), `geometry/` (per-body
-  meshes, git-LFS), `apply_gripper_tuning.py`, and its own
-  [`README.md`](Gripper_2F85_newton/README.md).
+- **Newton 2F-85:** the `Newton_compliant` variant of
+  [`Gripper_2F85/`](Gripper_2F85/) — physics in
+  `payloads/Robotiq_2F_85_newton_compliant_physics.usda` (bodies, joints, the
+  five-bar loop closure, and collision cooked from the shared visual CADs), plus
+  the runtime [`newton/apply_gripper_tuning.py`](Gripper_2F85/newton/apply_gripper_tuning.py).
 
 **Provenance:** the *physics model* derives from the
 [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotiq_2f85)
