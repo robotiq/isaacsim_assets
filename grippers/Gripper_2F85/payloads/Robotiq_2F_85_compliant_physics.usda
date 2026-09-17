@@ -114,6 +114,18 @@ def Xform "Robotiq_2F_85" (
     {
         bool physxArticulation:enabledSelfCollisions = 0
 
+        # Root/mount joint pinning the gripper base to the world (body0 empty).
+        # Makes this a fixed-base articulation, as expected for an End Effector
+        # interface asset. When mounting on an arm, retarget or deactivate this joint.
+        def PhysicsFixedJoint "root_joint"
+        {
+            rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
         def Scope "Joints"
         {
             def PhysicsRevoluteJoint "finger_joint" (
