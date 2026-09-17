@@ -682,15 +682,31 @@ def Xform "World" (
             {
                 over "wrist_3_link"
                 {
-                    def "Robotiq_2F85_newton" (
-                        delete apiSchemas = ["PhysicsArticulationRootAPI", "NewtonArticulationRootAPI"]
-                        prepend payload = @../../Gripper_2F85_newton/Robotiq_2F85_newton.usda@
+                    def "Robotiq_2F_85_edit" (
+                        prepend payload = @../../Gripper_2F85/Robotiq_2F_85_edit.usda@
+                        variants = {
+                            string Physics = "Newton_compliant"
+                        }
                     )
                     {
                         quatf xformOp:orient = (1, 0, 0, 0)
                         float3 xformOp:scale = (1, 1, 1)
                         double3 xformOp:translate = (0, 0, 0)
                         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        over "Robotiq_2F_85" (
+                            delete apiSchemas = ["PhysicsArticulationRootAPI"]
+                        )
+                        {
+                            # Mounted on the arm wrist by the FixedJoint below, so
+                            # deactivate the asset's world-pinning root_joint (same as
+                            # the physx variant) to avoid double-constraining base_link.
+                            over "root_joint" (
+                                active = false
+                            )
+                            {
+                            }
+                        }
                     }
                 }
 
@@ -734,23 +750,16 @@ def Xform "World" (
                 }
             }
 
-            def PhysicsRevoluteJoint "gripper_mount_lock" (
-                apiSchemas = ["PhysicsDriveAPI:angular"]
-            )
+            def PhysicsFixedJoint "FixedJoint"
             {
-                float drive:angular:physics:damping = 10000
-                float drive:angular:physics:maxForce = 100000
-                float drive:angular:physics:stiffness = 100000
-                float drive:angular:physics:targetPosition = 0
-                token physics:axis = "X"
                 rel physics:body0 = </World/ur5e/wrist_3_link>
-                rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_2F85_newton/Geometry/base_mount>
-                point3f physics:localPos0 = (0, 0, 0.007)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-                float physics:lowerLimit = -0.001
-                float physics:upperLimit = 0.001
+                rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/base_link>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)
+                point3f physics:localPos1 = (-0.3129819, 0.27369457, 0.19359241)
+                quatf physics:localRot0 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+                quatf physics:localRot1 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
             }
 
         }

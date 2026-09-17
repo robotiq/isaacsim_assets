@@ -161,6 +161,14 @@ def Xform "Robotiq_2F_85" (
         ) {
 
         }
+        "Newton_compliant" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_2F_85_newton_compliant_physics.usda@
+        ) {
+
+        }
     }
     variantSet "Fingertip" = {
         "Standard" {

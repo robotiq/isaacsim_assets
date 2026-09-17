@@ -70,22 +70,42 @@ try:
 
     # ------------------------------------------------------- NEWTON discovery
     def find_live():
-        """Return (Model, live Data) selecting the mujoco_warp Data whose qpos
-        has no NaN (a stop->play leaves a stale corrupted Data lingering)."""
+        """Return (Model, Data) for the ACTIVE Newton solve. Prefer the live handles
+        owned by the running SolverMuJoCo (`mjw_model` / `mjw_data`) -- deterministic,
+        and immune to stale duplicate Models that a stop->play or stage reopen leaves
+        lingering in gc. Those stale Models can have MORE geoms than the live one
+        (e.g. an old fingertip box+hulls build vs the current single-mesh build), so
+        the previous 'most geoms = scene' heuristic latched onto the frozen stale
+        Model and every force read 0. Fall back to that scavenge only if no solver
+        is found (max-geom Model + largest non-NaN Data; a stale post-replay Data has
+        NaN qpos)."""
+        for o in gc.get_objects():
+            if type(o).__name__=="SolverMuJoCo" and "mujoco" in getattr(type(o),"__module__",""):
+                mjm=getattr(o,"mjw_model",None); mjd=getattr(o,"mjw_data",None)
+                if mjm is not None and mjd is not None:
+                    return mjm, mjd
         models=[]; datas=[]
         for o in gc.get_objects():
-            try: m=type(o).__module__; n=type(o).__name__
+            try: mo=type(o).__module__; no=type(o).__name__
             except: continue
-            if isinstance(m,str) and "mujoco_warp" in m:
-                if n=="Model": models.append(o)
-                elif n=="Data": datas.append(o)
-        live=None
+            if isinstance(mo,str) and "mujoco_warp" in mo:
+                if no=="Model": models.append(o)
+                elif no=="Data": datas.append(o)
+        def ngeom(mjm):
+            try: return flat(mjm.geom_bodyid).size
+            except: return 0
+        def nq(d):
+            try: return flat(d.qpos).size
+            except: return -1
+        mjm=max(models, key=ngeom) if models else None
+        good=[]
         for d in datas:
             try:
-                if not np.isnan(np.asarray(d.qpos.numpy())).any(): live=d; break
+                if not np.isnan(np.asarray(d.qpos.numpy())).any(): good.append(d)
             except: pass
-        if live is None and datas: live=datas[0]
-        return (models[0] if models else None), live
+        good=good or datas
+        live=max(good, key=nq) if good else None
+        return mjm, live
 
     # Graspable objects = the free-jointed rigid bodies (cube, cylinder), and their
     # geoms. Derived live rather than hardcoded so this survives geom re-indexing —
@@ -100,8 +120,19 @@ try:
             obj_bodies={int(jb[j]) for j in range(jt.size) if int(jt[j])==0}  # 0 = mjJNT_FREE
             st["obj_bodies"]=obj_bodies
             st["obj_geoms"]={g for g in range(gb.size) if int(gb[g]) in obj_bodies}
-            st["lseed"]={int(jb[j]) for j in (9,10,11,12)}
-            st["rseed"]={int(jb[j]) for j in (15,16,17,18)}
+            # Left/right finger body seeds, used by newton_side() to attribute a
+            # contact to the left or right pad. In the scene model the joint order
+            # is [arm hinge joints..., the gripper's 8 finger hinge joints, free
+            # (object) joints]. Drop the free/object joints, take the LAST 8 hinge
+            # joints -- the 2F-85's 8 finger DOFs, which follow the arm in the
+            # kinematic tree -- and split them L/R. Robust to the arm's DOF count
+            # and to object count; also works for the standalone 8-joint gripper
+            # model. Replaces hardcoded indices (9-12 / 15-18) that were specific
+            # to the standalone gripper's larger joint layout.
+            finger_jb=[int(jb[j]) for j in range(jt.size) if int(jt[j])!=0]
+            gripper_jb=finger_jb[-8:]
+            half=len(gripper_jb)//2
+            st["lseed"]=set(gripper_jb[:half]); st["rseed"]=set(gripper_jb[half:])
     def newton_side(st,b):
         c=int(b); par=st["par"]
         for _ in range(24):
