@@ -61,10 +61,10 @@ def Xform "Robotiq_2F_85"
                 float drive:angular:physics:maxForce = 15
                 float drive:angular:physics:stiffness = 24.993114
                 float drive:angular:physics:targetPosition = 0
-                double mjc:armature = 0.3
-                double mjc:damping = 0.1
-                double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:armature = 0.3
+                uniform double mjc:damping = 0.1
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.02, 2]
                 float physics:lowerLimit = 0
                 float physics:upperLimit = 45.836624
                 float physxJoint:maxJointVelocity = 0.30000001
@@ -81,12 +81,12 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.030601099, 0.054944001)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solref = [0.005, 1]
-                double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.005, 1]
+                uniform double[] mjc:solreflimit = [0.02, 2]
                 float physics:lowerLimit = 0
                 float physics:upperLimit = 45.836624
                 rel mjc:target = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
@@ -104,10 +104,10 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.0621011, 0.050843999)
                 quatf physics:localRot0 = (0, 0, 0, 1)
                 quatf physics:localRot1 = (0, 0, 0, 1)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solreflimit = [0.00707, 2]
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.00707, 2]
                 float physics:lowerLimit = -89.954376
                 float physics:upperLimit = 0
                 float physxLimit:angular:damping = 0.0099999998
@@ -124,10 +124,10 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.0621011, 0.050843999)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solreflimit = [0.00707, 2]
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.00707, 2]
                 float physics:lowerLimit = -89.954376
                 float physics:upperLimit = 0
             }
@@ -143,11 +143,11 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.0132, 0.060940001)
                 quatf physics:localRot0 = (0, 0, 0, 1)
                 quatf physics:localRot1 = (0, 0, 0, 1)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solreflimit = [0.02, 2]
-                double mjc:springref = 2.62
-                double mjc:stiffness = 2
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:springref = 2.62
+                uniform double mjc:stiffness = 2
                 float physics:lowerLimit = -17
                 float physics:upperLimit = 45.836624
             }
@@ -163,11 +163,11 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.0132, 0.060940001)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solreflimit = [0.02, 2]
-                double mjc:springref = 2.62
-                double mjc:stiffness = 2
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:springref = 2.62
+                uniform double mjc:stiffness = 2
                 float physics:lowerLimit = -17
                 float physics:upperLimit = 45.836624
             }
@@ -183,10 +183,10 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.0502, 0.10494)
                 quatf physics:localRot0 = (0, 0, 0, 1)
                 quatf physics:localRot1 = (0, 0, 0, 1)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.02, 2]
                 float physics:lowerLimit = -49.999966
                 float physics:upperLimit = 49.999966
             }
@@ -202,10 +202,10 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.0502, 0.10494)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
-                double mjc:armature = 0
-                double mjc:damping = 0.5
-                double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.02, 2]
                 float physics:lowerLimit = -49.999966
                 float physics:upperLimit = 49.999966
             }
