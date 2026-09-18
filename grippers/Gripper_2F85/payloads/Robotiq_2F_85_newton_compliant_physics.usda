@@ -268,13 +268,19 @@ def Xform "Robotiq_2F_85"
         }
 
         over "left_outer_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
         )
         {
             float physics:mass = 0.02
             point3f physics:centerOfMass = (0, -0.065113, 0.074061)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
+            # Four-bar self-collision exclusion: outer_finger (coupler) and inner_finger
+            # (follower) are joined only by the spherical loop-closure equality, not a
+            # kinematic parent-child, so Newton/MuJoCo does not auto-exclude their
+            # contact -- the full-CAD hulls would otherwise overlap inside the linkage.
+            # (The PhysX variants self-exclude within the articulation, so need no equivalent.)
+            prepend rel physics:filteredPairs = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
         }
 
         over "left_inner_knuckle" (
@@ -308,13 +314,15 @@ def Xform "Robotiq_2F_85"
         }
 
         over "right_outer_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
         )
         {
             float physics:mass = 0.02
             point3f physics:centerOfMass = (0, 0.065113, 0.074061)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
+            # Four-bar self-collision exclusion (see left_outer_finger note).
+            prepend rel physics:filteredPairs = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
         }
 
         over "right_inner_knuckle" (
