@@ -667,7 +667,7 @@ The loop (five-bar) variant is where Newton earns its place:
   physical value, on purpose** — it stabilizes the soft loop-closure equalities so
   the weak parallel-grip spring holds. With physically-small inertias the linkage
   goes floppy and the fingertips sag ~20° out of parallel. Treat it like the
-  `mjc:armature`/`damping` tuning: **do not** replace it with CAD/menagerie
+  `mjc:armature`/`damping` tuning: **do not** replace it with CAD
   inertias without re-tuning the loop-closure `solref`.
 - Critical joint `mjc:damping` prevents the fingers from ringing;
   `MjcEqualityJointAPI` is applied **on the joint prim**.
@@ -692,15 +692,16 @@ The loop (five-bar) variant is where Newton earns its place:
   five-bar loop closure, and collision cooked from the shared visual CADs), plus
   the runtime [`newton/apply_gripper_tuning.py`](Gripper_2F85/newton/apply_gripper_tuning.py).
 
-**Provenance:** the *physics model* derives from the
-[MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie/tree/main/robotiq_2f85)
-2F-85 (`2f85.xml`) — bodies, masses/inertias, joints, five-bar closure, and
-contact/friction tuning. The *visual meshes* are Robotiq's detailed CAD
-(`Defeatured_2F_85_*`, shared with the PhysX asset). One import subtlety worth
-knowing: the MJCF→USD import **dropped the 6 MuJoCo `<contact><exclude>`
-self-collision pairs**; they were re-authored as `physics:filteredPairs`
-(base↔driver, base↔spring_link, coupler↔follower, both sides). Without them the
-fingers jam on self-contact instead of relaxing to the parallel pose.
+**Provenance:** both the visual meshes (`Defeatured_2F_85_*`, shared with the
+PhysX asset) and the Newton physics parameters (masses/inertias, joints, the
+five-bar loop closure, and the MuJoCo contact/friction tuning) are Robotiq's own.
+
+**Self-collision:** Newton/MuJoCo auto-excludes only kinematic parent-child body
+pairs. The four-bar's `outer_finger`↔`inner_finger` (coupler↔follower) are joined
+only by the spherical loop-closure equality — not a parent-child joint — so they
+are excluded explicitly via `physics:filteredPairs` (both sides). Without it the
+convex hulls overlap inside the linkage and the fingers jam on self-contact
+instead of relaxing to the parallel pose.
 
 ---
 
