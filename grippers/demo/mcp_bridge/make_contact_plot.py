@@ -70,48 +70,76 @@ try:
 
     # ------------------------------------------------------- NEWTON discovery
     def find_live():
-        """Return (Model, Data) for the ACTIVE Newton solve. Prefer the live handles
-        owned by the running SolverMuJoCo (`mjw_model` / `mjw_data`) -- deterministic,
-        and immune to stale duplicate Models that a stop->play or stage reopen leaves
-        lingering in gc. Those stale Models can have MORE geoms than the live one
-        (e.g. an old fingertip box+hulls build vs the current single-mesh build), so
-        the previous 'most geoms = scene' heuristic latched onto the frozen stale
-        Model and every force read 0. Fall back to that scavenge only if no solver
-        is found (max-geom Model + largest non-NaN Data; a stale post-replay Data has
-        NaN qpos)."""
-        for o in gc.get_objects():
-            if type(o).__name__=="SolverMuJoCo" and "mujoco" in getattr(type(o),"__module__",""):
-                mjm=getattr(o,"mjw_model",None); mjd=getattr(o,"mjw_data",None)
-                if mjm is not None and mjd is not None:
-                    return mjm, mjd
-        models=[]; datas=[]
-        for o in gc.get_objects():
-            try: mo=type(o).__module__; no=type(o).__name__
-            except: continue
-            if isinstance(mo,str) and "mujoco_warp" in mo:
-                if no=="Model": models.append(o)
-                elif no=="Data": datas.append(o)
-        def ngeom(mjm):
-            try: return flat(mjm.geom_bodyid).size
-            except: return 0
-        def nq(d):
-            try: return flat(d.qpos).size
-            except: return -1
-        mjm=max(models, key=ngeom) if models else None
-        good=[]
-        for d in datas:
+        """Return the running SolverMuJoCo for the active Newton solve, or None.
+        EXPENSIVE -- walks the whole Python heap (gc.get_objects, ~1e6 objects,
+        ~0.1-0.4 s), so call it RARELY: only the initial seed and to re-acquire
+        after a stop->play/reopen. Steady state uses the cheap solver_live() check.
+
+        A stop->play/reopen builds a FRESH SolverMuJoCo and leaves the previous ones
+        in gc -- both with valid, same-shape Data -- so 'first found' can latch onto
+        a stale one and read a frozen 0. The LIVE solver is the one being stepped:
+        its Data.time tracks the timeline while a stale one's is frozen far in the
+        past. When more than one is alive, pick the one whose Data.time is closest
+        to the current sim time."""
+        solvers=[o for o in gc.get_objects()
+                 if type(o).__name__=="SolverMuJoCo" and "mujoco" in getattr(type(o),"__module__","")
+                 and getattr(o,"mjw_model",None) is not None and getattr(o,"mjw_data",None) is not None]
+        if not solvers: return None
+        if len(solvers)>1:                     # stale duplicates linger after stop->play/reopen
             try:
-                if not np.isnan(np.asarray(d.qpos.numpy())).any(): good.append(d)
-            except: pass
-        good=good or datas
-        live=max(good, key=nq) if good else None
-        return mjm, live
+                import omni.timeline
+                t=omni.timeline.get_timeline_interface().get_current_time()
+                def _dt(s):
+                    try: return abs(float(flat(s.mjw_data.time)[0])-t)
+                    except: return float("inf")
+                solvers.sort(key=_dt)          # live solver: Data.time tracks the timeline
+            except Exception:
+                pass
+        return solvers[0]
+
+    def solver_live(st):
+        # CHEAP steady-state check on the cached solver -- NO heap scan. The live
+        # solver is the one being stepped, so its Data.time tracks the timeline
+        # (a stale one's is frozen); one scalar read + the timeline time. Returns
+        # False when the cached solver went stale/gone (a stop->play swapped it),
+        # which is the only time the caller pays for the expensive find_live rescan.
+        s=st.get("solver")
+        if s is None: return False
+        mjm=getattr(s,"mjw_model",None); mjd=getattr(s,"mjw_data",None)
+        if mjm is None or mjd is None: return False
+        # A stop->play often REUSES the solver object but swaps in a fresh
+        # Model/Data -- so the cached st["mjd"] (what read_newton indexes) goes
+        # stale while s.mjw_data is the new live one. Catch that by identity, else
+        # read_newton would keep reading the orphaned Data.
+        if mjd is not st.get("mjd") or mjm is not st.get("mjm"): return False
+        try:
+            import omni.timeline
+            t=omni.timeline.get_timeline_interface().get_current_time()
+            return abs(float(flat(mjd.time)[0])-t) < 5.0   # else frozen/stale -> reseed
+        except Exception:
+            return True   # can't tell -> assume still live, avoid needless rescans
+
+    def body_names(solver):
+        # {mujoco body id -> name} from the SolverMuJoCo's raw MuJoCo model (names
+        # like "..._Robotiq_2F_85_left_inner_finger"). None if unavailable, so callers
+        # fall back to a positional heuristic. No heap scan -- uses the cached solver.
+        try:
+            import mujoco
+            mj=getattr(solver,"mj_model",None)
+            if mj is None: return None
+            return {i:(mujoco.mj_id2name(mj, mujoco.mjtObj.mjOBJ_BODY, i) or "")
+                    for i in range(mj.nbody)}
+        except Exception:
+            return None
 
     # Graspable objects = the free-jointed rigid bodies (cube, cylinder), and their
     # geoms. Derived live rather than hardcoded so this survives geom re-indexing —
     # e.g. the fingertip-collider merge that shifted the object geoms 22,23 -> 20,21.
     def newton_seed(st):
-        mjm,mjd=find_live()
+        s=find_live()                          # expensive heap scan -- only on (re)seed
+        st["solver"]=s
+        mjm=getattr(s,"mjw_model",None) if s is not None else None
+        mjd=getattr(s,"mjw_data",None) if s is not None else None
         st["mjm"]=mjm; st["mjd"]=mjd
         if mjm is not None:
             gb=flat(mjm.geom_bodyid).astype(int); jb=flat(mjm.jnt_bodyid).astype(int)
@@ -121,18 +149,27 @@ try:
             st["obj_bodies"]=obj_bodies
             st["obj_geoms"]={g for g in range(gb.size) if int(gb[g]) in obj_bodies}
             # Left/right finger body seeds, used by newton_side() to attribute a
-            # contact to the left or right pad. In the scene model the joint order
-            # is [arm hinge joints..., the gripper's 8 finger hinge joints, free
-            # (object) joints]. Drop the free/object joints, take the LAST 8 hinge
-            # joints -- the 2F-85's 8 finger DOFs, which follow the arm in the
-            # kinematic tree -- and split them L/R. Robust to the arm's DOF count
-            # and to object count; also works for the standalone 8-joint gripper
-            # model. Replaces hardcoded indices (9-12 / 15-18) that were specific
-            # to the standalone gripper's larger joint layout.
-            finger_jb=[int(jb[j]) for j in range(jt.size) if int(jt[j])!=0]
-            gripper_jb=finger_jb[-8:]
-            half=len(gripper_jb)//2
-            st["lseed"]=set(gripper_jb[:half]); st["rseed"]=set(gripper_jb[half:])
+            # contact to the left or right pad. Matched by BODY NAME (the raw MuJoCo
+            # model's names, e.g. "..._Robotiq_2F_85_left_inner_finger"), scoped to
+            # the gripper bodies. This is robust to (a) joint authoring order -- the
+            # payload interleaves L/R joints and only the importer's body reordering
+            # made a positional split work -- and (b) extra articulations / a second
+            # gripper after the arm. A positional "last 8 hinge joints, split in
+            # half" heuristic fails silently on both, so it is only the fallback for
+            # when names are unavailable.
+            lseed=set(); rseed=set()
+            names=body_names(st["solver"])
+            if names:
+                for bid,nm in names.items():
+                    low=nm.lower()
+                    if "robotiq_2f_85" not in low: continue   # gripper bodies only
+                    if "left_" in low:    lseed.add(bid)
+                    elif "right_" in low: rseed.add(bid)
+            if not lseed or not rseed:                         # fallback: positional
+                finger_jb=[int(jb[j]) for j in range(jt.size) if int(jt[j])!=0]
+                g=finger_jb[-8:]; h=len(g)//2
+                lseed=set(g[:h]); rseed=set(g[h:])
+            st["lseed"]=lseed; st["rseed"]=rseed
     def newton_side(st,b):
         c=int(b); par=st["par"]
         for _ in range(24):
@@ -220,7 +257,7 @@ try:
         except: pass
 
     # -------------------------------------------------- backend detect (once)
-    st={"smax":10.0,"backend":None,"last_scan":0.0,"mjm":None,"mjd":None}
+    st={"smax":10.0,"backend":None,"last_scan":0.0,"mjm":None,"mjd":None,"solver":None}
     newton_seed(st)
     if st["mjd"] is not None:
         st["backend"]="newton"; note="Newton (mujoco_warp efc.force)"
@@ -283,7 +320,12 @@ try:
             now=time.time()
             if now-st["last_scan"]>SCAN_INTERVAL:
                 st["last_scan"]=now
-                if st["mjd"] is None: newton_seed(st)
+                # Cheap liveness check on the cached solver (no heap scan). Only when
+                # it went stale/gone -- i.e. a stop->play/reopen swapped in a fresh
+                # solver -- do we pay for the expensive find_live heap scan to
+                # re-acquire + reseed. This keeps steady-state play scan-free (an
+                # earlier version called find_live every throttle -> ~0.4s hitch/2s).
+                if not solver_live(st): newton_seed(st)
             try: res=read_newton(st)
             except Exception:
                 st["mjd"]=None; return    # stale after replay; throttled reseed will fix
