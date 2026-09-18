@@ -53,17 +53,6 @@ over "Robotiq_2F_85" (
     rel isaac:physics:robotJoints (
         displayName = "Robot Joints"
     )
-    prepend rel isaac:physics:robotJoints = [
-        </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
-        </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
-        </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
-        </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
-        </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
-        </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
-        </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
-        </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
-        </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
-    ]
     rel isaac:physics:robotLinks (
         displayName = "Robot Links"
     )
@@ -87,6 +76,54 @@ over "Robotiq_2F_85" (
     string isaac:version = "1.0.0" (
         displayName = "Version"
     )
+
+    # robotJoints is variant-specific -- the three Physics variants model the 2F-85
+    # four-bar with different joint sets -- so it is authored per-variant here rather
+    # than once on the default prim. (A default-prim value is Local-strength and could
+    # not be overridden by a variant.) robotLinks stays shared above: the bodies are
+    # the same across variants. Each list is a small set of joint paths, not the joint
+    # definitions (those live in the per-variant physics payloads).
+    variantSet "Physics" = {
+        "Physx_compliant" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
+        "Physx_parallel_grip" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
+        "Newton_compliant" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_driver_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_coupler_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_coupler_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_spring_link_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_spring_link_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_follower_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_follower_joint>,
+            ]
+        }
+    }
 
     over "Robotiq_2F_85"
     {

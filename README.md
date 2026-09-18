@@ -13,8 +13,7 @@ time.
 grippers/                         Gripper assets
   GRIPPER_SIMULATION_GUIDE.md     How to simulate Robotiq grippers in Isaac Sim
   images/                         Figures used by the guide
-  Gripper_2F85/                   2F-85 for the PhysX backend
-  Gripper_2F85_newton/            2F-85 for the Newton (MuJoCo-Warp) backend
+  Gripper_2F85/                   2F-85 gripper (PhysX + Newton solver variants)
 LICENSE                           Repository license + third-party attributions
 ```
 
@@ -25,15 +24,15 @@ New asset categories should be added as sibling top-level directories (e.g.
 
 ### Robotiq 2F-85 gripper
 
-A 2F-85 adaptive gripper authored for Isaac Sim 6, provided for both physics
-backends:
+A 2F-85 adaptive gripper authored for Isaac Sim 6, as a single asset
+([`grippers/Gripper_2F85/`](grippers/Gripper_2F85/)) whose `Physics` variant
+selects the solver — same body tree, geometry, and collision for both:
 
-- **PhysX** — [`grippers/Gripper_2F85/`](grippers/Gripper_2F85/), with
-  `parallel_grip` (mimic-joint) and `compliant` (closed five-bar loop) variants.
-- **Newton / MuJoCo-Warp** —
-  [`grippers/Gripper_2F85_newton/`](grippers/Gripper_2F85_newton/), which models
-  the compliant five-bar linkage more robustly; see its
-  [README](grippers/Gripper_2F85_newton/README.md).
+- **PhysX** — `Physx_parallel_grip` (mimic-joint) and `Physx_compliant`
+  (closed five-bar loop) variants.
+- **Newton / MuJoCo-Warp** — `Newton_compliant`, which models the compliant
+  five-bar linkage more robustly. It needs a one-shot runtime tuning after each
+  Stop→Play; see [`Gripper_2F85/newton/`](grippers/Gripper_2F85/newton/).
 
 Start with the
 **[Gripper Simulation Guide](grippers/GRIPPER_SIMULATION_GUIDE.md)** — it covers
@@ -58,7 +57,7 @@ git clone https://github.com/robotiq/isaacsim_assets.git
 Original work in this repository (documentation, scripts, and Robotiq-authored
 asset content) is released under the **BSD 3-Clause License**.
 
-Some asset files were originally copied or derived from third parties (the NVIDIA
-Isaac Sim asset library and the MuJoCo Menagerie) and remain under their own
-licenses. See [`LICENSE`](LICENSE) for the full text and attributions, and the
-`LICENSE` files bundled next to the affected assets.
+Some asset files were originally copied or derived from a third party (the NVIDIA
+Isaac Sim asset library) and remain under its own license. See
+[`LICENSE`](LICENSE) for the full text and attributions, and the `LICENSE` files
+bundled next to the affected assets.
