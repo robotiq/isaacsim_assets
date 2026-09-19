@@ -50,9 +50,11 @@ over "Robotiq_2F_85" (
         displayName = "Namespace"
         doc = "Namespace of the prim in Isaac Sim"
     )
-    rel isaac:physics:robotJoints (
-        displayName = "Robot Joints"
-    )
+    # isaac:physics:robotJoints is intentionally NOT declared here at prim scope.
+    # A bare (target-less) declaration would be the strongest opinion and, having
+    # no prependedItems, would make the RobotCore "relationship is prepended" check
+    # fail even though every variant below prepends its joint list. The relationship
+    # is authored per-variant instead (see the Physics variantSet).
     rel isaac:physics:robotLinks (
         displayName = "Robot Links"
     )
