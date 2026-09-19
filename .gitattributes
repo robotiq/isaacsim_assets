@@ -4,4 +4,4 @@
 # materials.usd is kept ASCII under its original .usd name (7 binary CAD parts
 # sublayer it by name, so renaming it would force re-saving those crates).
 # This override must stay AFTER the blanket *.usd rule so it wins.
-grippers/Gripper_2F85/materials/materials.usd !filter !diff !merge text
+grippers/Robotiq_2F_85/materials/materials.usd !filter !diff !merge text

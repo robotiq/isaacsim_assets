@@ -39,8 +39,8 @@ licenses, as noted below.
 
 NVIDIA Isaac Sim asset library
 --------------------------------------------------------------------------------
-Portions of the PhysX 2F-85 gripper asset (grippers/Gripper_2F85/), including
-its materials (grippers/Gripper_2F85/materials/), were originally copied and
+Portions of the PhysX 2F-85 gripper asset (grippers/Robotiq_2F_85/), including
+its materials (grippers/Robotiq_2F_85/materials/), were originally copied and
 adapted from the Robotiq 2F-85 asset in the NVIDIA Isaac Sim / SimReady asset
 library. These files were subsequently modified by Robotiq (physics tuning,
 joint-limit corrections, variant setup, and substitution of Robotiq's own CAD
@@ -49,6 +49,6 @@ visual meshes).
 The original NVIDIA work is licensed under the Creative Commons Attribution 4.0
 International License (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.
 A copy of that license is included alongside the affected files at
-grippers/Gripper_2F85/LICENSE and grippers/Gripper_2F85/materials/LICENSE, and
+grippers/Robotiq_2F_85/PACKAGE-LICENSES/LICENSE and grippers/Robotiq_2F_85/materials/LICENSE, and
 those files remain governed by it. Original author: NVIDIA Corporation.
 Modifications: Copyright (c) 2026, ROBOTIQ.

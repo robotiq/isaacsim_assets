@@ -13,7 +13,7 @@ time.
 grippers/                         Gripper assets
   GRIPPER_SIMULATION_GUIDE.md     How to simulate Robotiq grippers in Isaac Sim
   images/                         Figures used by the guide
-  Gripper_2F85/                   2F-85 gripper (PhysX + Newton solver variants)
+  Robotiq_2F_85/                   2F-85 gripper (PhysX + Newton solver variants)
 LICENSE                           Repository license + third-party attributions
 ```
 
@@ -25,14 +25,14 @@ New asset categories should be added as sibling top-level directories (e.g.
 ### Robotiq 2F-85 gripper
 
 A 2F-85 adaptive gripper authored for Isaac Sim 6, as a single asset
-([`grippers/Gripper_2F85/`](grippers/Gripper_2F85/)) whose `Physics` variant
+([`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/)) whose `Physics` variant
 selects the solver — same body tree, geometry, and collision for both:
 
 - **PhysX** — `Physx_parallel_grip` (mimic-joint) and `Physx_compliant`
   (closed five-bar loop) variants.
 - **Newton / MuJoCo-Warp** — `Newton_compliant`, which models the compliant
   five-bar linkage more robustly. It needs a one-shot runtime tuning after each
-  Stop→Play; see [`Gripper_2F85/newton/`](grippers/Gripper_2F85/newton/).
+  Stop→Play; see [`Robotiq_2F_85/newton/`](grippers/Robotiq_2F_85/newton/).
 
 Start with the
 **[Gripper Simulation Guide](grippers/GRIPPER_SIMULATION_GUIDE.md)** — it covers

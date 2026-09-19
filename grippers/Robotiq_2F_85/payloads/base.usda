@@ -21,7 +21,7 @@
             string boundCamera = "/OmniverseKit_Persp"
         }
         dictionary omni_layer = {
-            string authoring_layer = "./Robotiq_2F_85_base.usda"
+            string authoring_layer = "./base.usda"
             dictionary locked = {
             }
             dictionary muteness = {

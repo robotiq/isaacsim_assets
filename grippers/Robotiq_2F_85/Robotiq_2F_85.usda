@@ -21,7 +21,7 @@
             string boundCamera = "/OmniverseKit_Persp"
         }
         dictionary omni_layer = {
-            string authoring_layer = "./Robotiq_2F_85_edit.usda"
+            string authoring_layer = "./Robotiq_2F_85.usda"
             dictionary locked = {
                 bool "./configuration/Robotiq_2F_85_robot.usda" = 1
             }
@@ -109,7 +109,8 @@ def "Render" (
 }
 
 def Xform "Robotiq_2F_85" (
-    prepend references = @./payloads/Robotiq_2F_85_base.usda@
+    kind = "component"
+    prepend references = @./payloads/base.usda@
     variants = {
         string Fingertip = "Standard"
         string Physics = "Physx_parallel_grip"

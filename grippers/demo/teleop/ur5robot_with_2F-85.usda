@@ -683,7 +683,7 @@ def Xform "World" (
                 over "wrist_3_link"
                 {
                     def "Robotiq_2F_85_edit" (
-                        prepend payload = @../../Gripper_2F85/Robotiq_2F_85_edit.usda@
+                        prepend payload = @../../Robotiq_2F_85/Robotiq_2F_85.usda@
                         variants = {
                             string Physics = "Newton_compliant"
                         }
@@ -769,7 +769,7 @@ def Xform "World" (
                 over "wrist_3_link"
                 {
                     def "Robotiq_2F_85_edit" (
-                        prepend payload = @../../Gripper_2F85/Robotiq_2F_85_edit.usda@
+                        prepend payload = @../../Robotiq_2F_85/Robotiq_2F_85.usda@
                         variants = {
                             string Physics = "Physx_compliant"
                         }
