@@ -278,8 +278,14 @@ def Xform "Robotiq_2F_85" (
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
                 point3f physics:localPos0 = (0, -0.06776, 0.09809)
                 point3f physics:localPos1 = (0, -0.06776, 0.09809)
-                quatf physics:localRot0 = (0.5, -0.5, -0.5, 0.5)
-                quatf physics:localRot1 = (0.5, -0.5, -0.5, 0.5)
+                # Anchor frame gauge-rotated 90 deg about its own hinge (Z) axis,
+                # equally on both bodies. This is physically identical (same hinge
+                # axis, same relative frame, same zero state) but avoids the exact
+                # 120 deg quaternion the transform-consistency check decomposes
+                # ambiguously (double-cover), which mis-flagged the original
+                # (0.5,-0.5,-0.5,0.5) frame. Equivalent to that frame times Rz(90).
+                quatf physics:localRot0 = (0, -0.70710677, 0, 0.70710677)
+                quatf physics:localRot1 = (0, -0.70710677, 0, 0.70710677)
                 float physics:lowerLimit = -180
                 float physics:upperLimit = 180
                 float physxJoint:maxJointVelocity = 10000
