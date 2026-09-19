@@ -291,17 +291,31 @@ def Xform "Robotiq_2F_85" (
             }
         }
 
+        # base_link, left/right_outer_knuckle carry their colliders in the shared
+        # invisible /Meshes scope (not as rigid-body children), so PhysX cannot
+        # auto-compute mass from geometry. Author it explicitly. Mass + CoM are the
+        # gripper-specific values also used by the Newton variant; inertia is a
+        # realistic diagonal (base_link is a fixed base, so its inertia is inert;
+        # the outer knuckles get a small tensor on the order of the sibling knuckles).
         over "base_link" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
+            point3f physics:centerOfMass = (0, 0, 0.035508)
+            float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
+            float physics:mass = 0.77744
+            quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
         over "left_outer_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
         )
         {
+            point3f physics:centerOfMass = (0, -0.048356, 0.056017)
+            float3 physics:diagonalInertia = (0.00001, 0.000008, 0.000004)
+            float physics:mass = 0.02
+            quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
         over "left_outer_finger" (
@@ -354,9 +368,13 @@ def Xform "Robotiq_2F_85" (
         }
 
         over "right_outer_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
         )
         {
+            point3f physics:centerOfMass = (0, 0.048356, 0.056017)
+            float3 physics:diagonalInertia = (0.00001, 0.000008, 0.000004)
+            float physics:mass = 0.02
+            quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
         over "right_outer_finger" (
