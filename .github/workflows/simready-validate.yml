@@ -1,0 +1,114 @@
+# Manually-triggered SimReady conformance check for the Robotiq gripper asset.
+#
+# Runs NVIDIA's official `simready-validate` against a SimReady profile using
+# ONLY public PyPI packages (Python 3.12) plus a pinned checkout of the public
+# NVIDIA/simready-foundation spec repo. No container image, no registry, no
+# secrets.
+#
+# Versions are pinned to a known-good set. The published wheels lag the spec
+# repo, so if you bump `simready_foundation_ref` you may also need to bump the
+# pinned package versions below to match (and vice-versa).
+name: simready-validate
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset:
+        description: Asset USD to validate (repo-relative)
+        default: grippers/Gripper_2F85/Robotiq_2F_85_edit.usda
+      profile:
+        description: SimReady profile
+        default: Robot-Body-Isaac
+      version:
+        description: Profile version
+        default: "1.1.0"
+      simready_foundation_ref:
+        # Pinned to the commit whose docs/capabilities is still a Python package
+        # (has __init__.py), which simready-validate 2026.4.9's loader imports.
+        # Newer main dropped those __init__.py files and needs a newer validator.
+        description: NVIDIA/simready-foundation commit or tag (the spec source)
+        default: 0ed0dfbc539c9de99289771bd6848effe3ef5779
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    # A hung validator shouldn't hold a runner indefinitely.
+    timeout-minutes: 15
+    steps:
+      - name: Check out asset (with LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: asset
+
+      - name: Check out SimReady spec (public NVIDIA/simready-foundation)
+        uses: actions/checkout@v4
+        with:
+          repository: NVIDIA/simready-foundation
+          ref: ${{ inputs.simready_foundation_ref || '0ed0dfbc539c9de99289771bd6848effe3ef5779' }}
+          path: simready-foundation
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install SimReady validator (public PyPI, pinned)
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            simready-validate==2026.4.9 \
+            usd-core==26.8 \
+            omniverse-asset-validator==1.18.0 \
+            omniverse-usd-profiles==1.10.22 \
+            numpy==2.5.1
+          # usd-validation-nvidia ships the omni.capabilities used to register the
+          # SimReady rules; it must win over omniverse-usd-profiles' copy, so
+          # (re)install it LAST. Otherwise every requirement is "unregistered"
+          # and the validation degenerates to an empty (false) failure.
+          pip install --force-reinstall --no-deps usd-validation-nvidia==1.22.0
+
+      - name: Run SimReady validation
+        run: |
+          PROFILE="${{ inputs.profile || 'Robot-Body-Isaac' }}"
+          VERSION="${{ inputs.version || '1.1.0' }}"
+          ASSET_REL="${{ inputs.asset || 'grippers/Gripper_2F85/Robotiq_2F_85_edit.usda' }}"
+          # Absolute paths: the validator imports the rules as the top-level
+          # 'capabilities' package via sys.path, which breaks with relative paths.
+          SPEC="$GITHUB_WORKSPACE/simready-foundation/nv_core/sr_specs/docs"
+          PROFILE_FILE="$SPEC/profiles/$(printf '%s' "$PROFILE" | tr 'A-Z-' 'a-z_').toml"
+          ASSET_PATH="$GITHUB_WORKSPACE/asset/$ASSET_REL"
+          COMMON=(--rules-path "$SPEC/capabilities"
+                  --features-path "$SPEC/features"
+                  --profiles-path "$PROFILE_FILE"
+                  --profile "$PROFILE" --version "$VERSION")
+
+          rm -f results.json
+          # Warm-up invocation absorbs the validator's first-run capability-enum
+          # generation; its output is ignored.
+          simready-validate "${COMMON[@]}" "$ASSET_PATH" >/dev/null 2>&1 || true
+
+          # Real run. The JSON report is the source of truth; the console log is
+          # kept as an artifact, minus the noisy per-issue "did not specify a
+          # requirement" warnings.
+          simready-validate "${COMMON[@]}" --output results.json "$ASSET_PATH" 2>&1 \
+            | grep -v 'did not specify a requirement for an issue' > validation.log || true
+
+          if [ ! -f results.json ]; then
+            echo "::error::simready-validate produced no results.json"
+            tail -n 40 validation.log || true
+            exit 1
+          fi
+
+      - name: Summarize results (table + gate)
+        if: always()
+        run: python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" results.json
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simready-results
+          path: |
+            results.json
+            validation.log
