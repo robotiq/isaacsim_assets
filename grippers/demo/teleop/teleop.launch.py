@@ -47,6 +47,13 @@ def generate_launch_description():
         ],
     )
 
+    # The contact plot redraws an omni.ui Plot every frame inside Isaac and is
+    # the most expensive thing this launch adds to the sim process. Set
+    # TELEOP_HAPTICS=0 to leave it (and the R2 rumble) out -- useful both when
+    # you want the frames back and when bisecting a frame-rate problem, since
+    # the rest of the stack is pure ROS and costs Isaac almost nothing.
+    haptics_enabled = os.environ.get("TELEOP_HAPTICS", "1") != "0"
+
     haptics = TimerAction(
         period=12.0,
         actions=[
@@ -56,4 +63,10 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([servo, gamepad, haptics])
+    actions = [servo, gamepad]
+    if haptics_enabled:
+        actions.append(haptics)
+    else:
+        print("[teleop.launch] haptics DISABLED (TELEOP_HAPTICS=0): "
+              "no contact-force plot, no R2 rumble")
+    return LaunchDescription(actions)
