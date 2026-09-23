@@ -1,3 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+
+# Per-machine clone (or symlink) of the MCP extension the launchers expect as a
+# sibling. Its location differs per developer -- see mcp_bridge/README.md.
+grippers/demo/mcp_bridge/isaacsim-mcp-server
