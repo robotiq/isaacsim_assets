@@ -36,7 +36,7 @@
     startTimeCode = 0
     subLayers = [
         @../payloads/Robotiq_2F_85_parallel_grip_physics.usda@,
-        @../payloads/Robotiq_2F_85_base.usda@
+        @../payloads/base.usda@
     ]
     timeCodesPerSecond = 60
     upAxis = "Z"

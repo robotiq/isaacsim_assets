@@ -3,7 +3,7 @@
     defaultPrim = "Robotiq_2F_85"
     metersPerUnit = 1
     subLayers = [
-        @./Robotiq_2F_85_base.usda@
+        @./base.usda@
     ]
     upAxis = "Z"
 )

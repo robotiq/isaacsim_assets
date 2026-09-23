@@ -1,7 +1,7 @@
 # Newton (MuJoCo-Warp) tuning — 2F-85
 
 Newton-specific runtime tuning and notes for the **`Newton_compliant`** variant
-of the unified 2F-85 asset ([`../Robotiq_2F_85_edit.usda`](../Robotiq_2F_85_edit.usda)).
+of the unified 2F-85 asset ([`../Robotiq_2F_85.usda`](../Robotiq_2F_85.usda)).
 Select `Physics = Newton_compliant`, ensure the scene has a `PhysicsScene`, and
 play. The gripper is **open by default** (`finger_joint` drive target `0`); drive
 `finger_joint` toward ~0.8 rad (≈45°) to close.

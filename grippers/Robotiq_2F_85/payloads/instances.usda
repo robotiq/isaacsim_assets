@@ -1,0 +1,19 @@
+#usda 1.0
+# Canonical SimReady "instances" payload layer.
+#
+# In this asset the instanced geometry is authored inline in ./base.usda: each
+# link's `visuals` child is an `instanceable = true` prim that references the
+# shared, invisible `/Meshes` geometry (see ./geometries.usd). This layer is the
+# canonical instances entry point in the SimReady payload layout; it re-exposes
+# the assembled, instanced robot so it can be resolved as ./payloads/instances.usda.
+(
+    defaultPrim = "Robotiq_2F_85"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_2F_85" (
+    prepend references = @./base.usda@
+)
+{
+}

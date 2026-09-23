@@ -100,8 +100,8 @@ gripper without maintaining a second stage:
 
 | `Gripper` | Gripper asset | Launch with | After every Stop→Play |
 | --------- | ------------- | ----------- | --------------------- |
-| `physx` *(default)* | `Gripper_2F85/Robotiq_2F_85_edit.usda` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
-| `newton` | `Gripper_2F85/Robotiq_2F_85_edit.usda` (`Physics = Newton_compliant`) | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Gripper_2F85/newton/apply_gripper_tuning.py` once |
+| `physx` *(default)* | `Robotiq_2F_85/Robotiq_2F_85.usda` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
+| `newton` | `Robotiq_2F_85/Robotiq_2F_85.usda` (`Physics = Newton_compliant`) | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Robotiq_2F_85/newton/apply_gripper_tuning.py` once |
 
 Both variants payload the same unified asset and differ only in the
 `Physics` variant they select (`Physx_compliant` vs `Newton_compliant`).

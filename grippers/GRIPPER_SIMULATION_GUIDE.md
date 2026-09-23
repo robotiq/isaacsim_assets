@@ -11,8 +11,8 @@ The gripper assets referenced throughout live in this repo alongside this guide:
 
 | Asset | Backend | Path |
 |---|---|---|
-| 2F-85 (PhysX: `Physx_parallel_grip` + `Physx_compliant`) | PhysX | [`Gripper_2F85/`](Gripper_2F85/) |
-| 2F-85 (Newton: `Newton_compliant`) | Newton | [`Gripper_2F85/`](Gripper_2F85/) |
+| 2F-85 (PhysX: `Physx_parallel_grip` + `Physx_compliant`) | PhysX | [`Robotiq_2F_85/`](Robotiq_2F_85/) |
+| 2F-85 (Newton: `Newton_compliant`) | Newton | [`Robotiq_2F_85/`](Robotiq_2F_85/) |
 
 The exact tuned USD values are given inline with each fix in §3.
 
@@ -162,7 +162,7 @@ Any `Physics` × `Fingertip` combination works.
 Both variant sets live on the `edit` layer. If you integrate via the
 `configuration/` files (§2.2) you get the `Physx_parallel_grip` /
 `Physx_compliant` build with the `Standard` fingertip fixed — reference
-`Robotiq_2F_85_edit.usda` instead when you need to switch fingertips.
+`Robotiq_2F_85.usda` instead when you need to switch fingertips.
 
 #### Physics: mimic or loop
 
@@ -198,7 +198,7 @@ one, welds one, mimics two, and cuts the last to break the loop:
 | in_knuckle | **Cut** — the `base_link`↔`left_inner_knuckle` joint is omitted so the branch stays a tree | — |
 
 (Values read from
-[`payloads/Robotiq_2F_85_physics_parallel_grip.usda`](Gripper_2F85/payloads/Robotiq_2F_85_physics_parallel_grip.usda).
+[`payloads/Robotiq_2F_85_physics_parallel_grip.usda`](Robotiq_2F_85/payloads/Robotiq_2F_85_physics_parallel_grip.usda).
 The compliant variant instead keeps `left_inner_knuckle_joint` and closes it as a
 loop-closure constraint.)
 
@@ -244,7 +244,7 @@ symmetrically from the one `finger_joint` command. The compliant DOFs may act
 asymmetrically depending on the physical interaction with the environment.
 
 (Values read from
-[`payloads/Robotiq_2F_85_physics_compliant.usda`](Gripper_2F85/payloads/Robotiq_2F_85_physics_compliant.usda).
+[`payloads/Robotiq_2F_85_physics_compliant.usda`](Robotiq_2F_85/payloads/Robotiq_2F_85_physics_compliant.usda).
 This closed loop is what gives the more realistic contact behavior — and, under
 PhysX, the residual compliance and limit instability tuned away in §3.2.)
 
@@ -281,7 +281,7 @@ variant.
    (`configuration/Robotiq_2F_85_config_physics_parallel_grip.usda` or
    `…_compliant.usda`), not the `edit`/`robot` authoring files. These config
    files bake in the `Standard` fingertip; to switch fingertips (§2.1) at
-   integration time, reference `Robotiq_2F_85_edit.usda` instead — it carries
+   integration time, reference `Robotiq_2F_85.usda` instead — it carries
    both variant sets.
 
 ### 2.3 Attach it with a fixed joint
@@ -608,13 +608,13 @@ gripper asset is authored with Newton-specific (`mjc:`) attributes and MuJoCo
 contact tuning rather than PhysX ones.
 
 The Newton 2F-85 is the `Newton_compliant` variant of the unified asset
-([`Gripper_2F85/`](Gripper_2F85/)) — select `Physics = Newton_compliant`, drop
+([`Robotiq_2F_85/`](Robotiq_2F_85/)) — select `Physics = Newton_compliant`, drop
 it in a scene with a `PhysicsScene`, and play. It is **open by default**
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
 
 **One runtime step after every stop → play:** run
-[`newton/apply_gripper_tuning.py`](Gripper_2F85/newton/apply_gripper_tuning.py)
+[`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py)
 once (Script Editor or MCP bridge). It re-applies the only two settings that
 cannot be persisted in USD:
 
@@ -687,10 +687,10 @@ The loop (five-bar) variant is where Newton earns its place:
 ### 5.3 Where to find the asset
 
 - **Newton 2F-85:** the `Newton_compliant` variant of
-  [`Gripper_2F85/`](Gripper_2F85/) — physics in
+  [`Robotiq_2F_85/`](Robotiq_2F_85/) — physics in
   `payloads/Robotiq_2F_85_newton_compliant_physics.usda` (bodies, joints, the
   five-bar loop closure, and collision cooked from the shared visual CADs), plus
-  the runtime [`newton/apply_gripper_tuning.py`](Gripper_2F85/newton/apply_gripper_tuning.py).
+  the runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
 
 **Provenance:** both the visual meshes (`Defeatured_2F_85_*`, shared with the
 PhysX asset) and the Newton physics parameters (masses/inertias, joints, the
@@ -728,7 +728,7 @@ Use it to validate an asset you maintain before shipping it.
 **Running it:** the 2F-85 asset has no `profile_id` metadata, so profile
 inference fails and you must specify one. Since it's a gripper (robot body with
 driven joints + articulation), run the three **Robot-Body-\*** profiles against
-the root `Robotiq_2F_85_edit.usda`.
+the root `Robotiq_2F_85.usda`.
 
 **Result — all three profiles FAILED, but most checks pass.**
 Robot-Body-Neutral is closest: everything passes *except* the driven-joints

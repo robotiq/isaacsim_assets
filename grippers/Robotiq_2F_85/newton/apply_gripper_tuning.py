@@ -3,7 +3,7 @@ Re-apply ONLY the two 2F-85 gripper settings that cannot be saved in the USD.
 
 Everything else (finger drive gains, armature, damping, spring stiffness,
 maxForce, and the stiff coupler limits) is baked into the Newton_compliant
-variant of ../Robotiq_2F_85_edit.usda and rebuilds natively on load.
+variant of ../Robotiq_2F_85.usda and rebuilds natively on load.
 
 These two can't live in USD and must be re-applied at runtime after each
 stop -> play:
