@@ -18,6 +18,7 @@ physics authored yet.
 """
     metersPerUnit = 1
     subLayers = [
+        @./Robotiq_2F_85_body_mass_physics.usda@,
         @./base.usda@
     ]
     upAxis = "Z"
@@ -243,28 +244,15 @@ def Xform "Robotiq_2F_85"
         }
 
         # Step 2: rigid bodies + Newton mass properties on the shared PhysX tree.
-        # mass = Newton values (scalar); diagonalInertia = Newton's intentional
-        # isotropic (0.001)^3 (solver-stability tuning, frame-independent);
-        # centerOfMass = Newton COM mapped into the PhysX body frame via G
-        # (rotate 90deg +Z, Z -0.01076); principalAxes identity (isotropic).
-        over "base_link" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        # base_link + outer-knuckle mass + CoM (identity principalAxes) come from the
+        # shared ./Robotiq_2F_85_body_mass_physics.usda subLayer. Newton overrides
+        # only the diagonal inertia with its intentional isotropic (0.001)^3
+        # (solver-stability tuning, frame-independent). CoM was mapped into the PhysX
+        # body frame via G (rotate 90deg +Z, Z -0.01076). The Newton-only bodies
+        # (couplers, followers, spring links) keep their full mass properties below.
+        over "left_outer_knuckle"
         {
-            float physics:mass = 0.77744
-            point3f physics:centerOfMass = (0, 0, 0.035508)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
-            quatf physics:principalAxes = (1, 0, 0, 0)
-        }
-
-        over "left_outer_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            float physics:mass = 0.02
-            point3f physics:centerOfMass = (0, -0.048356, 0.056017)
-            float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
-            quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
         over "left_outer_finger" (
@@ -303,14 +291,9 @@ def Xform "Robotiq_2F_85"
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        over "right_outer_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        over "right_outer_knuckle"
         {
-            float physics:mass = 0.02
-            point3f physics:centerOfMass = (0, 0.048356, 0.056017)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
-            quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
         over "right_outer_finger" (

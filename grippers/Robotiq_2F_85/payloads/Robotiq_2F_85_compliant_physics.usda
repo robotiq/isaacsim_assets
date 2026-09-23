@@ -35,6 +35,7 @@
     metersPerUnit = 1
     startTimeCode = -1
     subLayers = [
+        @./Robotiq_2F_85_body_mass_physics.usda@,
         @./Robotiq_2F_85_fingertip_physics.usda@
     ]
     upAxis = "Z"

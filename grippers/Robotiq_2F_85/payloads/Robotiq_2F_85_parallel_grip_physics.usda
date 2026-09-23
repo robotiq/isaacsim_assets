@@ -35,6 +35,7 @@
     metersPerUnit = 1
     startTimeCode = -1
     subLayers = [
+        @./Robotiq_2F_85_body_mass_physics.usda@,
         @./Robotiq_2F_85_fingertip_physics.usda@
     ]
     upAxis = "Z"
@@ -291,18 +292,9 @@ def Xform "Robotiq_2F_85" (
             }
         }
 
-        over "base_link" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
-            kind = "group"
-        )
-        {
-        }
-
-        over "left_outer_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
-        )
-        {
-        }
+        # base_link + left/right_outer_knuckle rigid-body mass is authored once in
+        # ./Robotiq_2F_85_body_mass_physics.usda (a subLayer, above) and shared with
+        # the compliant and Newton variants — single source of truth for mass + CoM.
 
         over "left_outer_finger" (
             delete apiSchemas = ["PhysicsMassAPI"]
@@ -353,11 +345,7 @@ def Xform "Robotiq_2F_85" (
             quatf physics:principalAxes = (0.9063078, -0.42261827, 0, 0)
         }
 
-        over "right_outer_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
-        )
-        {
-        }
+        # right_outer_knuckle rigid-body mass: see ./Robotiq_2F_85_body_mass_physics.usda.
 
         over "right_outer_finger" (
             delete apiSchemas = ["PhysicsMassAPI"]
