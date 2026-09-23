@@ -15,7 +15,12 @@ WHAT IT ADDS
 ------------
 * A short thick-walled tube, inner diameter sized so the existing 50 mm
   cylinder drops into it with a few mm of clearance -- an insertion task.
-* Four more cubes in different colours, for stacking.
+* Four small cubes in different colours, for stacking.
+* One large cube, 20 mm narrower than the fully-open finger gap, for exercising
+  the haptics. The fingers meet it after 10 mm of travel and stay loaded for
+  the rest of the stroke, which is what makes the contact force -- and so the
+  R2 rumble -- readable. The 24 mm cubes let the fingers run most of their
+  travel before they feel anything at all.
 
 LIGHTING
 --------
@@ -59,11 +64,24 @@ CYLINDERS = [                # (name, x, y, colour)
     ("CylinderBlue",  0.420,  0.070, (0.22, 0.42, 0.82)),
 ]
 
-CUBES = [                    # (name, size, x, y, colour)
-    ("CubeRed",    0.024, 0.300, -0.235, (0.78, 0.16, 0.16)),
-    ("CubeGreen",  0.024, 0.360, -0.290, (0.22, 0.62, 0.28)),
-    ("CubeBlue",   0.024, 0.240, -0.310, (0.20, 0.40, 0.80)),
-    ("CubeYellow", 0.024, 0.430, -0.060, (0.88, 0.72, 0.18)),
+# Pad-to-pad gap with finger_joint at GRIP_OPEN (0.0). That is the pose the
+# 2F-85 parts are authored in -- they are named PAD_OPEN -- so it can be read
+# straight off the asset, which is better than the 85 mm nameplate: the
+# fingertip pads' facing surfaces sit at y = -0.0435 and +0.0435 in
+# grippers/Robotiq_2F_85/Robotiq_2F_85.usda, a gap of 87.0 mm.
+GRIP_OPEN_GAP = 0.087
+BIG_CUBE = GRIP_OPEN_GAP - 0.020      # 67 mm
+
+CUBES = [                    # (name, size, mass, x, y, colour)
+    ("CubeRed",    0.024,     0.06, 0.300, -0.235, (0.78, 0.16, 0.16)),
+    ("CubeGreen",  0.024,     0.06, 0.360, -0.290, (0.22, 0.62, 0.28)),
+    ("CubeBlue",   0.024,     0.06, 0.240, -0.310, (0.20, 0.40, 0.80)),
+    ("CubeYellow", 0.024,     0.06, 0.430, -0.060, (0.88, 0.72, 0.18)),
+    # 0.40 kg is about a solid plastic block this size: heavy enough to sit
+    # still while the fingers close on it instead of being nudged away, light
+    # enough that the grip carries it. Placed in the gap between the small
+    # cubes and the cylinders so it does not crowd either.
+    ("CubeBig",    BIG_CUBE,  0.40, 0.250, -0.130, (0.85, 0.45, 0.10)),
 ]
 
 
@@ -170,14 +188,14 @@ def main():
     _hollow_collider(prim)
 
     # ---- cubes ------------------------------------------------------------
-    for name, size, x, y, colour in CUBES:
+    for name, size, mass, x, y, colour in CUBES:
         p = "/World/%s" % name
         if stage.GetPrimAtPath(p):
             stage.RemovePrim(p)
         cube = UsdGeom.Cube.Define(stage, p)
         cube.CreateSizeAttr(size)
         cube.AddTranslateOp().Set(Gf.Vec3d(x, y, size / 2.0 + 0.0005))
-        _rigid(cube.GetPrim(), 0.06, colour)
+        _rigid(cube.GetPrim(), mass, colour)
 
     # ---- cylinders --------------------------------------------------------
     for name, x, y, colour in CYLINDERS:
@@ -217,7 +235,12 @@ def main():
           % (TUBE_IN * 2000, TUBE_OUT * 2000, WALL * 1000, TUBE_H * 1000))
     print("      cylinder is %.1f mm across -> %.1f mm clearance per side"
           % (CYL_RADIUS * 2000, CLEARANCE * 1000))
-    print("cubes: %s" % ", ".join(c[0] for c in CUBES))
+    print("cubes: %s"
+          % ", ".join("%s %.0f mm" % (c[0], c[1] * 1000) for c in CUBES))
+    print("      open finger gap %.1f mm, CubeBig %.1f mm"
+          " -> %.1f mm free travel per side before contact"
+          % (GRIP_OPEN_GAP * 1000, BIG_CUBE * 1000,
+             (GRIP_OPEN_GAP - BIG_CUBE) * 500))
     print("cylinders: %s (upright, r %.3f h %.3f)"
           % (", ".join(c[0] for c in CYLINDERS), CYL_RADIUS, CYL_H))
     for n in notes:
