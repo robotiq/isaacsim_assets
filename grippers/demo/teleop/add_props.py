@@ -33,7 +33,7 @@ import math
 import os
 import sys
 
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux, UsdPhysics
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux, UsdPhysics, UsdShade
 
 SCENE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      "ur5robot_with_2F-85.usda")
@@ -77,11 +77,13 @@ CUBES = [                    # (name, size, mass, x, y, colour)
     ("CubeGreen",  0.024,     0.06, 0.360, -0.290, (0.22, 0.62, 0.28)),
     ("CubeBlue",   0.024,     0.06, 0.240, -0.310, (0.20, 0.40, 0.80)),
     ("CubeYellow", 0.024,     0.06, 0.430, -0.060, (0.88, 0.72, 0.18)),
-    # 0.40 kg is about a solid plastic block this size: heavy enough to sit
-    # still while the fingers close on it instead of being nudged away, light
-    # enough that the grip carries it. Placed in the gap between the small
+    # 0.25 kg: heavy enough to sit still while the fingers close on it
+    # instead of being nudged away, and to load the pads noticeably, but only
+    # 2.5x the 100 g that PHYSICS_TUNING.md reports holding through fast arm
+    # motion. Raise it once the grasp is trusted -- friction, not mass, was
+    # what made the first attempt at 0.40 kg slip. Placed in the gap between the small
     # cubes and the cylinders so it does not crowd either.
-    ("CubeBig",    BIG_CUBE,  0.40, 0.250, -0.130, (0.85, 0.45, 0.10)),
+    ("CubeBig",    BIG_CUBE,  0.25, 0.250, -0.130, (0.85, 0.45, 0.10)),
 ]
 
 
@@ -160,11 +162,47 @@ def _hollow_collider(prim):
                              tv).Set(value)
 
 
+PHYS_MATERIAL = "/World/PhysicsMaterial"
+
+
 def _rigid(prim, mass, colour):
+    """A graspable rigid body, tuned the way PHYSICS_TUNING.md requires.
+
+    The API schemas alone are not enough to grasp anything reliably. The two
+    props that shipped with the scene -- /World/Cube and /World/Cylinder --
+    also bind the scene physics material and carry four PhysX attributes, and
+    everything this script authored used to skip all of it and fall back on
+    the PhysX scene defaults.
+
+    That went unnoticed because the props were light. The default material is
+    roughly half as grippy as /World/PhysicsMaterial (staticFriction 1.0,
+    dynamicFriction 0.9), and a 60 g cube needs so little friction that the
+    difference does not show. A 400 g one slides out of the pads.
+    """
     UsdPhysics.CollisionAPI.Apply(prim)
     UsdPhysics.RigidBodyAPI.Apply(prim)
     UsdPhysics.MassAPI.Apply(prim).CreateMassAttr(mass)
     UsdGeom.Gprim(prim).CreateDisplayColorAttr([Gf.Vec3f(*colour)])
+
+    mat = UsdShade.Material(prim.GetStage().GetPrimAtPath(PHYS_MATERIAL))
+    if mat:
+        UsdShade.MaterialBindingAPI.Apply(prim).Bind(
+            mat, UsdShade.Tokens.weakerThanDescendants, "physics")
+
+    # PHYSICS_TUNING.md, "Contact offsets" and "Rigid-body properties":
+    # the offsets default to -inf (= scene default), which is too small at
+    # centimetre scale and shows as interpenetration during the grasp. The
+    # pad meshes are inside an instance proxy so they cannot be authored;
+    # setting the object side alone is enough, because PhysX sums the pair.
+    _apply_api(prim, "PhysxCollisionAPI")
+    _apply_api(prim, "PhysxRigidBodyAPI")
+    for name, tv, value in (
+            ("physxCollision:contactOffset", Sdf.ValueTypeNames.Float, 0.002),
+            ("physxCollision:restOffset", Sdf.ValueTypeNames.Float, 0.0005),
+            ("physxRigidBody:linearDamping", Sdf.ValueTypeNames.Float, 0.1),
+            ("physxRigidBody:solverVelocityIterationCount",
+             Sdf.ValueTypeNames.Int, 4)):
+        prim.CreateAttribute(name, tv).Set(value)
 
 
 def main():
