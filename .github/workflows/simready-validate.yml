@@ -5,6 +5,14 @@
 # NVIDIA/simready-foundation spec repo. No container image, no registry, no
 # secrets.
 #
+# Targets the Robot-Gripper profile from SimReady Foundations 2026.07.1. In that
+# profile the PhysX/Isaac/Newton/MuJoCo features are optional, and the 2026.07.1
+# rules no longer hard-require PhysxSchema or the Isaac schema, so a plain-PyPI
+# runner reproduces the same verdict as a full Isaac Sim runtime (verified: the
+# 2F-85 gets 0 blocking failures either way). Conformance is gated on blocking
+# failures only; optional features that are not met are reported but do not fail
+# the job (see ci/simready/summarize.py).
+#
 # Versions are pinned to a known-good set. The published wheels lag the spec
 # repo, so if you bump `simready_foundation_ref` you may also need to bump the
 # pinned package versions below to match (and vice-versa).
@@ -18,16 +26,13 @@ on:
         default: grippers/Robotiq_2F_85/Robotiq_2F_85.usda
       profile:
         description: SimReady profile
-        default: Robot-Body-Isaac
+        default: Robot-Gripper
       version:
         description: Profile version
-        default: "1.1.0"
+        default: "2.1.0"
       simready_foundation_ref:
-        # Pinned to the commit whose docs/capabilities is still a Python package
-        # (has __init__.py), which simready-validate 2026.4.9's loader imports.
-        # Newer main dropped those __init__.py files and needs a newer validator.
         description: NVIDIA/simready-foundation commit or tag (the spec source)
-        default: 0ed0dfbc539c9de99289771bd6848effe3ef5779
+        default: v2026.07.1
 
 jobs:
   validate:
@@ -45,8 +50,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: NVIDIA/simready-foundation
-          ref: ${{ inputs.simready_foundation_ref || '0ed0dfbc539c9de99289771bd6848effe3ef5779' }}
+          ref: ${{ inputs.simready_foundation_ref || 'v2026.07.1' }}
           path: simready-foundation
+          # Only the spec tier is needed; skip the large sample_content assets.
+          sparse-checkout: nv_core
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -57,10 +64,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install \
-            simready-validate==2026.4.9 \
+            simready-validate==2026.7.1 \
             usd-core==26.8 \
             omniverse-asset-validator==1.18.0 \
-            omniverse-usd-profiles==1.10.22 \
+            omniverse-usd-profiles==1.11.2 \
             numpy==2.5.1
           # usd-validation-nvidia ships the omni.capabilities used to register the
           # SimReady rules; it must win over omniverse-usd-profiles' copy, so
@@ -70,16 +77,17 @@ jobs:
 
       - name: Run SimReady validation
         run: |
-          PROFILE="${{ inputs.profile || 'Robot-Body-Isaac' }}"
-          VERSION="${{ inputs.version || '1.1.0' }}"
+          PROFILE="${{ inputs.profile || 'Robot-Gripper' }}"
+          VERSION="${{ inputs.version || '2.1.0' }}"
           ASSET_REL="${{ inputs.asset || 'grippers/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
-          # Absolute paths: the validator imports the rules as the top-level
-          # 'capabilities' package via sys.path, which breaks with relative paths.
-          SPEC="$GITHUB_WORKSPACE/simready-foundation/nv_core/sr_specs/docs"
-          PROFILE_FILE="$SPEC/profiles/$(printf '%s' "$PROFILE" | tr 'A-Z-' 'a-z_').toml"
+          # 2026.07.1 layout: capabilities/features/profiles live under the tier.
+          # The validator imports the rules as the top-level 'capabilities'
+          # package via sys.path, so absolute paths are required.
+          TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
+          PROFILE_FILE="$TC/profiles/$(printf '%s' "$PROFILE" | tr 'A-Z-' 'a-z_').toml"
           ASSET_PATH="$GITHUB_WORKSPACE/asset/$ASSET_REL"
-          COMMON=(--rules-path "$SPEC/capabilities"
-                  --features-path "$SPEC/features"
+          COMMON=(--rules-path "$TC/capabilities"
+                  --features-path "$TC/features"
                   --profiles-path "$PROFILE_FILE"
                   --profile "$PROFILE" --version "$VERSION")
 
