@@ -535,7 +535,15 @@ which needs neither Servo nor the gamepad node.
 ./run_demo.sh --keyboard      # keyboard frontend (no gamepad, no haptics)
 ./run_demo.sh --no-frontend   # Isaac + Servo only
 ./run_demo.sh --no-isaac      # attach to an Isaac you already have running
+
+TELEOP_GRIPPER_VARIANT=newton ./run_demo.sh    # the Newton gripper
 ```
+
+The variant picks the Isaac experience, because the `newton` gripper only
+simulates under the Newton solver and that is a separate launcher rather than a
+flag — choosing one without the other gives a scene that loads and will not
+move. `ISAACSIM_LAUNCHER` overrides the derived default for anyone wrapping
+Isaac their own way, and the banner says which of the two you got.
 
 The scene opens in **RealTimePathTracing** rather than the saved
 `MinimalRendering`. Minimal does simplified lighting, so the soft sun angle and

@@ -12,6 +12,13 @@
 #   ./run_demo.sh --no-frontend   # Isaac + Servo running, drive it yourself
 #   ./run_demo.sh --no-isaac      # attach to an Isaac you already have running
 #
+#   TELEOP_GRIPPER_VARIANT=newton ./run_demo.sh      # the Newton gripper
+#
+# The variant picks the launcher, because the newton gripper only simulates
+# under the Newton solver and that is a separate Isaac experience rather than
+# a flag. Set ISAACSIM_LAUNCHER to override -- e.g. a launcher of your own
+# that wraps Isaac differently -- and it wins over the derived default.
+#
 # THE DEFAULT NO LONGER USES ROS FOR CONTROL. physx_tick_teleop.py runs inside
 # Isaac on Kit's update tick, so controller, physics and clock share one
 # timebase. MoveIt Servo is paced by a WALL clock, and against a sim at RTF
@@ -32,7 +39,6 @@
 # drops the contact-force plot and R2 rumble. The plot redraws an
 # omni.ui Plot every frame INSIDE Isaac, so it is the first thing to
 # bisect when frames are scarce.
-# applies the timing before play, so no stop -> play cycle is needed.
 #
 # WHY THIS SCRIPT EXISTS RATHER THAN THREE TERMINALS
 # --------------------------------------------------
@@ -53,7 +59,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DDS_FILE="$SCRIPT_DIR/../isaac-demo-dds.sh"
 
 ISAACSIM_ROOT="${ISAACSIM_ROOT:-$HOME/isaacsim}"
-ISAACSIM_LAUNCHER="${ISAACSIM_LAUNCHER:-isaac-sim.sh}"      # PhysX, not Newton
+# The gripper variant and the physics engine are two halves of one choice: the
+# newton gripper needs the Newton experience, and picking one without the other
+# gives a scene that loads and will not simulate. So derive the launcher from
+# the variant rather than making it a second thing to remember.
+#
+# An explicit ISAACSIM_LAUNCHER still wins, for anyone wrapping Isaac their own
+# way; the default is only what you get when you say nothing.
+TELEOP_GRIPPER_VARIANT="${TELEOP_GRIPPER_VARIANT:-physx}"
+case "$TELEOP_GRIPPER_VARIANT" in
+  newton) VARIANT_LAUNCHER=isaac-sim.newton.sh ;;
+  *)      VARIANT_LAUNCHER=isaac-sim.sh ;;
+esac
+if [[ -n "${ISAACSIM_LAUNCHER:-}" ]]; then LAUNCHER_SRC="explicit"
+else LAUNCHER_SRC="from variant '$TELEOP_GRIPPER_VARIANT'"; fi
+ISAACSIM_LAUNCHER="${ISAACSIM_LAUNCHER:-$VARIANT_LAUNCHER}"
 LAUNCHER="$ISAACSIM_ROOT/$ISAACSIM_LAUNCHER"
 ROS_SETUP="/opt/ros/${TELEOP_ROS_DISTRO:-jazzy}/setup.bash"
 JOY_DEV="${JOY_DEV:-/dev/input/js0}"
@@ -149,10 +169,17 @@ ros_env() {
   "$@"
 }
 
-echo "Isaac Sim:  $LAUNCHER"
+echo "Isaac Sim:  $LAUNCHER  ($LAUNCHER_SRC)"
+echo "Variant:    $TELEOP_GRIPPER_VARIANT"
 echo "Scene:      $SCRIPT_DIR/ur5robot_with_2F-85.usda"
 echo "ROS:        $ROS_SETUP"
 echo "Frontend:   $FRONTEND"
+# Only reachable by overriding the launcher, so it is a note, not an error --
+# the override is the whole point of being allowed to set it.
+if [[ "$TELEOP_GRIPPER_VARIANT" == "newton" && "$ISAACSIM_LAUNCHER" != *newton* ]]; then
+  echo "Note:       variant 'newton' with a launcher that is not the Newton"
+  echo "               experience -- the gripper will not simulate."
+fi
 
 # shellcheck source=../cpu_governor_check.sh
 source "$SCRIPT_DIR/../cpu_governor_check.sh"
@@ -180,7 +207,7 @@ if [[ "$START_ISAAC" == "1" ]]; then
     # the same articulation from ROS and must not fight it.
     if [[ "$FRONTEND" == "tick" ]]; then export TELEOP_TICK=1
     else export TELEOP_TICK=0; fi
-    export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER
+    export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER TELEOP_GRIPPER_VARIANT
     # --exec is greedy, so it goes last. launch_isaac_with_mcp.sh forwards
     # trailing arguments to the Isaac launcher unchanged.
     exec "${ISAAC_CMD[@]}" "${ISAAC_EXTRA[@]}" --exec "$SCRIPT_DIR/open_scene.py"
