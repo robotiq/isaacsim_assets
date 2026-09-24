@@ -51,8 +51,11 @@ LABELS = [
     # right shoulders
     (0.792, 0.084, "R", "yaw +"),
     (0.792, 0.146, "R", "open / close"),
-    # right column: cross only -- square, circle and triangle are unbound
+    # right column, top to bottom in this artwork: cross, square, circle,
+    # triangle. Circle is the only one still unbound.
     (0.798, 0.373, "R", "point tool down"),
+    (0.798, 0.439, "R", "slower"),
+    (0.798, 0.570, "R", "faster"),
     # the two bare leader lines on the right
     (0.768, 0.250, "R", "show / hide this"),
     (0.793, 0.662, "R", "horizontal move"),

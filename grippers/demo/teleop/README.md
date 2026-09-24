@@ -587,8 +587,25 @@ In text:
 | left stick | roll / pitch |
 | `L1` / `R1` | yaw - / yaw + |
 | Cross | point tool down |
+| Triangle / Square | faster / slower |
 | `R2` | open / close the gripper (analog) |
 | Create | restart the sim |
+
+Speed starts at its MAXIMUM: 250 mm/s and 57 deg/s, which is what the demo has
+always opened at. Triangle and Square trim it by 1.25x a press, ten presses down
+to 27 mm/s for insertion and stacking. There is no faster setting — the
+constants are the ceiling, not a midpoint.
+
+Each press flashes a bar in the viewport for about a second, showing where you
+are in the range and the speed in mm/s. It draws into the viewport rather than a
+floating window, because Kit hides those in fullscreen, which is how the demo is
+usually run. `SPEED_MAX`, `SPEED_STEP` and `SPEED_NOTCHES` are at the top of
+`physx_tick_teleop.py`; `SPEED_MIN` is derived from them so the range divides
+into whole presses.
+
+A GUI Stop then Play is recovered from automatically; the arm is undrivable for
+about a second afterwards while physics steps and the articulation handle is
+re-attached.
 
 Button numbering is the standard hid-playstation js mapping. On a pad that
 numbers them differently, Options also prints the indices currently held, which

@@ -128,6 +128,11 @@ RESTART_BTN = BTN_CREATE
 # tool lurched as it levelled -- the two are physically the same control.
 TOOL_DOWN_BTN = BTN_X
 HELP_BTN = BTN_OPTIONS          # the menu button, right of the touchpad
+# Triangle up, Square down -- both were free, and a vertical pair on the face
+# reads as a rate control. Cross stays "point tool down"; the old Servo
+# frontend put "slower" there, but tool-down earns the more reachable button.
+FASTER_BTN = BTN_TRI
+SLOWER_BTN = BTN_SQUARE
 
 CONTROLS = [
     ("right stick",      "horizontal move"),
@@ -136,6 +141,7 @@ CONTROLS = [
     ("left stick",       "roll / pitch the tool"),
     ("L1 / R1",          "yaw the tool"),
     ("Cross",            "point tool down"),
+    ("Triangle / Square", "faster / slower, 250 mm/s down to 27 mm/s"),
     ("R2",               "open / close the gripper (analog)"),
     ("Create",           "restart the sim"),
     ("Options",          "show or hide this list"),
@@ -173,11 +179,32 @@ _RESTART_SETTLE_FRAMES = 45     # let physics step before reseeding the target
 DEADZONE = 0.12
 SPEED_LINEAR = 0.25
 SPEED_ANGULAR = 1.0
+# Runtime trim on the two above. They are the CEILING, not a midpoint: 0.25 m/s
+# is already brisk on a bench this size, and what fine work wants is slower,
+# not faster. So the scale runs 0.1 to 1.0 and STARTS AT THE TOP -- the demo
+# opens at exactly the speed it always did, and the control only buys
+# precision. (The old Servo frontend clamped 0.1-5.0 around a 1.0 m/s base;
+# this default is that frontend at 0.25, so there is no headroom to restore.)
+#
+# 1.25 per press is 11 presses from top to bottom. That is deliberate: the
+# range worth having is the top of it, and a coarser step would skip past the
+# useful settings for insertion.
+SPEED_STEP = 1.25
+SPEED_MAX = 1.0
+# Presses from fastest to slowest. The floor is DERIVED from it rather than
+# set to a round 0.1, so the range divides into whole steps: with 0.1 the last
+# press was a stub that changed the speed without moving the on-screen bar,
+# which reads as a dead button. ~0.107 -> 27 mm/s at the bottom.
+SPEED_NOTCHES = 10
+SPEED_MIN = SPEED_MAX / (SPEED_STEP ** SPEED_NOTCHES)
+# How long the on-screen speed flash stays up. Long enough to read without
+# looking away from the arm, short enough not to become scenery.
+SPEED_HUD_SECONDS = 1.6
 
 JS = _struct.Struct("IhBB")
 
 KEYBOARD_HELP = ("W/S=x  A/D=y  Q/E=z  arrows=roll/pitch  Z/C=yaw  "
-                 "SPACE=close gripper  R/F=speed")
+                 "SPACE=close gripper  R/F=speed  T=tool down")
 
 
 def _T(x):
@@ -343,7 +370,11 @@ class Keyboard:
                  "Q": (AXIS_DY, -1.0), "E": (AXIS_DY, +1.0),
                  "RIGHT": (AXIS_LX, +1.0), "LEFT": (AXIS_LX, -1.0),
                  "DOWN": (AXIS_LY, +1.0), "UP": (AXIS_LY, -1.0)}
-    BUTTON_KEYS = {"C": BTN_R1, "Z": BTN_L1, "R": BTN_TRI, "F": BTN_X}
+    # R/F have always been ADVERTISED as speed. R was wired to Triangle and
+    # went nowhere once the tick controller stopped reading it, and F was
+    # wired to Cross -- so pressing "slower" pointed the tool at the floor.
+    BUTTON_KEYS = {"C": BTN_R1, "Z": BTN_L1, "R": BTN_TRI, "F": BTN_SQUARE,
+                   "T": BTN_X}
     GRIP_KEY = "SPACE"
 
     def __init__(self):
@@ -488,6 +519,13 @@ class Teleop:
         self.grip = float(q[self.fj]) if self.fj is not None else GRIP_OPEN
         self.r2_rest = None
         self._moving = False
+        # The NOTCH is the state and the speed is derived from it. Keeping the
+        # float as state meant ten divisions by 1.25 missed SPEED_MIN by 4e-17,
+        # so one more press "changed" the speed and said so while nothing moved.
+        self._notch = SPEED_NOTCHES
+        self.speed = SPEED_MAX
+        self._speed_frame = None    # viewport overlay, built on first change
+        self._speed_hide_at = 0.0
 
         # Static: the arm base is fixed to the world, so reading it once is safe
         # even with Fabric active (which reports AUTHORED transforms for
@@ -798,6 +836,109 @@ class Teleop:
         self.R_des = (self.armbase @ fk(self.q)[5])[0:3, 0:3]
         self.r2_rest = None
 
+    def _nudge_speed(self, notches):
+        """Move the speed trim by whole notches and say where it landed.
+
+        Reports in real units rather than as a percentage alone: "40%" does
+        not tell you whether that is usable for an insertion, and 100 mm/s
+        does.
+        """
+        was = self._notch
+        self._notch = max(0, min(SPEED_NOTCHES, self._notch + notches))
+        self.speed = SPEED_MIN * (SPEED_STEP ** self._notch)
+        if self._notch == was:
+            print("[physx_teleop] speed already at its %s (%.0f mm/s)"
+                  % ("maximum" if was >= SPEED_NOTCHES else "minimum",
+                     SPEED_LINEAR * self.speed * 1000.0))
+        else:
+            print("[physx_teleop] speed %.0f%% -- %.0f mm/s, %.0f deg/s"
+                  % (self.speed * 100.0, SPEED_LINEAR * self.speed * 1000.0,
+                     math.degrees(SPEED_ANGULAR * self.speed)))
+        # Shown even when the value did not move: a press that does nothing
+        # still needs an answer, and a bar already hard against its end is a
+        # clearer one than silence.
+        self._show_speed()
+
+    def _show_speed(self):
+        """Flash the current speed INSIDE the viewport.
+
+        Same reason as the help overlay: Kit hides floating windows in
+        fullscreen, which is how the demo is actually run, so a ui.Window
+        would be invisible exactly when it is wanted. A viewport frame is not.
+
+        A bar rather than a bare number, because the question while driving is
+        "how much further can I go", which a percentage answers badly and a
+        filled bar answers without looking away from the arm. It hides itself
+        after SPEED_HUD_SECONDS -- this is feedback on a press, not a readout
+        worth permanent screen space.
+
+        Silent on failure: _nudge_speed has already printed, so a viewport that
+        will not take an overlay costs the flash, not the control.
+        """
+        self._speed_hide_at = time.time() + SPEED_HUD_SECONDS
+        try:
+            import omni.ui as ui
+            from omni.kit.viewport.utility import get_active_viewport_window
+
+            frame = self._speed_frame
+            if frame is None:
+                vp_win = get_active_viewport_window()
+                if vp_win is None:
+                    return
+                frame = vp_win.get_frame("physx_teleop_speed")
+                self._speed_frame = frame
+
+            here = self._notch
+            end = ("   slowest" if here <= 0 else
+                   "   fastest" if here >= SPEED_NOTCHES else "")
+            with frame:
+                with ui.VStack():
+                    ui.Spacer()                       # push to the bottom
+                    with ui.HStack(height=0):
+                        ui.Spacer()                   # and to the centre
+                        with ui.ZStack(width=300, height=84):
+                            ui.Rectangle(style={"background_color": 0xd0101014,
+                                                "border_radius": 8})
+                            with ui.VStack(spacing=1):
+                                ui.Spacer(height=9)
+                                ui.Label("speed %.0f%%%s"
+                                         % (self.speed * 100.0, end),
+                                         alignment=ui.Alignment.CENTER,
+                                         style={"font_size": 20,
+                                                "color": 0xff66ccff})
+                                # Drawn as rectangles, not block characters.
+                                # U+25A0/U+25A1 are not in Kit's font and came
+                                # out as "?????????" -- and a bar made of
+                                # widgets is the right thing anyway: it cannot
+                                # depend on glyph coverage, and the filled part
+                                # can carry the accent colour.
+                                with ui.HStack(height=10, spacing=3):
+                                    ui.Spacer()
+                                    for i in range(SPEED_NOTCHES + 1):
+                                        ui.Rectangle(
+                                            width=20, height=10,
+                                            style={"background_color":
+                                                   0xff66ccff if i <= here
+                                                   else 0x40ffffff,
+                                                   "border_radius": 2})
+                                    ui.Spacer()
+                                # mm/s, not m/s: the range is 25-250, which is
+                                # integers either end, where m/s spends the
+                                # useful half of the scale behind "0.0".
+                                ui.Label("%.0f mm/s    %.0f deg/s"
+                                         % (SPEED_LINEAR * self.speed * 1000.0,
+                                            math.degrees(SPEED_ANGULAR
+                                                         * self.speed)),
+                                         alignment=ui.Alignment.CENTER,
+                                         style={"font_size": 13,
+                                                "color": 0xffaab1b8})
+                                ui.Spacer(height=9)
+                        ui.Spacer()
+                    ui.Spacer(height=80)              # clear of the timeline
+            frame.visible = True
+        except Exception:
+            pass
+
     def _service_restart(self):
         """Drive the stop -> play -> reseed sequence, one step per tick.
 
@@ -921,6 +1062,14 @@ class Teleop:
             self.pad.poll()
             a, b = self.pad.axes, self.pad.buttons
 
+            # Ahead of the early returns below, so a restart cannot leave the
+            # flash stranded on screen. Wall time, not sim time: it is a UI
+            # dwell, and on Newton at RTF 0.07 a sim-time timeout would hold
+            # it up for most of a minute.
+            if (self._speed_frame is not None and self._speed_frame.visible
+                    and time.time() >= self._speed_hide_at):
+                self._speed_frame.visible = False
+
             if self._restart is not None:
                 self._service_restart()
                 return
@@ -942,6 +1091,11 @@ class Teleop:
                 print("[physx_teleop] buttons down: %s"
                       % [i for i, v in enumerate(b) if v])
 
+            if self.pad.edges[FASTER_BTN]:
+                self._nudge_speed(+1)
+            if self.pad.edges[SLOWER_BTN]:
+                self._nudge_speed(-1)
+
             if self.pad.edges[TOOL_DOWN_BTN]:
                 self.R_des = _tool_down(
                     (self.armbase @ fk(self.q)[5])[0:3, 0:3])
@@ -952,7 +1106,7 @@ class Teleop:
             if abs(a[AXIS_DX]) > 0.5:
                 self._zoom(a[AXIS_DX], dt)
 
-            sl, sa = SPEED_LINEAR, SPEED_ANGULAR
+            sl, sa = SPEED_LINEAR * self.speed, SPEED_ANGULAR * self.speed
             # Right stick is VIEW-relative: push away and the tool goes away
             # from you on screen, whatever the camera is doing. Previously it
             # was world x/y, so orbiting the view left the stick pointing the
