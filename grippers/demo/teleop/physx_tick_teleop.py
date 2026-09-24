@@ -54,6 +54,7 @@ import numpy as np
 
 import carb
 import omni.kit.app
+import omni.timeline
 import omni.usd
 from pxr import UsdGeom
 
@@ -440,6 +441,8 @@ class Teleop:
         self.R_des = (self.armbase @ fk(self.q)[5])[0:3, 0:3]
 
         self._restart = None        # None, or frames elapsed since the combo
+        self._recover = None        # ditto, for an externally driven Play
+        self._tl_sub = None
 
         # How far the tool reaches, measured from the gripper's own rendered
         # bounds projected onto the tool axis. Done once: it is fixed geometry.
@@ -473,6 +476,18 @@ class Teleop:
         self._sub = (omni.kit.app.get_app().get_update_event_stream()
                      .create_subscription_to_pop(self._tick,
                                                  name="physx_tick_teleop"))
+        # Stop/Play from Isaac's own toolbar has to be survivable: it is a
+        # completely ordinary thing to do mid-demo, and it invalidates the
+        # articulation handle exactly as our own restart does.
+        try:
+            self._tl_sub = (omni.timeline.get_timeline_interface()
+                            .get_timeline_event_stream()
+                            .create_subscription_to_pop(
+                                self._on_timeline,
+                                name="physx_tick_teleop_timeline"))
+        except Exception:
+            print("[physx_teleop] timeline events unavailable; GUI Stop/Play "
+                  "will NOT be recovered from:\n" + traceback.format_exc())
         self._frame_tip()
         print("[physx_teleop] running on Kit's update tick (no Servo, no ROS)")
         print("[physx_teleop] press Options for the control list")
@@ -695,9 +710,28 @@ class Teleop:
             if self._zoomerr == 1:
                 print("[physx_teleop] zoom unavailable:\n" + traceback.format_exc())
 
+    def _actual(self):
+        """Measured joint positions, or None while the handle is unusable.
+
+        After a stop the physics simulation view is gone, and
+        get_joint_positions() does not raise -- it returns a DEGENERATE array
+        (size 1). So a try/except around the read catches nothing, and the
+        IndexError lands on the indexing below it instead, outside the guard.
+        That is what killed the controller after a GUI Stop -> Play: the first
+        failure printed a traceback, and every tick after it failed silently.
+        """
+        try:
+            act = self._read(self.art.get_joint_positions())
+        except Exception:
+            return None
+        need = max(self.idx + ([self.fj] if self.fj is not None else []))
+        return act if act.size > need else None
+
     def _reseed(self):
         """Re-read the arm and adopt it as the target. Used after a restart."""
-        act = self._read(self.art.get_joint_positions())
+        act = self._actual()
+        if act is None:
+            raise RuntimeError("articulation not readable yet")
         self.q = [float(act[j]) for j in self.idx]
         self.grip = float(act[self.fj]) if self.fj is not None else GRIP_OPEN
         self.R_des = (self.armbase @ fk(self.q)[5])[0:3, 0:3]
@@ -720,8 +754,6 @@ class Teleop:
           one failure meant the controller was dead until Isaac restarted.
           Comparisons are >= and the state is cleared in a finally.
         """
-        import omni.timeline
-
         tl = omni.timeline.get_timeline_interface()
         n = self._restart
         self._restart = n + 1
@@ -746,11 +778,53 @@ class Teleop:
             self._restart = None               # never wedge the controller
             print("[physx_teleop] restart FAILED:\n" + traceback.format_exc())
 
+    def _on_timeline(self, e):
+        """Note an externally driven Play so the next tick can re-attach.
+
+        Only PLAY matters. The handle is already dead by the time STOP is
+        observed, and nothing may touch the articulation until physics has
+        stepped again -- so this records the event and gets out, rather than
+        doing the work in the callback.
+
+        Our own Create-button restart drives stop() and play() itself and
+        repairs the handle in _service_restart, so its events are ignored
+        here; reacting to them as well would run the recovery twice.
+        """
+        try:
+            if self._restart is not None:
+                return
+            if e.type == int(omni.timeline.TimelineEventType.PLAY):
+                self._recover = 0
+        except Exception:
+            pass
+
+    def _service_recover(self):
+        """Re-attach to the articulation after an externally driven Play.
+
+        Deferred a few frames for the same reason the restart sequence is:
+        physics has to step before the articulation can be read back.
+
+        The view is deliberately NOT reframed. A Create-button restart is for
+        when things have gone wrong and the camera is usually lost too, but a
+        Stop/Play is routine -- yanking the view would be its own annoyance.
+        """
+        n = self._recover
+        self._recover = n + 1
+        if n < _RESTART_SETTLE_FRAMES:
+            return
+        try:
+            self.art.initialize()      # handle is stale after stop/play
+            self._reseed()
+            print("[physx_teleop] timeline play -- articulation re-attached")
+        except Exception:
+            print("[physx_teleop] re-attach FAILED:\n" + traceback.format_exc())
+        finally:
+            self._recover = None       # never wedge the controller
+
     def _clamp_to_actual(self):
         """Keep the target within MAX_LAG of the measured pose (anti-windup)."""
-        try:
-            act = self._read(self.art.get_joint_positions())
-        except Exception:
+        act = self._actual()
+        if act is None:
             return
         # Scale the whole lag vector, never clamp per joint. Clamping joints
         # independently changes the ratio between them, which rotates the
@@ -782,6 +856,9 @@ class Teleop:
 
             if self._restart is not None:
                 self._service_restart()
+                return
+            if self._recover is not None:
+                self._service_recover()
                 return
             if self.pad.edges[RESTART_BTN]:
                 self._restart = 0
@@ -904,6 +981,7 @@ class Teleop:
     def stop(self):
         try:
             self._sub = None
+            self._tl_sub = None
         except Exception:
             pass
         self.pad.close()
