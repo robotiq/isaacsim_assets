@@ -878,8 +878,6 @@ def Xform "World" (
                                     token[] isaac:physics:DofOffsetOpOrder (
                                         displayName = "Dof Offset Op Order"
                                     )
-                                    float physics:lowerLimit = 0
-                                    float physics:upperLimit = 75
                                     float state:angular:physics:position = 0
                                     float state:angular:physics:velocity = 0
                                 }
