@@ -191,7 +191,7 @@ def Xform "Robotiq_2F_85" (
                 point3f physics:localPos1 = (0, 0.06213, 0.0509)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
+                float physics:lowerLimit = -45
                 float physics:upperLimit = 0
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
