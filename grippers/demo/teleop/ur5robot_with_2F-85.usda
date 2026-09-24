@@ -899,44 +899,6 @@ def Xform "World" (
                                     float state:angular:physics:velocity = 0
                                 }
 
-                                over "left_inner_finger_joint"
-                                {
-                                    float drive:angular:physics:damping = 0.00001
-                                    float drive:angular:physics:stiffness = 0.0004
-                                    float drive:angular:physics:targetPosition = 92
-                                    bool[] isaac:actuator (
-                                        displayName = "Actuator"
-                                    )
-                                    string isaac:NameOverride (
-                                        displayName = "Joint Name Override"
-                                    )
-                                    token[] isaac:physics:DofOffsetOpOrder (
-                                        displayName = "Dof Offset Op Order"
-                                    )
-                                    uniform bool physics:excludeFromArticulation = 1
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "right_inner_finger_joint"
-                                {
-                                    float drive:angular:physics:damping = 0.00001
-                                    float drive:angular:physics:stiffness = 0.0004
-                                    float drive:angular:physics:targetPosition = -92
-                                    bool[] isaac:actuator (
-                                        displayName = "Actuator"
-                                    )
-                                    string isaac:NameOverride (
-                                        displayName = "Joint Name Override"
-                                    )
-                                    token[] isaac:physics:DofOffsetOpOrder (
-                                        displayName = "Dof Offset Op Order"
-                                    )
-                                    uniform bool physics:excludeFromArticulation = 1
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
                                 over "left_inner_finger_knuckle_joint"
                                 {
                                     bool[] isaac:actuator (
@@ -980,20 +942,6 @@ def Xform "World" (
                                     uniform bool physics:excludeFromArticulation = 0
                                     float physics:lowerLimit = -45
                                     float physics:upperLimit = 0
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "left_inner_knuckle_joint"
-                                {
-                                    uniform bool physics:excludeFromArticulation = 0
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "right_inner_knuckle_joint"
-                                {
-                                    uniform bool physics:excludeFromArticulation = 0
                                     float state:angular:physics:position = 0
                                     float state:angular:physics:velocity = 0
                                 }
