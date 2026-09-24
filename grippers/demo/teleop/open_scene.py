@@ -78,6 +78,53 @@ def _teleop_dir():
         + SCENE)
 
 
+# The Newton/MJWarp solver pre-allocates a fixed contact buffer, 200 per
+# world by default. add_props.py puts a tube, four cubes and three cylinders
+# on the bench, and that took the peak to 203 -- so every contact past the cap
+# was dropped, with 2394 warnings in a single session and correspondingly
+# degraded grasp fidelity on Newton.
+#
+# Newton takes max(user, its own geometry estimate), so raising this can only
+# ever help. njmax goes up alongside it: MuJoCo constraints scale with contact
+# count, so leaving it at its 1200 default would just move the ceiling instead
+# of removing it.
+NEWTON_NCONMAX = int(os.environ.get("TELEOP_NEWTON_NCONMAX", "512"))
+NEWTON_NJMAX = int(os.environ.get("TELEOP_NEWTON_NJMAX", "2400"))
+
+
+def _raise_newton_contact_limit():
+    """Give the MJWarp solver room for the props, before its buffers are sized.
+
+    Gated on being able to acquire a Newton stage rather than on VARIANT: the
+    gripper variant and the physics engine are chosen separately -- the engine
+    comes from the experience (isaac-sim.newton.sh) -- so asking Newton itself
+    is the only honest test. On PhysX the extension is not loaded and this is
+    a no-op.
+
+    Ordering matters. It has to run after the engine is on Newton, because
+    switching resets the stage and discards earlier edits, and before play,
+    because that is when the buffers are allocated.
+    """
+    try:
+        import isaacsim.physics.newton as newton_ext
+    except Exception:
+        return "not a Newton run; contact limit untouched"
+    try:
+        ns = newton_ext.acquire_stage()
+        if ns is None:
+            return "Newton stage not acquired; contact limit left at default"
+        cfg = ns.cfg.solver_cfg
+        was_n, was_j = cfg.nconmax, cfg.njmax
+        cfg.nconmax = max(was_n or 0, NEWTON_NCONMAX)
+        cfg.njmax = max(was_j or 0, NEWTON_NJMAX)
+        return ("Newton contact limits: nconmax %s -> %s, njmax %s -> %s"
+                % (was_n, cfg.nconmax, was_j, cfg.njmax))
+    except Exception:
+        import traceback
+        return ("could not raise the Newton contact limit:\n"
+                + traceback.format_exc())
+
+
 def _select_variant(stage):
     """Returns a human-readable note about what it did."""
     prim = stage.GetPrimAtPath("/World")
@@ -253,6 +300,8 @@ def install():
                 if os.environ.get("TELEOP_KEEP_VIEW", "0") == "0":
                     print("[physx-autostart] "
                           + _look_at(ctx.get_stage(), VIEW_EYE, VIEW_TARGET))
+
+                print("[physx-autostart] " + _raise_newton_contact_limit())
 
                 tl = omni.timeline.get_timeline_interface()
                 if not tl.is_playing():
