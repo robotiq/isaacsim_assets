@@ -203,11 +203,12 @@ def Xform "Robotiq_2F_85" (
             {
                 float drive:angular:physics:damping = 0.00001
                 float drive:angular:physics:maxForce = 0.5
-                float drive:angular:physics:stiffness = 0.0002
-                float drive:angular:physics:targetPosition = 45
+                float drive:angular:physics:stiffness = 0.0004
+                float drive:angular:physics:targetPosition = -92
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+                uniform bool physics:excludeFromArticulation = 1
                 point3f physics:localPos0 = (0, 0.06776, 0.09809)
                 point3f physics:localPos1 = (0, 0.06776, 0.09809)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
@@ -227,7 +228,7 @@ def Xform "Robotiq_2F_85" (
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
-                uniform bool physics:excludeFromArticulation = 1
+                uniform bool physics:excludeFromArticulation = 0
                 point3f physics:localPos0 = (0, 0.0127, 0.06118)
                 point3f physics:localPos1 = (0, 0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
@@ -297,11 +298,12 @@ def Xform "Robotiq_2F_85" (
             {
                 float drive:angular:physics:damping = 0.00001
                 float drive:angular:physics:maxForce = 0.5
-                float drive:angular:physics:stiffness = 0.0002
-                float drive:angular:physics:targetPosition = 45
+                float drive:angular:physics:stiffness = 0.0004
+                float drive:angular:physics:targetPosition = 92
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+                uniform bool physics:excludeFromArticulation = 1
                 point3f physics:localPos0 = (0, -0.06776, 0.09809)
                 point3f physics:localPos1 = (0, -0.06776, 0.09809)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
@@ -321,7 +323,7 @@ def Xform "Robotiq_2F_85" (
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
-                uniform bool physics:excludeFromArticulation = 1
+                uniform bool physics:excludeFromArticulation = 0
                 point3f physics:localPos0 = (0, -0.0127, 0.06118)
                 point3f physics:localPos1 = (0, -0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
