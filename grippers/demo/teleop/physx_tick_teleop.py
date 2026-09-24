@@ -407,11 +407,72 @@ def _acquire_input():
         return Keyboard()
 
 
+def _align_tensor_backend():
+    """Match the core tensor backend to the physics device before we attach.
+
+    SingleArticulation.initialize() reads the drive gains through
+    clone_tensor(), which is np.copy() under the hood. Under Newton the
+    articulation is GPU-resident, so that is np.copy() on a cuda:0 tensor:
+
+        TypeError: can't convert cuda:0 device type tensor to numpy.
+
+    SimulationManager makes exactly this switch itself -- but only inside
+    initialize_physics(), which is reached when the sim is brought up through
+    SimulationContext. open_scene.py plays the timeline directly, so nothing
+    ever ran it and the backend stayed at its 'numpy' default. Harmless on
+    PhysX, where the tensors are already on the host; fatal on Newton, where
+    it left the arm running but undrivable.
+
+    Switching costs nothing here: _read() already unwraps torch tensors.
+    """
+    try:
+        from isaacsim.core.simulation_manager import SimulationManager
+
+        dev = str(SimulationManager.get_physics_sim_device())
+        if "cuda" in dev and SimulationManager.get_backend() == "numpy":
+            SimulationManager.set_backend("torch")
+            print("[physx_teleop] physics on %s -- tensor backend numpy -> "
+                  "torch" % dev)
+    except Exception:
+        print("[physx_teleop] could not align the tensor backend; a GPU "
+              "pipeline may fail to attach:\n" + traceback.format_exc())
+
+
+def _backend_arrays():
+    """The torch module and device to build actions with, or (None, None).
+
+    _align_tensor_backend() may have moved the backend to torch, and the move
+    cuts both ways: apply_action() resolves joint indices through the active
+    backend's tensor utils, and the torch one calls .to() on them --
+
+        AttributeError: 'numpy.ndarray' object has no attribute 'to'
+
+    -- so once the backend is torch, numpy arrays can be read back but not
+    written. Returning (None, None) keeps the numpy path for PhysX.
+    """
+    try:
+        from isaacsim.core.simulation_manager import SimulationManager
+
+        if SimulationManager.get_backend() != "torch":
+            return None, None
+        import torch
+
+        return torch, SimulationManager.get_physics_sim_device()
+    except Exception:
+        print("[physx_teleop] could not resolve the write backend; falling "
+              "back to numpy arrays:\n" + traceback.format_exc())
+        return None, None
+
+
 class Teleop:
     def __init__(self):
         from isaacsim.core.prims import SingleArticulation
 
         self.stage = omni.usd.get_context().get_stage()
+        _align_tensor_backend()          # must precede SingleArticulation
+        # Which flavour of array the articulation wants WRITTEN to it. Reads
+        # are handled the other way round, in _read(); this is the write side.
+        self._torch, self._device = _backend_arrays()
         self.art = SingleArticulation(ARTICULATION)
         self.art.initialize()
         names = list(self.art.dof_names)
@@ -841,9 +902,15 @@ class Teleop:
     def _apply(self, positions, indices):
         from isaacsim.core.utils.types import ArticulationAction
 
-        self.art.apply_action(ArticulationAction(
-            joint_positions=np.asarray(positions, dtype=np.float32),
-            joint_indices=np.asarray(indices, dtype=np.int32)))
+        if self._torch is not None:
+            t = self._torch
+            pos = t.tensor(positions, dtype=t.float32, device=self._device)
+            idx = t.tensor(indices, dtype=t.long, device=self._device)
+        else:
+            pos = np.asarray(positions, dtype=np.float32)
+            idx = np.asarray(indices, dtype=np.int32)
+        self.art.apply_action(ArticulationAction(joint_positions=pos,
+                                                joint_indices=idx))
 
     def _tick(self, e):
         try:
