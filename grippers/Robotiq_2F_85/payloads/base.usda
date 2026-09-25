@@ -34,6 +34,16 @@
     endTimeCode = 0
     metersPerUnit = 1
     startTimeCode = -1
+    # Canonical Isaac composition layout (SimReady ISA.001): the base layer
+    # composes the named geometries + instances slots so all four layout layers
+    # (base / geometries / instances / materials) are in the layer graph. These
+    # two are empty slots today (geometry + instancing are authored inline here,
+    # and materials come from ../materials/materials.usd); they exist so the
+    # layout is complete and can be filled without re-plumbing the reference graph.
+    subLayers = [
+        @./geometries.usd@,
+        @./instances.usda@
+    ]
     upAxis = "Z"
 )
 
