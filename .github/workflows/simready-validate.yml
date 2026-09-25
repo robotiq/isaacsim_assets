@@ -33,6 +33,27 @@ on:
       simready_foundation_ref:
         description: NVIDIA/simready-foundation commit or tag (the spec source)
         default: v2026.07.1
+  # Callable from other workflows (e.g. hf-publish.yml) so publishing can gate on
+  # a passing validation without duplicating the logic below. Inputs mirror the
+  # workflow_dispatch inputs; workflow_call requires an explicit type.
+  workflow_call:
+    inputs:
+      asset:
+        description: Asset USD to validate (repo-relative)
+        type: string
+        default: grippers/Robotiq_2F_85/Robotiq_2F_85.usda
+      profile:
+        description: SimReady profile
+        type: string
+        default: Robot-Gripper
+      version:
+        description: Profile version
+        type: string
+        default: "2.1.0"
+      simready_foundation_ref:
+        description: NVIDIA/simready-foundation commit or tag (the spec source)
+        type: string
+        default: v2026.07.1
 
 jobs:
   validate:

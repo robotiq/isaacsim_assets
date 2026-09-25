@@ -1,0 +1,225 @@
+# Manually-triggered publish of the Robotiq gripper asset to a public Hugging
+# Face *dataset*, from which it can be submitted to the NVIDIA SimReady Catalog
+# (see ci/simready/submit_to_central.sh and docs).
+#
+# Flow:
+#   1. `validate` GATE  — reuses simready-validate.yml (Robot-Gripper). Publish
+#      only runs if this passes. Single source of truth for the pass/fail rule.
+#   2. `publish`        — stages the asset into the layout simready-package needs,
+#      stamps a Robot-Gripper validation result into the root USD, builds the
+#      com.nvidia.simready.packaging.json package, and uploads it to the HF
+#      dataset. Emits the immutable resolve URL (dataset commit SHA) that is later
+#      submitted to SimReady Central.
+#
+# Requires repo secret HF_TOKEN (a Hugging Face *write* token for the target
+# namespace). A HF dataset (public, license cc-by-4.0 in its card) must exist or
+# be creatable by that token.
+#
+# NOTE: the exact simready-validate/simready-package CLI is exercised for the
+# first time in CI (the toolchain needs Python 3.11/3.12 and is not run locally).
+# Do a `dry_run: true` dispatch first to shake out tool/CLI specifics before a
+# real upload.
+name: hf-publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version, format YYYY.MM.DD_NN (e.g. 2026.09.25_00)"
+        required: true
+      dataset:
+        description: "HF dataset, <namespace>/<name> (no dots in either)"
+        default: Robotiq-Official/simready-assets
+      asset_dir:
+        description: "Repo-relative asset folder; its basename is the logical asset name"
+        default: grippers/Robotiq_2F_85
+      root_usd:
+        description: "Interface USD filename, relative to asset_dir"
+        default: Robotiq_2F_85.usda
+      license_id:
+        description: "SPDX license id; must match the HF dataset card"
+        default: cc-by-4.0
+      simready_foundation_ref:
+        description: "NVIDIA/simready-foundation commit or tag (spec + packaging config)"
+        default: v2026.07.1
+      dry_run:
+        description: "Build + package but DO NOT upload to Hugging Face"
+        type: boolean
+        default: false
+
+jobs:
+  # Pass/fail gate. Reuses the exact validation the repo already trusts.
+  validate:
+    uses: ./.github/workflows/simready-validate.yml
+    with:
+      asset: ${{ format('{0}/{1}', inputs.asset_dir, inputs.root_usd) }}
+      profile: Robot-Gripper
+      version: "2.1.0"
+      simready_foundation_ref: ${{ inputs.simready_foundation_ref }}
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      DATASET: ${{ inputs.dataset }}
+      VERSION: ${{ inputs.version }}
+      ROOT_USD: ${{ inputs.root_usd }}
+      LICENSE_ID: ${{ inputs.license_id }}
+    steps:
+      - name: Validate version format (YYYY.MM.DD_NN)
+        run: |
+          if ! printf '%s' "$VERSION" | grep -qE '^[0-9]{4}\.[0-9]{2}\.[0-9]{2}_[0-9]{2}$'; then
+            echo "::error::version '$VERSION' is not in the required format YYYY.MM.DD_NN (e.g. 2026.09.25_00)"
+            exit 1
+          fi
+          # SimReady requires no dots in namespace or dataset name.
+          if printf '%s' "$DATASET" | awk -F/ '{exit !($1 ~ /\./ || $2 ~ /\./)}'; then
+            echo "::error::HF namespace/dataset must not contain a dot: $DATASET"
+            exit 1
+          fi
+
+      - name: Check out asset (with LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: asset
+
+      - name: Check out SimReady spec + packaging config (NVIDIA/simready-foundation)
+        uses: actions/checkout@v4
+        with:
+          repository: NVIDIA/simready-foundation
+          ref: ${{ inputs.simready_foundation_ref }}
+          path: simready-foundation
+          # nv_core = the rule/feature/profile spec (for the Robot-Gripper stamp);
+          # sample_content = project_config.toml used by simready-package.
+          sparse-checkout: |
+            nv_core
+            sample_content
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install SimReady validator + packager + HF CLI (pinned)
+        run: |
+          python -m pip install --upgrade pip
+          # Same pinned validator stack as simready-validate.yml so the
+          # Robot-Gripper stamp reproduces the gate's verdict, plus the packager
+          # and Hugging Face client.
+          pip install \
+            simready-validate==2026.7.1 \
+            simready-package \
+            usd-core==26.8 \
+            omniverse-asset-validator==1.18.0 \
+            omniverse-usd-profiles==1.11.2 \
+            numpy==2.5.1 \
+            huggingface_hub
+          # usd-validation-nvidia ships the omni.capabilities used to register the
+          # SimReady rules; it must win, so (re)install it LAST (see validate.yml).
+          pip install --force-reinstall --no-deps usd-validation-nvidia==1.22.0
+
+      - name: Stage asset into simready-package layout
+        id: stage
+        run: |
+          STAGED=$(bash "$GITHUB_WORKSPACE/asset/ci/simready/stage_package.sh" \
+            "$GITHUB_WORKSPACE/asset/${{ inputs.asset_dir }}" \
+            "$ROOT_USD" \
+            "$GITHUB_WORKSPACE/staged")
+          echo "staged=$STAGED" >> "$GITHUB_OUTPUT"
+          echo "Staged package at: $STAGED"
+
+      - name: Stamp Robot-Gripper validation into the staged root USD
+        run: |
+          # Mirror simready-validate.yml's plain-PyPI Robot-Gripper invocation,
+          # but target the STAGED root USD and write the stamp into it.
+          TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
+          PROFILE="Robot-Gripper"
+          PROFILE_FILE="$TC/profiles/$(printf '%s' "$PROFILE" | tr 'A-Z-' 'a-z_').toml"
+          STAGED_ROOT="${{ steps.stage.outputs.staged }}/simready_usd/$ROOT_USD"
+          simready-validate \
+            --rules-path "$TC/capabilities" \
+            --features-path "$TC/features" \
+            --profiles-path "$PROFILE_FILE" \
+            --profile "$PROFILE" --version "2.1.0" \
+            --stamp-asset-validation \
+            --output stamp-result.json \
+            "$STAGED_ROOT" 2>stamp.log || true
+          if [ ! -f stamp-result.json ]; then
+            echo "::warning::stamping did not produce stamp-result.json; see stamp.log"
+            tail -n 30 stamp.log || true
+          fi
+
+      - name: Build SimReady package (com.nvidia.simready.packaging.json)
+        run: |
+          simready-package \
+            --project-config "$GITHUB_WORKSPACE/simready-foundation/sample_content/project_config.toml" \
+            --name "simready.hf.${DATASET/\//.}.$(basename '${{ inputs.asset_dir }}')" \
+            --version "$VERSION" \
+            --license "$LICENSE_ID" \
+            --root-usd "simready_usd/$ROOT_USD" \
+            "${{ steps.stage.outputs.staged }}"
+          PKG_JSON="${{ steps.stage.outputs.staged }}/com.nvidia.simready.packaging.json"
+          if [ ! -f "$PKG_JSON" ]; then
+            echo "::error::simready-package did not produce $PKG_JSON"
+            exit 1
+          fi
+          echo "### Package definition" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat "$PKG_JSON" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload to Hugging Face dataset
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::HF_TOKEN secret is not set"
+            exit 1
+          fi
+          LOGICAL="$(basename '${{ inputs.asset_dir }}')"
+          # --delete replaces the folder contents (no-op on first upload, required
+          # on update). The globally-qualified package id stays inside the JSON;
+          # the HF folder is just the short logical name.
+          OUT=$(hf upload "$DATASET" "${{ steps.stage.outputs.staged }}" "./$LOGICAL" \
+            --repo-type dataset --delete "./$LOGICAL/*" 2>&1 | tee /dev/stderr)
+          COMMIT_URL=$(printf '%s\n' "$OUT" | grep -oE 'https://huggingface.co/datasets/[^ ]+/commit/[0-9a-f]+' | tail -n1)
+          SHA=$(printf '%s' "$COMMIT_URL" | grep -oE '[0-9a-f]{40}$')
+          if [ -z "$SHA" ]; then
+            echo "::error::could not parse commit SHA from hf upload output"
+            exit 1
+          fi
+          RESOLVE_URL="https://huggingface.co/datasets/$DATASET/resolve/$SHA/$LOGICAL/com.nvidia.simready.packaging.json"
+          printf '%s\n' "$RESOLVE_URL" > submission-url.txt
+          {
+            echo "## ✅ Published to Hugging Face"
+            echo ""
+            echo "**Dataset:** \`$DATASET\`  "
+            echo "**Version:** \`$VERSION\`  "
+            echo "**Commit:** \`$SHA\`"
+            echo ""
+            echo "**Immutable submission URL** (paste into \`submissions/$DATASET\` for SimReady Central):"
+            echo ""
+            echo "\`\`\`"
+            echo "$RESOLVE_URL"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dry-run notice
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "## 🟡 Dry run — nothing uploaded" >> "$GITHUB_STEP_SUMMARY"
+          echo "Package was staged and built but not pushed to Hugging Face." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts (package + submission URL)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hf-publish-${{ inputs.version }}
+          path: |
+            ${{ steps.stage.outputs.staged }}/com.nvidia.simready.packaging.json
+            submission-url.txt
+            stamp-result.json
+            stamp.log
+          if-no-files-found: ignore
