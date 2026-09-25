@@ -110,6 +110,10 @@ jobs:
 
       - name: Summarize results (table + gate)
         if: always()
+        # Fails on any blocking failure AND on any optional-feature regression
+        # versus the committed baseline (ci/simready/expected.json). After an
+        # intended change, refresh it with:
+        #   python3 ci/simready/summarize.py --update results.json
         run: python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" results.json
 
       - name: Upload results

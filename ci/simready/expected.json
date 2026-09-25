@@ -1,0 +1,160 @@
+{
+  "_note": "SimReady feature baseline. Regenerate: python3 ci/simready/summarize.py --update results.json",
+  "features": {
+    "FET_000_MUJOCO": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.NP.005",
+        "com.nvidia.simready.NP.008",
+        "com.nvidia.simready.RV.007"
+      ]
+    },
+    "FET_000_NEWTON": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.NP.005",
+        "com.nvidia.simready.NP.008",
+        "com.nvidia.simready.RV.004"
+      ]
+    },
+    "FET_000_PHYSX": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.NP.005",
+        "com.nvidia.simready.NP.008",
+        "com.nvidia.simready.RV.001"
+      ]
+    },
+    "FET_000_STANDARD": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.NP.005",
+        "com.nvidia.simready.NP.008"
+      ]
+    },
+    "FET_001_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_003_MUJOCO": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_003_NEWTON": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_003_PHYSX": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_003_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_MUJOCO": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_NEWTON": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_PHYSX": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_ROBOT_MUJOCO": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_ROBOT_NEWTON": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_ROBOT_PHYSX": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_004_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_021_ISAAC": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_022_ISAAC": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_022_MUJOCO": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.MUJOCO.DJ.001"
+      ]
+    },
+    "FET_022_NEWTON": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.NEWTON.DJ.001"
+      ]
+    },
+    "FET_022_PHYSX": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_022_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_024_MUJOCO": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_024_NEWTON": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.NEWTON.BA.001"
+      ]
+    },
+    "FET_024_PHYSX": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_024_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_028_ISAAC": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_028_MUJOCO": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.MUJOCO.DJ.001"
+      ]
+    },
+    "FET_028_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_031_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_033_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_100_ISAAC": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.ISA.001"
+      ]
+    }
+  },
+  "profile_id": "Robot-Gripper",
+  "profile_version": "2.1.0"
+}
