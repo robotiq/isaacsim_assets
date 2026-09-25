@@ -150,9 +150,7 @@
     },
     "FET_100_ISAAC": {
       "blocking": [],
-      "optional": [
-        "com.nvidia.simready.ISA.001"
-      ]
+      "optional": []
     }
   },
   "profile_id": "Robot-Gripper",
