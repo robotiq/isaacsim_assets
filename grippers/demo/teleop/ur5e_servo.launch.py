@@ -32,7 +32,39 @@ def _load_yaml(pkg, rel):
         return yaml.safe_load(f)
 
 
-def build_servo_context(ur_type="ur5e"):
+TELEOP_SCENE = "ur5robot_with_2F-85.usda"
+
+
+def _scene_tick_hz(default=60.0):
+    """The scene's timeCodesPerSecond -- the rate Isaac applies commands at.
+
+    Isaac uses fixed time stepping: one time code per rendered frame. So this
+    is the ceiling on how often a /joint_command can actually take effect, and
+    the rate Servo should be paced to.
+
+    Read from the scene rather than hardcoded, so the two cannot drift apart
+    and nobody has to remember to override anything. Falls back to 60 if the
+    scene moves or the metadata is missing -- a wrong-but-sane rate is much
+    better than failing to launch.
+    """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), TELEOP_SCENE)
+    try:
+        with open(path) as fh:
+            for _, line in zip(range(200), fh):      # it lives in the header
+                if "timeCodesPerSecond" in line:
+                    return float(line.split("=", 1)[1].strip())
+    except Exception:
+        pass
+    return default
+
+
+# Isaac applies /joint_command once per tick, so pacing Servo there rather than
+# at upstream's 250 Hz removes ~4.5x of redundant work per tick.
+DEFAULT_PUBLISH_PERIOD = float(
+    os.environ.get("SERVO_PUBLISH_PERIOD", 1.0 / _scene_tick_hz()))
+
+
+def build_servo_context(ur_type="ur5e", publish_period=DEFAULT_PUBLISH_PERIOD):
     """Assemble every parameter servo_node needs, with no launch machinery.
 
     Split out from generate_launch_description so smoke_launch_check.py can
@@ -92,6 +124,28 @@ def build_servo_context(ur_type="ur5e"):
     # gamepad's SPEED_ANGULAR=3.0, so full stick deflection actually reaches
     # the cap instead of being clipped well below it.
     servo_yaml["scale"]["rotational"] = 3.0
+    # Pace Servo to the simulator instead of to the wall clock.
+    #
+    # Upstream is 0.004 (250 Hz). Isaac applies /joint_command once per tick,
+    # ~55 Hz on a healthy session, so 250 Hz produced ~4.5 commands per tick of
+    # which only the last had any effect. The surplus is not free: each one
+    # costs a Servo solve and smoothing-filter pass, a DDS round trip, a
+    # conversion in the Python servo_to_isaac_bridge, and Action Graph work
+    # inside Isaac -- all of it while the sim is trying to render.
+    #
+    # This is NOT fixed by use_sim_time. That governs message STAMPS, which is
+    # what keeps Servo's stale-message filter from dropping input (gotcha #1).
+    # Servo's control loop itself is paced by a wall-clock rate, so it keeps
+    # emitting at 250 Hz however slowly the sim runs -- at RTF 0.45 that was
+    # ~550 commands per simulated second against a configured 250.
+    #
+    # Arm speed is unaffected: Servo integrates velocity over publish_period,
+    # so a longer period yields proportionally larger steps along the same
+    # trajectory -- fewer, bigger increments, not slower motion.
+    #
+    # Override by passing publish_period= to build_servo_context(), or set
+    # SERVO_PUBLISH_PERIOD in the environment.
+    servo_yaml["publish_period"] = publish_period
     # MoveIt Servo's collision monitor segfaults inside FCL on some
     # self-collision states during teleop (CollisionCheck::run → FCL
     # registerObjects → SIGSEGV), which kills the whole servo_node and the

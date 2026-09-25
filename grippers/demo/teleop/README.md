@@ -509,6 +509,118 @@ The image's package list has to stay in step with the
 
 ## Day-to-day usage
 
+### One command
+
+```bash
+# clean shell -- do NOT source /opt/ros first, run_demo.sh does that itself
+grippers/demo/teleop/run_demo.sh
+```
+
+Brings up Isaac with the scene open, the gripper variant selected, the timeline
+playing, and **`physx_tick_teleop.py` driving the arm from inside Isaac**.
+Ctrl-C stops everything it started.
+
+The default path uses **no ROS for control**. MoveIt Servo's loop is paced by
+the wall clock, and against a sim at RTF ~0.45 that produced a ~3.7 Hz limit
+cycle — the arm shook about three times harder than it advanced. Measured as
+motion energy in the 3–5 Hz band from screen capture, same scene and frame
+rate: **1.9% through Servo, 0.0% without it**. `physx_tick_teleop.py` runs on
+Kit's update tick so controller, physics and clock share one timebase and the
+oscillation cannot form. `--servo` restores the old stack for comparison.
+
+ROS is still started for haptics alone (the contact-force plot and R2 rumble),
+which needs neither Servo nor the gamepad node.
+
+```bash
+./run_demo.sh --keyboard      # keyboard frontend (no gamepad, no haptics)
+./run_demo.sh --no-frontend   # Isaac + Servo only
+./run_demo.sh --no-isaac      # attach to an Isaac you already have running
+
+TELEOP_GRIPPER_VARIANT=newton ./run_demo.sh    # the Newton gripper
+```
+
+The variant picks the Isaac experience, because the `newton` gripper only
+simulates under the Newton solver and that is a separate launcher rather than a
+flag — choosing one without the other gives a scene that loads and will not
+move. `ISAACSIM_LAUNCHER` overrides the derived default for anyone wrapping
+Isaac their own way, and the banner says which of the two you got.
+
+The scene opens in **RealTimePathTracing** rather than the saved
+`MinimalRendering`. Minimal does simplified lighting, so the soft sun angle and
+fill dome authored in the scene barely reach it. Measured here, same scene:
+59.6 FPS / GPU 13% minimal, 58.6 FPS / GPU 85% path-traced — one frame, because
+the work moves onto a GPU that was idle while the CPU was the bottleneck.
+`TELEOP_RENDER=keep` leaves the scene's own setting.
+
+`--no-isaac` is the one to reach for while iterating: Isaac's first boot is
+90-150s and the ROS half restarts in seconds.
+
+It launches Isaac **with the MCP extension** when one is found, because the
+haptics half needs it: `make_contact_plot.py` injects the contact-force plot
+through the extension's TCP socket on 8766, and that injection is also what
+starts the UDP 8770 force stream the R2 rumble reads. No extension means no
+plot *and* no rumble, so the script says so up front rather than letting both
+fail quietly at +12s. Point `MCP_EXT_ROOT` at your checkout if it is not the
+sibling clone `mcp_bridge/` expects.
+
+It waits on Isaac's `/clock` rather than a timer, which only ticks once the
+timeline is actually playing — so reaching the Servo step proves the scene is
+open and stepping, not merely that a process started. Isaac's output goes to
+`/tmp/physx_teleop_isaac.log` and Servo's to `/tmp/physx_teleop_servo.log`;
+both are printed back on failure.
+
+The rest of this section is what that script automates, and is still the way
+to run the halves independently.
+
+### Controls
+
+Press **Options** (the menu button, right of the touchpad) in the sim for the
+diagram below, drawn on the controller itself:
+
+![controller map](controls.png)
+
+Regenerate it with `python3 make_controls_diagram.py` after changing a binding.
+
+Controller art: **PS5 Button Icons and Controls** by Zacksly, licensed
+[CC BY 3.0](http://creativecommons.org/licenses/by/3.0/) — <https://zacksly.itch.io>.
+Vendored unmodified under `third_party/ps5_icons/`; the diagram crops it and adds
+our labels.
+In text:
+
+| control | action |
+|---|---|
+| right stick | move the tool, **relative to the view** |
+| d-pad up/down | move the tool up/down (always world vertical) |
+| d-pad left / right | zoom in / out on the tool tip |
+| left stick | roll / pitch |
+| `L1` / `R1` | yaw - / yaw + |
+| Cross | point tool down |
+| Triangle / Square | faster / slower |
+| `R2` | open / close the gripper (analog) |
+| Create | restart the sim |
+
+Speed starts at its MAXIMUM: 250 mm/s and 57 deg/s, which is what the demo has
+always opened at. Triangle and Square trim it by 1.25x a press, ten presses down
+to 27 mm/s for insertion and stacking. There is no faster setting — the
+constants are the ceiling, not a midpoint.
+
+Each press flashes a bar in the viewport for about a second, showing where you
+are in the range and the speed in mm/s. It draws into the viewport rather than a
+floating window, because Kit hides those in fullscreen, which is how the demo is
+usually run. `SPEED_MAX`, `SPEED_STEP` and `SPEED_NOTCHES` are at the top of
+`physx_tick_teleop.py`; `SPEED_MIN` is derived from them so the range divides
+into whole presses.
+
+A GUI Stop then Play is recovered from automatically; the arm is undrivable for
+about a second afterwards while physics steps and the articulation handle is
+re-attached.
+
+Button numbering is the standard hid-playstation js mapping. On a pad that
+numbers them differently, Options also prints the indices currently held, which
+is enough to re-map the constants at the top of `physx_tick_teleop.py`.
+
+### By hand
+
 Native install. (From a container, `run.sh` runs these launches for you.)
 
 Commands below assume you're **cd'd into this `teleop/` folder** of this
