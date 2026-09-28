@@ -1,24 +1,31 @@
 # Manually-triggered publish of the Robotiq gripper asset to a public Hugging
 # Face *dataset*, from which it can be submitted to the NVIDIA SimReady Catalog
-# (see ci/simready/submit_to_central.sh and docs).
+# (see ci/simready/submit_to_central.sh and ci/simready/README.md).
 #
 # Flow:
-#   1. `validate` GATE  — reuses simready-validate.yml (Robot-Gripper). Publish
+#   1. `validate` GATE — reuses simready-validate.yml (Robot-Gripper). Publish
 #      only runs if this passes. Single source of truth for the pass/fail rule.
-#   2. `publish`        — stages the asset into the layout simready-package needs,
-#      stamps a Robot-Gripper validation result into the root USD, builds the
-#      com.nvidia.simready.packaging.json package, and uploads it to the HF
-#      dataset. Emits the immutable resolve URL (dataset commit SHA) that is later
-#      submitted to SimReady Central.
+#   2. `publish` — builds a self-contained SimReady package that PRESERVES the
+#      asset's variants (PhysX / Newton / compliant / tactile), then uploads it to
+#      the HF dataset and emits the immutable resolve URL.
+#
+# Packaging follows NVIDIA's Runtime-Variants + multi-file model rather than
+# flattening (which would bake a single solver). Concretely:
+#   - stage_package.sh   -> one `simready_usd/` intermediate folder (NP.005),
+#   - colocate_package.py -> flatten the FOLDER layout so every layer sits side by
+#     side with anchored `./` references (no `../` escaping a layer's dir, which
+#     packaging's AA.001 rejects) while keeping all sublayers/payloads/variants,
+#   - simready-package --repo <local-folder> -> the WRAPP flow, which validates
+#     only the declared root (Package-Candidate pre+post) and writes the package
+#     definition + BOM. This needs the `simready-package[publish]` extra (pulls
+#     `ovpackage`, which provides `wrapp`); a local folder repo needs no Nucleus.
 #
 # Requires repo secret HF_TOKEN (a Hugging Face *write* token for the target
-# namespace). A HF dataset (public, license cc-by-4.0 in its card) must exist or
+# namespace). A public HF dataset (license cc-by-4.0 in its card) must exist or
 # be creatable by that token.
 #
-# NOTE: the exact simready-validate/simready-package CLI is exercised for the
-# first time in CI (the toolchain needs Python 3.11/3.12 and is not run locally).
-# Do a `dry_run: true` dispatch first to shake out tool/CLI specifics before a
-# real upload.
+# NOTE: every step is reproduced locally with the real toolchain, but the wired
+# workflow runs in CI for the first time — do a `dry_run: true` dispatch first.
 name: hf-publish
 
 on:
@@ -41,7 +48,7 @@ on:
         description: "SPDX license id; must match the HF dataset card"
         default: cc-by-4.0
       simready_foundation_ref:
-        description: "NVIDIA/simready-foundation commit or tag (spec + packaging config)"
+        description: "NVIDIA/simready-foundation commit or tag (packaging spec)"
         default: v2026.07.1
       dry_run:
         description: "Build + package but DO NOT upload to Hugging Face"
@@ -84,40 +91,32 @@ jobs:
           lfs: true
           path: asset
 
-      - name: Check out SimReady spec + packaging config (NVIDIA/simready-foundation)
+      - name: Check out SimReady packaging spec (NVIDIA/simready-foundation)
         uses: actions/checkout@v4
         with:
           repository: NVIDIA/simready-foundation
           ref: ${{ inputs.simready_foundation_ref }}
           path: simready-foundation
-          # nv_core = the rule/feature/profile spec (for the Robot-Gripper stamp);
-          # sample_content = project_config.toml used by simready-package.
-          sparse-checkout: |
-            nv_core
-            sample_content
+          # Only the rule/feature/profile spec is needed; explicit --*-path flags
+          # to simready-package mean the large sample_content is not required.
+          sparse-checkout: nv_core
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install SimReady validator + packager + HF CLI (pinned)
+      - name: Install SimReady packager (with publish extra) + HF CLI
         run: |
           python -m pip install --upgrade pip
-          # Same pinned validator stack as simready-validate.yml so the
-          # Robot-Gripper stamp reproduces the gate's verdict, plus the packager
-          # and Hugging Face client.
+          # The [publish] extra pulls `ovpackage`, which provides the `wrapp`
+          # module the --repo/BOM (root-only validation) flow needs. All public
+          # PyPI; no Omniverse/Nucleus install required for a local-folder repo.
           pip install \
-            simready-validate==2026.7.1 \
-            simready-package \
+            "simready-package[publish]" \
             usd-core==26.8 \
-            omniverse-asset-validator==1.18.0 \
-            omniverse-usd-profiles==1.11.2 \
             numpy==2.5.1 \
             huggingface_hub
-          # usd-validation-nvidia ships the omni.capabilities used to register the
-          # SimReady rules; it must win, so (re)install it LAST (see validate.yml).
-          pip install --force-reinstall --no-deps usd-validation-nvidia==1.22.0
 
       - name: Resolve version (auto-derive if blank; refuse to reuse one)
         run: |
@@ -158,102 +157,69 @@ jobs:
               fh.write(f"VERSION={version}\n")
           PY
 
-      - name: Stage asset into simready-package layout
-        id: stage
+      - name: Build the SimReady package (stage -> co-locate -> --repo package)
         run: |
-          STAGED=$(bash "$GITHUB_WORKSPACE/asset/ci/simready/stage_package.sh" \
-            "$GITHUB_WORKSPACE/asset/${{ inputs.asset_dir }}" \
-            "$ROOT_USD" \
-            "$GITHUB_WORKSPACE/staged")
-          echo "staged=$STAGED" >> "$GITHUB_OUTPUT"
-          echo "Staged package at: $STAGED"
-
-      - name: Stamp Robot-Gripper validation into the staged root USD
-        run: |
-          # Mirror simready-validate.yml's plain-PyPI Robot-Gripper invocation,
-          # but target the STAGED root USD and write the stamp into it. The stamp
-          # is what we rely on for SimReady Central, so a failed/missing stamp
-          # must fail the job rather than upload an unstamped package.
+          set -euo pipefail
+          CI_DIR="$GITHUB_WORKSPACE/asset/ci/simready"
+          LOGICAL="$(basename '${{ inputs.asset_dir }}')"
+          ROOT_NAME="sm_${LOGICAL}_01.usd"
           TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
-          PROFILE="Robot-Gripper"
-          PROFILE_FILE="$TC/profiles/$(printf '%s' "$PROFILE" | tr 'A-Z-' 'a-z_').toml"
-          STAGED_ROOT="${{ steps.stage.outputs.staged }}/simready_usd/$ROOT_USD"
-          COMMON=(--rules-path "$TC/capabilities"
-                  --features-path "$TC/features"
-                  --profiles-path "$PROFILE_FILE"
-                  --profile "$PROFILE" --version "2.1.0")
 
-          rm -f stamp-result.json
-          # Warm-up run absorbs the validator's first-run capability-enum
-          # generation (see simready-validate.yml); its output is ignored.
-          simready-validate "${COMMON[@]}" "$STAGED_ROOT" >/dev/null 2>&1 || true
+          # 1. one intermediate folder (NP.005)
+          STAGED=$(bash "$CI_DIR/stage_package.sh" \
+            "$GITHUB_WORKSPACE/asset/${{ inputs.asset_dir }}" "$ROOT_USD" "$GITHUB_WORKSPACE/staged")
 
-          # Real run: stamp into the USD and emit the report.
-          simready-validate "${COMMON[@]}" --stamp-asset-validation \
-            --output stamp-result.json "$STAGED_ROOT" 2>stamp.log || true
+          # 2. flat, self-contained ./ layout that keeps every layer + variant
+          DELIV_ROOT="$GITHUB_WORKSPACE/deliverable"
+          LOGICAL_DIR=$(python3 "$CI_DIR/colocate_package.py" \
+            --src-root "$STAGED/simready_usd/$ROOT_USD" \
+            --out "$DELIV_ROOT" --asset-name "$LOGICAL" \
+            --thumbnail "$STAGED/simready_usd/.thumbs/256x256/$ROOT_USD.png" \
+            --root-usd-name "$ROOT_NAME")
 
-          if [ ! -f stamp-result.json ]; then
-            echo "::error::stamping produced no stamp-result.json"
-            tail -n 40 stamp.log || true
-            exit 1
-          fi
-          # Gate on blocking failures AND regressions vs the baseline, but ACCEPT
-          # improvements: the baseline (ci/simready/expected.json) is captured from
-          # the flat repo asset, while this validates the STAGED package, which
-          # legitimately improves on it (e.g. passes NP.005 via the required
-          # simready_usd/ intermediate folder). --allow-improvements keeps that gain
-          # from failing the job while still catching any regression.
-          python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" \
-            --allow-improvements stamp-result.json
-
-      - name: Build SimReady package (com.nvidia.simready.packaging.json)
-        run: |
+          # 3. WRAPP package into a local-folder repo (root-only Package-Candidate
+          #    pre+post validation; writes the package def + BOM).
+          NAME="simready.hf.${DATASET//\//.}.${LOGICAL}"
+          REPO="$GITHUB_WORKSPACE/wrapp-repo"
           simready-package \
-            --project-config "$GITHUB_WORKSPACE/simready-foundation/sample_content/project_config.toml" \
-            --name "simready.hf.${DATASET/\//.}.$(basename '${{ inputs.asset_dir }}')" \
-            --version "$VERSION" \
-            --license "$LICENSE_ID" \
-            --root-usd "simready_usd/$ROOT_USD" \
-            "${{ steps.stage.outputs.staged }}"
-          PKG_JSON="${{ steps.stage.outputs.staged }}/com.nvidia.simready.packaging.json"
-          if [ ! -f "$PKG_JSON" ]; then
-            echo "::error::simready-package did not produce $PKG_JSON"
-            exit 1
-          fi
-          echo "### Package definition" >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          cat "$PKG_JSON" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+            --rules-path "$TC/capabilities" \
+            --features-path "$TC/features" \
+            --profiles-path "$TC/profiles/package_profiles.toml" \
+            --name "$NAME" --version "$VERSION" --license "$LICENSE_ID" \
+            --root-usd "simready_usd/$ROOT_NAME" \
+            --repo "$REPO" "$LOGICAL_DIR"
+
+          PKG_DIR="$REPO/.packages/$NAME/$VERSION"
+          PKG_JSON="$PKG_DIR/com.nvidia.simready.packaging.json"
+          [ -f "$PKG_JSON" ] || { echo "::error::simready-package produced no $PKG_JSON"; exit 1; }
+          # The .wrapp bundle is the archived form; the HF folder ships the
+          # unpacked package (def + .metadata/ + simready_usd/), like NVIDIA's
+          # on-disk reference packages. Drop the bundle before upload.
+          find "$PKG_DIR" -maxdepth 1 -name '*.wrapp' -delete
+          echo "PKG_DIR=$PKG_DIR" >> "$GITHUB_ENV"
+          echo "LOGICAL=$LOGICAL" >> "$GITHUB_ENV"
+          {
+            echo "### Package definition"
+            echo '```json'; cat "$PKG_JSON"; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload to Hugging Face dataset
         if: ${{ !inputs.dry_run }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
-            echo "::error::HF_TOKEN secret is not set"
-            exit 1
+            echo "::error::HF_TOKEN secret is not set"; exit 1
           fi
-          LOGICAL="$(basename '${{ inputs.asset_dir }}')"
-          # --delete replaces the folder contents (no-op on first upload, required
-          # on update). Two things must both be right for deletion to work
-          # (verified empirically against huggingface_hub 1.9.0):
-          #   1. path_in_repo must have NO leading "./". Uploads normalize "./x"
-          #      to "x", but the delete step does NOT: it strips the raw
-          #      "./$LOGICAL/" prefix from the remote paths (stored as "$LOGICAL/..."),
-          #      never matches, and deletes nothing. Pass "$LOGICAL", not "./$LOGICAL".
-          #   2. the pattern is matched RELATIVE to path_in_repo, so use "*"
-          #      (fnmatch "*" spans "/"; .gitattributes is protected). "$LOGICAL/*"
-          #      would match nothing.
-          OUT=$(hf upload "$DATASET" "${{ steps.stage.outputs.staged }}" "$LOGICAL" \
+          # Delete patterns are matched relative to path_in_repo, and a leading
+          # "./" breaks the match, so pass "$LOGICAL" (no ./) + --delete "*" to
+          # replace the folder contents on update (.gitattributes is protected).
+          OUT=$(hf upload "$DATASET" "$PKG_DIR" "$LOGICAL" \
             --repo-type dataset --delete "*" 2>&1 | tee /dev/stderr)
           COMMIT_URL=$(printf '%s\n' "$OUT" | grep -oE 'https://huggingface.co/datasets/[^ ]+/commit/[0-9a-f]+' | tail -n1)
           SHA=$(printf '%s' "$COMMIT_URL" | grep -oE '[0-9a-f]{40}$')
-          if [ -z "$SHA" ]; then
-            echo "::error::could not parse commit SHA from hf upload output"
-            exit 1
-          fi
+          [ -n "$SHA" ] || { echo "::error::could not parse commit SHA from hf upload output"; exit 1; }
           echo "SHA=$SHA" >> "$GITHUB_ENV"
           RESOLVE_URL="https://huggingface.co/datasets/$DATASET/resolve/$SHA/$LOGICAL/com.nvidia.simready.packaging.json"
-          printf '%s\n' "$RESOLVE_URL" > submission-url.txt
+          printf '%s\n' "$RESOLVE_URL" > "$GITHUB_WORKSPACE/submission-url.txt"
           {
             echo "## ✅ Published to Hugging Face"
             echo ""
@@ -261,11 +227,9 @@ jobs:
             echo "**Version:** \`$VERSION\`  "
             echo "**Commit:** \`$SHA\`"
             echo ""
-            echo "**Immutable submission URL** (paste into \`submissions/$DATASET\` for SimReady Central):"
+            echo "**Immutable submission URL** (for \`submissions/$DATASET\` in SimReady Central):"
             echo ""
-            echo "\`\`\`"
-            echo "$RESOLVE_URL"
-            echo "\`\`\`"
+            echo '```'; echo "$RESOLVE_URL"; echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Tag the published version on the dataset
@@ -286,16 +250,15 @@ jobs:
         if: ${{ inputs.dry_run }}
         run: |
           echo "## 🟡 Dry run — nothing uploaded" >> "$GITHUB_STEP_SUMMARY"
-          echo "Resolved version \`$VERSION\` was staged and built but not pushed to Hugging Face." >> "$GITHUB_STEP_SUMMARY"
+          echo "Resolved version \`$VERSION\` was built + validated but not pushed to Hugging Face." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload artifacts (package + submission URL)
+      - name: Upload artifacts (package def + submission URL)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hf-publish-${{ env.VERSION || github.run_id }}
           path: |
-            ${{ steps.stage.outputs.staged }}/com.nvidia.simready.packaging.json
+            ${{ env.PKG_DIR }}/com.nvidia.simready.packaging.json
+            ${{ env.PKG_DIR }}/.metadata/
             submission-url.txt
-            stamp-result.json
-            stamp.log
           if-no-files-found: ignore
