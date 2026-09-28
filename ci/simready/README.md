@@ -37,8 +37,10 @@ ci/simready/submit_to_central.sh          PR to NVIDIA-Omniverse/simready-centra
 
 Run the **`hf-publish`** workflow from the Actions tab (`workflow_dispatch`).
 
-- `version` — **required**, format `YYYY.MM.DD_NN` (e.g. `2026.09.25_00`). Each
-  publish must use a *new* version; NVIDIA pins by version + immutable commit SHA.
+- `version` — **optional**. Leave blank and the job derives today's date plus the
+  next `_NN` (from the dataset's existing version tags), e.g. `2026.09.28_00`.
+  Provide one (`YYYY.MM.DD_NN`) only to override. Either way the job refuses to
+  reuse an already-published version; NVIDIA pins by version + immutable commit SHA.
 - Other inputs default to the 2F-85 / `Robotiq-Official/simready-assets`.
 - Tick **`dry_run`** first: it stages, stamps, and packages without uploading, so
   you can confirm the toolchain and the package definition before a real push.
@@ -77,3 +79,6 @@ Use `--no-pr` to prepare the branch/commit without pushing.
 - **Immutable pin:** the Hugging Face dataset commit SHA in the `resolve/<sha>/`
   URL. That URL is what SimReady Central records; publishing a change means a new
   version + new SHA, never reusing an old one.
+- **Version registry:** each publish creates a tag `<version>` on the dataset.
+  That's how `hf-publish` auto-derives the next `_NN` and refuses to reuse a
+  version. NVIDIA ignores these tags (it pins by SHA); they're just our bookkeeping.

@@ -25,8 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Package version, format YYYY.MM.DD_NN (e.g. 2026.09.25_00)"
-        required: true
+        description: "Package version YYYY.MM.DD_NN. Leave BLANK to auto-derive today's date + next _NN."
+        required: false
+        default: ""
       dataset:
         description: "HF dataset, <namespace>/<name> (no dots in either)"
         default: Robotiq-Official/simready-assets
@@ -64,17 +65,14 @@ jobs:
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       DATASET: ${{ inputs.dataset }}
-      VERSION: ${{ inputs.version }}
+      INPUT_VERSION: ${{ inputs.version }}
       ROOT_USD: ${{ inputs.root_usd }}
       LICENSE_ID: ${{ inputs.license_id }}
     steps:
-      - name: Validate version format (YYYY.MM.DD_NN)
+      - name: Validate dataset name (no dots)
         run: |
-          if ! printf '%s' "$VERSION" | grep -qE '^[0-9]{4}\.[0-9]{2}\.[0-9]{2}_[0-9]{2}$'; then
-            echo "::error::version '$VERSION' is not in the required format YYYY.MM.DD_NN (e.g. 2026.09.25_00)"
-            exit 1
-          fi
-          # SimReady requires no dots in namespace or dataset name.
+          # SimReady requires no dots in namespace or dataset name (keeps the
+          # package id unambiguous). Version format is checked in "Resolve version".
           if printf '%s' "$DATASET" | awk -F/ '{exit !($1 ~ /\./ || $2 ~ /\./)}'; then
             echo "::error::HF namespace/dataset must not contain a dot: $DATASET"
             exit 1
@@ -120,6 +118,45 @@ jobs:
           # usd-validation-nvidia ships the omni.capabilities used to register the
           # SimReady rules; it must win, so (re)install it LAST (see validate.yml).
           pip install --force-reinstall --no-deps usd-validation-nvidia==1.22.0
+
+      - name: Resolve version (auto-derive if blank; refuse to reuse one)
+        run: |
+          # Existing published versions are tracked as tags on the dataset (NVIDIA
+          # pins by commit SHA and ignores tags, so this is a free, reliable
+          # registry that doesn't depend on the package-json schema). A blank
+          # input auto-derives today's date + the next _NN; a provided value is
+          # used verbatim. Either way, an already-published version is rejected.
+          python3 - <<'PY'
+          import datetime, os, re, sys
+          from huggingface_hub import HfApi
+
+          dataset = os.environ["DATASET"]
+          inp = (os.environ.get("INPUT_VERSION") or "").strip()
+          api = HfApi(token=os.environ.get("HF_TOKEN") or None)
+          try:
+              tags = [t.name for t in api.list_repo_refs(dataset, repo_type="dataset").tags]
+          except Exception as e:
+              print(f"::warning::could not list dataset tags ({e}); assuming none")
+              tags = []
+
+          fmt = re.compile(r"^\d{4}\.\d{2}\.\d{2}_\d{2}$")
+          if inp:
+              if not fmt.match(inp):
+                  sys.exit(f"::error::version '{inp}' is not in the format YYYY.MM.DD_NN")
+              version = inp
+          else:
+              today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y.%m.%d")
+              same_day = [t for t in tags if t.startswith(today + "_")]
+              nn = max((int(t.rsplit("_", 1)[-1]) for t in same_day), default=-1) + 1
+              version = f"{today}_{nn:02d}"
+
+          if version in tags:
+              sys.exit(f"::error::version '{version}' is already published (tag exists). Bump _NN or pick a new version.")
+
+          print(f"Resolved version: {version}")
+          with open(os.environ["GITHUB_ENV"], "a") as fh:
+              fh.write(f"VERSION={version}\n")
+          PY
 
       - name: Stage asset into simready-package layout
         id: stage
@@ -209,6 +246,7 @@ jobs:
             echo "::error::could not parse commit SHA from hf upload output"
             exit 1
           fi
+          echo "SHA=$SHA" >> "$GITHUB_ENV"
           RESOLVE_URL="https://huggingface.co/datasets/$DATASET/resolve/$SHA/$LOGICAL/com.nvidia.simready.packaging.json"
           printf '%s\n' "$RESOLVE_URL" > submission-url.txt
           {
@@ -225,17 +263,31 @@ jobs:
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Tag the published version on the dataset
+        if: ${{ !inputs.dry_run }}
+        run: |
+          # Record the version as a dataset tag so future runs auto-increment _NN
+          # and refuse to reuse it. Points at the commit we just created.
+          python3 - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.create_tag(os.environ["DATASET"], repo_type="dataset",
+                         tag=os.environ["VERSION"], revision=os.environ["SHA"])
+          print(f"Tagged {os.environ['VERSION']} at {os.environ['SHA']}")
+          PY
+
       - name: Dry-run notice
         if: ${{ inputs.dry_run }}
         run: |
           echo "## 🟡 Dry run — nothing uploaded" >> "$GITHUB_STEP_SUMMARY"
-          echo "Package was staged and built but not pushed to Hugging Face." >> "$GITHUB_STEP_SUMMARY"
+          echo "Resolved version \`$VERSION\` was staged and built but not pushed to Hugging Face." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifacts (package + submission URL)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hf-publish-${{ inputs.version }}
+          name: hf-publish-${{ env.VERSION || github.run_id }}
           path: |
             ${{ steps.stage.outputs.staged }}/com.nvidia.simready.packaging.json
             submission-url.txt
