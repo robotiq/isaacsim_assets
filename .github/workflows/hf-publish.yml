@@ -15,10 +15,12 @@
 #   - colocate_package.py -> flatten the FOLDER layout so every layer sits side by
 #     side with anchored `./` references (no `../` escaping a layer's dir, which
 #     packaging's AA.001 rejects) while keeping all sublayers/payloads/variants,
-#   - simready-package --repo <local-folder> -> the WRAPP flow, which validates
-#     only the declared root (Package-Candidate pre+post) and writes the package
-#     definition + BOM. This needs the `simready-package[publish]` extra (pulls
-#     `ovpackage`, which provides `wrapp`); a local folder repo needs no Nucleus.
+#   - simready-validate --profile Package-Candidate -> validates the interface USD
+#     only (sublayers are dependencies), the packaging conformance gate,
+#   - simready-package --skip-*-validation -> writes the package definition (nobom
+#     form, like NVIDIA's apple_a01_nobom). We avoid the WRAPP `--repo` flow: its
+#     freeze (ovpackage/omni.wrapp) crashes on the CI runner with an asyncio
+#     "Semaphore bound to a different event loop" error.
 #
 # Requires repo secret HF_TOKEN (a Hugging Face *write* token for the target
 # namespace). A public HF dataset (license cc-by-4.0 in its card) must exist or
@@ -101,24 +103,22 @@ jobs:
           # to simready-package mean the large sample_content is not required.
           sparse-checkout: nv_core
 
-      - name: Set up Python 3.12.13
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          # Pinned to an exact patch. simready-package[publish]'s WRAPP freeze
-          # (ovpackage/omni.wrapp 0.2.1) fails on Python 3.12.14 with
-          # "Semaphore is bound to a different event loop" — an asyncio
-          # loop-binding regression in that patch. 3.12.13 works (verified). Bump
-          # only after confirming the WRAPP freeze still passes.
-          python-version: "3.12.13"
+          python-version: "3.12"
 
-      - name: Install SimReady packager (with publish extra) + HF CLI
+      - name: Install SimReady packager + validator + HF CLI
         run: |
           python -m pip install --upgrade pip
-          # The [publish] extra pulls `ovpackage`, which provides the `wrapp`
-          # module the --repo/BOM (root-only validation) flow needs. All public
-          # PyPI; no Omniverse/Nucleus install required for a local-folder repo.
+          # Plain simready-package (pulls simready-validate). We deliberately do
+          # NOT install the [publish] extra: its WRAPP freeze (ovpackage/omni.wrapp
+          # 0.2.1) crashes on the CI runner with "Semaphore is bound to a different
+          # event loop". Instead we validate the root with simready-validate and
+          # create the package definition with --skip-*-validation (see below), so
+          # `wrapp` is never used.
           pip install \
-            "simready-package[publish]" \
+            simready-package \
             usd-core==26.8 \
             numpy==2.5.1 \
             huggingface_hub
@@ -162,7 +162,7 @@ jobs:
               fh.write(f"VERSION={version}\n")
           PY
 
-      - name: Build the SimReady package (stage -> co-locate -> --repo package)
+      - name: Build the SimReady package (stage -> co-locate -> validate -> package def)
         run: |
           set -euo pipefail
           CI_DIR="$GITHUB_WORKSPACE/asset/ci/simready"
@@ -175,33 +175,51 @@ jobs:
             "$GITHUB_WORKSPACE/asset/${{ inputs.asset_dir }}" "$ROOT_USD" "$GITHUB_WORKSPACE/staged")
 
           # 2. flat, self-contained ./ layout that keeps every layer + variant
-          DELIV_ROOT="$GITHUB_WORKSPACE/deliverable"
           LOGICAL_DIR=$(python3 "$CI_DIR/colocate_package.py" \
             --src-root "$STAGED/simready_usd/$ROOT_USD" \
-            --out "$DELIV_ROOT" --asset-name "$LOGICAL" \
+            --out "$GITHUB_WORKSPACE/deliverable" --asset-name "$LOGICAL" \
             --thumbnail "$STAGED/simready_usd/.thumbs/256x256/$ROOT_USD.png" \
             --root-usd-name "$ROOT_NAME")
+          ROOT="$LOGICAL_DIR/simready_usd/$ROOT_NAME"
 
-          # 3. WRAPP package into a local-folder repo (root-only Package-Candidate
-          #    pre+post validation; writes the package def + BOM).
-          NAME="simready.hf.${DATASET//\//.}.${LOGICAL}"
-          REPO="$GITHUB_WORKSPACE/wrapp-repo"
-          simready-package \
-            --rules-path "$TC/capabilities" \
-            --features-path "$TC/features" \
+          # 3. Root-only Package-Candidate validation (the packaging conformance
+          #    gate). Runs simready-validate on the interface USD only — sublayers
+          #    are dependencies, not standalone assets. No wrapp involved.
+          simready-validate \
+            --rules-path "$TC/capabilities" --features-path "$TC/features" \
             --profiles-path "$TC/profiles/package_profiles.toml" \
-            --name "$NAME" --version "$VERSION" --license "$LICENSE_ID" \
-            --root-usd "simready_usd/$ROOT_NAME" \
-            --repo "$REPO" "$LOGICAL_DIR"
+            --profile Package-Candidate --output pkgval.json "$ROOT" 2>pkgval.log || true
+          python3 - <<'PY'
+          import json, sys
+          try:
+              data = json.load(open("pkgval.json"))
+          except Exception as e:
+              sys.exit(f"::error::Package-Candidate validation produced no results.json ({e})")
+          info = next(iter(data.values()))
+          feats = info.get("features_summary", {})
+          if not feats:
+              sys.exit("::error::Package-Candidate validation registered no features")
+          blocking = {n: f.get("failing requirements")
+                      for n, f in feats.items()
+                      if (f.get("failing requirements") or "[]") != "[]"}
+          print(f"Package-Candidate features: {sorted(feats)}")
+          if blocking:
+              sys.exit(f"::error::Package-Candidate blocking failures: {blocking}")
+          print("Package-Candidate: PASSED (root-only)")
+          PY
 
-          PKG_DIR="$REPO/.packages/$NAME/$VERSION"
-          PKG_JSON="$PKG_DIR/com.nvidia.simready.packaging.json"
+          # 4. Write the package definition (nobom form, like NVIDIA's
+          #    apple_a01_nobom). --skip-*-validation avoids the plain flow's
+          #    every-file validation AND the wrapp freeze; conformance is already
+          #    covered by step 3.
+          NAME="simready.hf.${DATASET//\//.}.${LOGICAL}"
+          simready-package --skip-pre-validation --skip-post-validation \
+            --name "$NAME" --version "$VERSION" --license "$LICENSE_ID" \
+            --root-usd "simready_usd/$ROOT_NAME" "$LOGICAL_DIR"
+
+          PKG_JSON="$LOGICAL_DIR/com.nvidia.simready.packaging.json"
           [ -f "$PKG_JSON" ] || { echo "::error::simready-package produced no $PKG_JSON"; exit 1; }
-          # The .wrapp bundle is the archived form; the HF folder ships the
-          # unpacked package (def + .metadata/ + simready_usd/), like NVIDIA's
-          # on-disk reference packages. Drop the bundle before upload.
-          find "$PKG_DIR" -maxdepth 1 -name '*.wrapp' -delete
-          echo "PKG_DIR=$PKG_DIR" >> "$GITHUB_ENV"
+          echo "PKG_DIR=$LOGICAL_DIR" >> "$GITHUB_ENV"
           echo "LOGICAL=$LOGICAL" >> "$GITHUB_ENV"
           {
             echo "### Package definition"
@@ -264,6 +282,6 @@ jobs:
           name: hf-publish-${{ env.VERSION || github.run_id }}
           path: |
             ${{ env.PKG_DIR }}/com.nvidia.simready.packaging.json
-            ${{ env.PKG_DIR }}/.metadata/
+            pkgval.json
             submission-url.txt
           if-no-files-found: ignore
