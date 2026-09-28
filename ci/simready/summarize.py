@@ -18,12 +18,20 @@ Gating (a "ratchet"):
     undetected. Failing forces the baseline to be updated in the same PR, so it
     always tracks reality and the ratchet can only move up.
 
+    Pass --allow-improvements to accept improvements without failing (they are
+    still reported). Use this when comparing a *different* asset against the
+    baseline — e.g. the hf-publish stamp gate validates the staged package,
+    which legitimately improves on the flat repo asset (it passes NP.005) — so
+    a gain there is expected and must not be treated as a stale baseline.
+    Blocking failures and regressions still fail.
+
 Regenerate the baseline after an intended change:
     python3 ci/simready/summarize.py --update results.json
 
 Usage:
-    summarize.py [results.json]            # render + gate against baseline
-    summarize.py --update [results.json]   # (re)write the baseline from results
+    summarize.py [results.json]                       # render + gate against baseline
+    summarize.py --allow-improvements [results.json]  # ... but don't fail on improvements
+    summarize.py --update [results.json]              # (re)write the baseline from results
 """
 import ast
 import json
@@ -91,9 +99,11 @@ def _emit(lines, gh_key=None):
 
 
 def main() -> int:
-    args = [a for a in sys.argv[1:] if a != "--update"]
+    flags = {"--update", "--allow-improvements"}
+    args = [a for a in sys.argv[1:] if a not in flags]
     if "--update" in sys.argv:
         return _write_baseline(args[0] if args else "results.json")
+    allow_improvements = "--allow-improvements" in sys.argv
 
     path = args[0] if args else "results.json"
     asset, info = _load_results(path)
@@ -129,10 +139,11 @@ def main() -> int:
                 improvements[name] = fixed
 
     # ---- verdict ----
-    # Blocking failures and regressions fail. Improvements also fail (until the
-    # baseline is refreshed) so an un-recorded gain can't leave the floor stale
-    # and let a later regression slip through undetected.
-    ok = not blocking and not regressions and not improvements
+    # Blocking failures and regressions always fail. Improvements also fail (until
+    # the baseline is refreshed) so an un-recorded gain can't leave the floor stale
+    # and let a later regression slip through undetected -- UNLESS --allow-improvements
+    # is set (comparing a different asset, where a gain is expected).
+    ok = not blocking and not regressions and (allow_improvements or not improvements)
     n_clean = sum(1 for n, r in cur.items() if not r["blocking"] and not r["optional"])
 
     lines = [
@@ -184,7 +195,15 @@ def main() -> int:
         for name, reqs in sorted(regressions.items()):
             print(f"::error title=SimReady regression::{name}: {', '.join(reqs)} regressed vs baseline")
 
-    if improvements:
+    if improvements and allow_improvements:
+        lines += ["### ⬆️ Improvements vs baseline (accepted)", ""]
+        for name, reqs in sorted(improvements.items()):
+            lines.append(f"- `{name}`: now passing " + ", ".join(f"`{r}`" for r in reqs))
+        lines += ["", "These pass beyond the baseline. Accepted (`--allow-improvements`) because "
+                  "this compares a different asset than the baseline was captured from.", ""]
+        for name, reqs in sorted(improvements.items()):
+            print(f"::notice title=SimReady improvement::{name}: {', '.join(reqs)} now passes (accepted)")
+    elif improvements:
         lines += ["### ⬆️ Improvements vs baseline — refresh the baseline to accept them", ""]
         for name, reqs in sorted(improvements.items()):
             lines.append(f"- `{name}`: now passing " + ", ".join(f"`{r}`" for r in reqs))

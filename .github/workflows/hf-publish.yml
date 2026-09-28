@@ -197,9 +197,14 @@ jobs:
             tail -n 40 stamp.log || true
             exit 1
           fi
-          # Gate on blocking failures with the same policy as the validate job.
-          # summarize.py exits non-zero on any blocking failure -> fails the job.
-          python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" stamp-result.json
+          # Gate on blocking failures AND regressions vs the baseline, but ACCEPT
+          # improvements: the baseline (ci/simready/expected.json) is captured from
+          # the flat repo asset, while this validates the STAGED package, which
+          # legitimately improves on it (e.g. passes NP.005 via the required
+          # simready_usd/ intermediate folder). --allow-improvements keeps that gain
+          # from failing the job while still catching any regression.
+          python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" \
+            --allow-improvements stamp-result.json
 
       - name: Build SimReady package (com.nvidia.simready.packaging.json)
         run: |
