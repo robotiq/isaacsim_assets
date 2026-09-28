@@ -5,8 +5,9 @@ public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 
 | File | Role |
 |---|---|
-| `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates on **blocking** failures only. |
-| `stage_package.sh` | Reshapes the flat repo asset into the `simready-package` layout (`<asset>/simready_usd/…`). |
+| `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates on **blocking** failures (+ baseline ratchet). |
+| `stage_package.sh` | Adds the one intermediate folder `simready-package` requires (`<asset>/simready_usd/…`, NP.005). |
+| `colocate_package.py` | Flattens the *folder* layout to a self-contained flat `simready_usd/` with anchored `./` refs, **keeping all sublayers/payloads and both variant sets** (no `../`, which packaging's AA.001 rejects). Not a stage flatten. |
 | `submit_to_central.sh` | Stage 2 — opens the SimReady Central PR from an immutable HF URL. Run locally. |
 
 ## Pipeline overview
@@ -15,11 +16,31 @@ public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 .github/workflows/simready-validate.yml   Robot-Gripper conformance (manual + reusable)
                     │  workflow_call (gate)
                     ▼
-.github/workflows/hf-publish.yml          stage → stamp → package → upload to HF dataset
+.github/workflows/hf-publish.yml          stage → co-locate → package (--repo, WRAPP) → upload
                     │  emits immutable resolve URL
                     ▼
 ci/simready/submit_to_central.sh          PR to NVIDIA-Omniverse/simready-central (local)
 ```
+
+## How packaging preserves the variants
+
+`simready-package`'s Package-Candidate validation rejects USD refs that use `../`
+to escape a layer's own directory (AA.001), and — in the plain local flow — it
+validates *every* USD file as a standalone asset (so multi-layer assets fail on
+their sublayers). The fix is not to flatten the asset (that bakes a single
+solver) but to match NVIDIA's reference package shape:
+
+- **`simready-package[publish]`** — the `publish` extra pulls `ovpackage`, which
+  provides the `wrapp` module. That unlocks the `--repo` flow, which validates
+  only the declared **root** (Package-Candidate pre+post) and treats sublayers as
+  dependencies. A **local folder** repo works — no Omniverse/Nucleus needed.
+- **`colocate_package.py`** — co-locates every layer into one flat `simready_usd/`
+  with `./` references, so nothing uses `../`. All variant payloads
+  (PhysX/Newton/compliant/tactile) are copied and both `Physics` and `Fingertip`
+  variant sets survive.
+
+The uploaded HF folder is the unpacked package: `com.nvidia.simready.packaging.json`
++ `.metadata/` (BOM, conformance) + `simready_usd/`.
 
 ## One-time setup
 
@@ -42,20 +63,20 @@ Run the **`hf-publish`** workflow from the Actions tab (`workflow_dispatch`).
   Provide one (`YYYY.MM.DD_NN`) only to override. Either way the job refuses to
   reuse an already-published version; NVIDIA pins by version + immutable commit SHA.
 - Other inputs default to the 2F-85 / `Robotiq-Official/simready-assets`.
-- Tick **`dry_run`** first: it stages, stamps, and packages without uploading, so
-  you can confirm the toolchain and the package definition before a real push.
+- Tick **`dry_run`** first: it builds + validates the package without uploading, so
+  you can confirm the package definition before a real push.
 
 The job:
 1. **Gates** on `simready-validate` (Robot-Gripper). No pass → no publish.
-2. Stages the asset (`stage_package.sh`), **stamps** a Robot-Gripper validation
-   result into the staged root USD, and builds `com.nvidia.simready.packaging.json`.
-3. `hf upload … --repo-type dataset --delete` into the `Robotiq_2F_85/` folder,
-   then prints the **immutable submission URL** to the job summary and saves it as
-   the `submission-url.txt` artifact.
+2. Builds the package: `stage_package.sh` → `colocate_package.py` →
+   `simready-package --repo <local>` (Package-Candidate pre+post validation, BOM).
+3. `hf upload … --repo-type dataset --delete` the unpacked package into the
+   `Robotiq_2F_85/` folder, then prints the **immutable submission URL** to the job
+   summary and saves it as the `submission-url.txt` artifact.
 
-> First real run: the `simready-validate`/`simready-package` CLI is exercised in
-> CI (the toolchain needs Python 3.11/3.12 and isn't run locally). Use `dry_run`
-> to shake out any CLI/version specifics before uploading.
+> First CI run: each step is proven locally with the real toolchain (Python 3.12),
+> but the wired workflow runs in CI for the first time — use `dry_run` to shake out
+> any environment specifics before uploading.
 
 ## Stage 2 — submit to SimReady Central (local)
 
