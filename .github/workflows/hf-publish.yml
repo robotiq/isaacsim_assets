@@ -101,10 +101,15 @@ jobs:
           # to simready-package mean the large sample_content is not required.
           sparse-checkout: nv_core
 
-      - name: Set up Python 3.12
+      - name: Set up Python 3.12.13
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          # Pinned to an exact patch. simready-package[publish]'s WRAPP freeze
+          # (ovpackage/omni.wrapp 0.2.1) fails on Python 3.12.14 with
+          # "Semaphore is bound to a different event loop" — an asyncio
+          # loop-binding regression in that patch. 3.12.13 works (verified). Bump
+          # only after confirming the WRAPP freeze still passes.
+          python-version: "3.12.13"
 
       - name: Install SimReady packager (with publish extra) + HF CLI
         run: |
