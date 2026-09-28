@@ -56,6 +56,7 @@ if [[ ! "$URL" =~ $re ]]; then
 fi
 NAMESPACE="${BASH_REMATCH[1]}"
 DATASET="${BASH_REMATCH[2]}"
+SHA="${BASH_REMATCH[3]}"
 ASSET="${BASH_REMATCH[4]}"
 
 if [ ! -d "$CENTRAL/.git" ] || [ ! -f "$CENTRAL/docs/oem-asset-submission-guide.md" ]; then
@@ -64,7 +65,9 @@ if [ ! -d "$CENTRAL/.git" ] || [ ! -f "$CENTRAL/docs/oem-asset-submission-guide.
 fi
 
 SUB_REL="submissions/$NAMESPACE/$DATASET"
-BRANCH="submit-$NAMESPACE-$DATASET"
+# Unique per published revision (the HF commit SHA) so each submission gets its
+# own branch/PR rather than piling onto a stale, possibly-merged branch.
+BRANCH="submit-$NAMESPACE-$DATASET-${SHA:0:12}"
 
 echo "Namespace/dataset: $NAMESPACE/$DATASET"
 echo "Asset:             $ASSET"
@@ -75,7 +78,9 @@ echo
 cd "$CENTRAL"
 git switch main
 git pull --ff-only
-git switch -c "$BRANCH" 2>/dev/null || git switch "$BRANCH"
+# -C (re)creates the branch from the freshly-pulled main, so a re-run never
+# builds on stale history.
+git switch -C "$BRANCH"
 
 mkdir -p "$(dirname "$SUB_REL")"
 touch "$SUB_REL"
@@ -101,8 +106,15 @@ if [ -z "$DESCRIPTION" ]; then
 fi
 
 git add "$SUB_REL"
-git commit -s -m "Submit packages from $NAMESPACE/$DATASET" \
-  -m "Adds $ASSET ($NAMESPACE/$DATASET) at an immutable Hugging Face commit."
+# Skip the commit when nothing is staged (e.g. a re-run where the URL is already
+# in main, or the commit already exists) so the script can still proceed to push
+# and open/refresh the PR instead of aborting under `set -e`.
+if git diff --cached --quiet; then
+  echo "No staged changes — skipping commit; continuing to push/PR."
+else
+  git commit -s -m "Submit packages from $NAMESPACE/$DATASET" \
+    -m "Adds $ASSET ($NAMESPACE/$DATASET) at an immutable Hugging Face commit."
+fi
 
 if [ "$OPEN_PR" -eq 0 ]; then
   echo "Branch and commit prepared. Skipping PR (--no-pr). Push + open it yourself with:"
@@ -111,7 +123,9 @@ if [ "$OPEN_PR" -eq 0 ]; then
   exit 0
 fi
 
-git push -u origin "$BRANCH"
+# --force-with-lease keeps re-runs idempotent (the branch is reset onto main each
+# time) without clobbering unrelated remote work.
+git push -u --force-with-lease origin "$BRANCH"
 gh pr create \
   --repo NVIDIA-Omniverse/simready-central \
   --title "Submit packages from $NAMESPACE/$DATASET" \

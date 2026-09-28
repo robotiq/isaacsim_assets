@@ -134,23 +134,35 @@ jobs:
       - name: Stamp Robot-Gripper validation into the staged root USD
         run: |
           # Mirror simready-validate.yml's plain-PyPI Robot-Gripper invocation,
-          # but target the STAGED root USD and write the stamp into it.
+          # but target the STAGED root USD and write the stamp into it. The stamp
+          # is what we rely on for SimReady Central, so a failed/missing stamp
+          # must fail the job rather than upload an unstamped package.
           TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
           PROFILE="Robot-Gripper"
           PROFILE_FILE="$TC/profiles/$(printf '%s' "$PROFILE" | tr 'A-Z-' 'a-z_').toml"
           STAGED_ROOT="${{ steps.stage.outputs.staged }}/simready_usd/$ROOT_USD"
-          simready-validate \
-            --rules-path "$TC/capabilities" \
-            --features-path "$TC/features" \
-            --profiles-path "$PROFILE_FILE" \
-            --profile "$PROFILE" --version "2.1.0" \
-            --stamp-asset-validation \
-            --output stamp-result.json \
-            "$STAGED_ROOT" 2>stamp.log || true
+          COMMON=(--rules-path "$TC/capabilities"
+                  --features-path "$TC/features"
+                  --profiles-path "$PROFILE_FILE"
+                  --profile "$PROFILE" --version "2.1.0")
+
+          rm -f stamp-result.json
+          # Warm-up run absorbs the validator's first-run capability-enum
+          # generation (see simready-validate.yml); its output is ignored.
+          simready-validate "${COMMON[@]}" "$STAGED_ROOT" >/dev/null 2>&1 || true
+
+          # Real run: stamp into the USD and emit the report.
+          simready-validate "${COMMON[@]}" --stamp-asset-validation \
+            --output stamp-result.json "$STAGED_ROOT" 2>stamp.log || true
+
           if [ ! -f stamp-result.json ]; then
-            echo "::warning::stamping did not produce stamp-result.json; see stamp.log"
-            tail -n 30 stamp.log || true
+            echo "::error::stamping produced no stamp-result.json"
+            tail -n 40 stamp.log || true
+            exit 1
           fi
+          # Gate on blocking failures with the same policy as the validate job.
+          # summarize.py exits non-zero on any blocking failure -> fails the job.
+          python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" stamp-result.json
 
       - name: Build SimReady package (com.nvidia.simready.packaging.json)
         run: |
@@ -180,10 +192,13 @@ jobs:
           fi
           LOGICAL="$(basename '${{ inputs.asset_dir }}')"
           # --delete replaces the folder contents (no-op on first upload, required
-          # on update). The globally-qualified package id stays inside the JSON;
-          # the HF folder is just the short logical name.
+          # on update). Delete patterns are matched RELATIVE to path_in_repo
+          # (./$LOGICAL), so "*" clears the whole asset folder (fnmatch "*" spans
+          # path separators; .gitattributes is protected). A repo-rooted pattern
+          # like "./$LOGICAL/*" would match nothing. The globally-qualified
+          # package id stays inside the JSON; the HF folder is the short name.
           OUT=$(hf upload "$DATASET" "${{ steps.stage.outputs.staged }}" "./$LOGICAL" \
-            --repo-type dataset --delete "./$LOGICAL/*" 2>&1 | tee /dev/stderr)
+            --repo-type dataset --delete "*" 2>&1 | tee /dev/stderr)
           COMMIT_URL=$(printf '%s\n' "$OUT" | grep -oE 'https://huggingface.co/datasets/[^ ]+/commit/[0-9a-f]+' | tail -n1)
           SHA=$(printf '%s' "$COMMIT_URL" | grep -oE '[0-9a-f]{40}$')
           if [ -z "$SHA" ]; then
