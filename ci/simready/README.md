@@ -16,7 +16,7 @@ public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 .github/workflows/simready-validate.yml   Robot-Gripper conformance (manual + reusable)
                     │  workflow_call (gate)
                     ▼
-.github/workflows/hf-publish.yml          stage → co-locate → package (--repo, WRAPP) → upload
+.github/workflows/hf-publish.yml          stage → co-locate → validate (root-only) → package def → upload
                     │  emits immutable resolve URL
                     ▼
 ci/simready/submit_to_central.sh          PR to NVIDIA-Omniverse/simready-central (local)
@@ -30,17 +30,24 @@ validates *every* USD file as a standalone asset (so multi-layer assets fail on
 their sublayers). The fix is not to flatten the asset (that bakes a single
 solver) but to match NVIDIA's reference package shape:
 
-- **`simready-package[publish]`** — the `publish` extra pulls `ovpackage`, which
-  provides the `wrapp` module. That unlocks the `--repo` flow, which validates
-  only the declared **root** (Package-Candidate pre+post) and treats sublayers as
-  dependencies. A **local folder** repo works — no Omniverse/Nucleus needed.
 - **`colocate_package.py`** — co-locates every layer into one flat `simready_usd/`
   with `./` references, so nothing uses `../`. All variant payloads
   (PhysX/Newton/compliant/tactile) are copied and both `Physics` and `Fingertip`
   variant sets survive.
+- **`simready-validate --profile Package-Candidate`** on the interface USD only —
+  the packaging conformance gate. Sublayers are dependencies, not standalone
+  assets, so validating the root is the correct scope (and it passes).
+- **`simready-package --skip-*-validation`** writes the package definition
+  (nobom form, like NVIDIA's `apple_a01_nobom`).
 
-The uploaded HF folder is the unpacked package: `com.nvidia.simready.packaging.json`
-+ `.metadata/` (BOM, conformance) + `simready_usd/`.
+> We avoid `simready-package[publish]`'s WRAPP `--repo` flow: although it does
+> root-only validation, its freeze step (`ovpackage`/`omni.wrapp`) crashes on the
+> CI runner with an asyncio "Semaphore bound to a different event loop" error.
+> Validating with `simready-validate` + writing the def with `--skip-*` gives the
+> same result without `wrapp`.
+
+The uploaded HF folder is the package: `com.nvidia.simready.packaging.json` +
+`simready_usd/` (the co-located asset with its thumbnail).
 
 ## One-time setup
 
