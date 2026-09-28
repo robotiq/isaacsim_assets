@@ -39,7 +39,24 @@ jobs:
     runs-on: ubuntu-latest
     # A hung validator shouldn't hold a runner indefinitely.
     timeout-minutes: 15
+    # statuses:write lets this manual run publish a "validate" commit status onto
+    # the dispatched SHA. That status is what the branch ruleset requires: GitHub
+    # required checks IGNORE check runs from workflow_dispatch events, but they DO
+    # honor commit statuses, so this is how a manual run gates a PR merge.
+    permissions:
+      contents: read
+      statuses: write
     steps:
+      - name: Mark commit status pending
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state=pending \
+            -f context=validate \
+            -f description="SimReady validation running" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
       - name: Check out asset (with LFS)
         uses: actions/checkout@v4
         with:
@@ -109,6 +126,7 @@ jobs:
           fi
 
       - name: Summarize results (table + gate)
+        id: summarize
         if: always()
         # Fails on any blocking failure AND on any optional-feature regression
         # versus the committed baseline (ci/simready/expected.json). After an
@@ -124,3 +142,23 @@ jobs:
           path: |
             results.json
             validation.log
+
+      - name: Report commit status (the required check on PRs)
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The gate lives in the "Summarize results" step; mirror its outcome onto
+          # the commit as the "validate" status the ruleset requires.
+          if [ "${{ steps.summarize.outcome }}" = "success" ]; then
+            state=success
+            desc="SimReady validation passed"
+          else
+            state=failure
+            desc="SimReady validation failed"
+          fi
+          gh api -X POST "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="$state" \
+            -f context=validate \
+            -f description="$desc" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
