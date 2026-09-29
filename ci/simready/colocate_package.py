@@ -21,7 +21,7 @@ left untouched — they resolve at runtime and packaging only warns on them.
 Usage:
   colocate_package.py --src-root <composed-root.usda> --out <dir>
                       --asset-name <name> --thumbnail <png>
-                      [--root-usd-name sm_<name>_01.usd]
+                      [--root-usd-name sm_<name>_01.usda]
 
 Writes <out>/<asset-name>/simready_usd/... and prints that logical-asset dir.
 """
@@ -131,7 +131,11 @@ def main() -> int:
     ap.add_argument("--root-usd-name", default=None,
                     help="root USD filename in the package (default sm_<asset>_01.usd)")
     a = ap.parse_args()
-    root_usd_name = a.root_usd_name or f"sm_{a.asset_name}_01.usd"
+    # .usda (ASCII) matches the co-located content and keeps
+    # simready-validate --stamp-asset-validation's atomic-save happy (a generic
+    # .usd extension makes it pass an invalid format="usd"). .usd/.usda are
+    # interchangeable per the SimReady guide.
+    root_usd_name = a.root_usd_name or f"sm_{a.asset_name}_01.usda"
     colocate(a.src_root, a.out, a.asset_name, a.thumbnail, root_usd_name)
     return 0
 

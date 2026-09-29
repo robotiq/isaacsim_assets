@@ -15,8 +15,12 @@
 #   - colocate_package.py -> flatten the FOLDER layout so every layer sits side by
 #     side with anchored `./` references (no `../` escaping a layer's dir, which
 #     packaging's AA.001 rejects) while keeping all sublayers/payloads/variants,
-#   - simready-validate --profile Package-Candidate -> validates the interface USD
-#     only (sublayers are dependencies), the packaging conformance gate,
+#   - simready-validate --profile Robot-Gripper --stamp-asset-validation ->
+#     validates the interface USD (guide step 1) and writes the feature-level
+#     results into its customLayerData. Robot-Gripper 2.1.0 also requires the
+#     packaging features (FET_031 self-contained / AA.001, FET_033 thumbnail +
+#     metadata / SR.002-003), so this one run is both the asset-conformance stamp
+#     AND the packaging gate,
 #   - simready-package --skip-*-validation -> writes the package definition (nobom
 #     form, like NVIDIA's apple_a01_nobom). We avoid the WRAPP `--repo` flow: its
 #     freeze (ovpackage/omni.wrapp) crashes on the CI runner with an asyncio
@@ -162,12 +166,16 @@ jobs:
               fh.write(f"VERSION={version}\n")
           PY
 
-      - name: Build the SimReady package (stage -> co-locate -> validate -> package def)
+      - name: Build the SimReady package (stage -> co-locate -> stamp -> package def)
         run: |
           set -euo pipefail
           CI_DIR="$GITHUB_WORKSPACE/asset/ci/simready"
           LOGICAL="$(basename '${{ inputs.asset_dir }}')"
-          ROOT_NAME="sm_${LOGICAL}_01.usd"
+          # Root is .usda (ASCII): matches the co-located content, and lets
+          # simready-validate --stamp-asset-validation save the stamp (a generic
+          # .usd extension makes its atomic-save pass format="usd", which USD
+          # rejects). The guide treats .usd/.usda as interchangeable.
+          ROOT_NAME="sm_${LOGICAL}_01.usda"
           TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
 
           # 1. one intermediate folder (NP.005)
@@ -182,36 +190,43 @@ jobs:
             --root-usd-name "$ROOT_NAME")
           ROOT="$LOGICAL_DIR/simready_usd/$ROOT_NAME"
 
-          # 3. Root-only Package-Candidate validation (the packaging conformance
-          #    gate). Runs simready-validate on the interface USD only — sublayers
-          #    are dependencies, not standalone assets. No wrapp involved.
+          # 3. Validate + STAMP against Robot-Gripper (the gripper-appropriate
+          #    profile; the guide's step 1). Robot-Gripper 2.1.0 also requires the
+          #    packaging features FET_031 (self-contained/AA.001) and FET_033
+          #    (thumbnail + nested metadata / SR.002-003), so this one run covers
+          #    both asset conformance AND packaging, and writes the feature-level
+          #    results into the root USD's customLayerData for NVIDIA review.
           simready-validate \
             --rules-path "$TC/capabilities" --features-path "$TC/features" \
-            --profiles-path "$TC/profiles/package_profiles.toml" \
-            --profile Package-Candidate --output pkgval.json "$ROOT" 2>pkgval.log || true
+            --profiles-path "$TC/profiles/robot_gripper.toml" \
+            --profile Robot-Gripper --version 2.1.0 --stamp-asset-validation \
+            --output rgstamp.json "$ROOT" 2>rgstamp.log || true
           python3 - <<'PY'
           import json, sys
           try:
-              data = json.load(open("pkgval.json"))
+              data = json.load(open("rgstamp.json"))
           except Exception as e:
-              sys.exit(f"::error::Package-Candidate validation produced no results.json ({e})")
+              sys.exit(f"::error::Robot-Gripper validation produced no results.json ({e}); see rgstamp.log")
           info = next(iter(data.values()))
           feats = info.get("features_summary", {})
           if not feats:
-              sys.exit("::error::Package-Candidate validation registered no features")
+              sys.exit("::error::Robot-Gripper validation registered no features")
           blocking = {n: f.get("failing requirements")
                       for n, f in feats.items()
                       if (f.get("failing requirements") or "[]") != "[]"}
-          print(f"Package-Candidate features: {sorted(feats)}")
+          print(f"Robot-Gripper features: {sorted(feats)}")
           if blocking:
-              sys.exit(f"::error::Package-Candidate blocking failures: {blocking}")
-          print("Package-Candidate: PASSED (root-only)")
+              sys.exit(f"::error::Robot-Gripper blocking failures: {blocking}")
+          print("Robot-Gripper: PASSED + stamped (root-only)")
           PY
+          # Confirm the stamp landed in the root USD.
+          grep -q "dictionary validation" "$ROOT" \
+            || { echo "::error::--stamp-asset-validation did not write the validation stamp into $ROOT"; exit 1; }
 
           # 4. Write the package definition (nobom form, like NVIDIA's
           #    apple_a01_nobom). --skip-*-validation avoids the plain flow's
-          #    every-file validation AND the wrapp freeze; conformance is already
-          #    covered by step 3.
+          #    every-file validation AND the wrapp freeze; conformance is covered
+          #    and stamped in step 3.
           NAME="simready.hf.${DATASET//\//.}.${LOGICAL}"
           simready-package --skip-pre-validation --skip-post-validation \
             --name "$NAME" --version "$VERSION" --license "$LICENSE_ID" \
@@ -282,6 +297,6 @@ jobs:
           name: hf-publish-${{ env.VERSION || github.run_id }}
           path: |
             ${{ env.PKG_DIR }}/com.nvidia.simready.packaging.json
-            pkgval.json
+            rgstamp.json
             submission-url.txt
           if-no-files-found: ignore

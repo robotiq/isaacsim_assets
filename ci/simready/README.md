@@ -16,7 +16,7 @@ public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 .github/workflows/simready-validate.yml   Robot-Gripper conformance (manual + reusable)
                     │  workflow_call (gate)
                     ▼
-.github/workflows/hf-publish.yml          stage → co-locate → validate (root-only) → package def → upload
+.github/workflows/hf-publish.yml          stage → co-locate → Robot-Gripper stamp → package def → upload
                     │  emits immutable resolve URL
                     ▼
 ci/simready/submit_to_central.sh          PR to NVIDIA-Omniverse/simready-central (local)
@@ -31,12 +31,17 @@ their sublayers). The fix is not to flatten the asset (that bakes a single
 solver) but to match NVIDIA's reference package shape:
 
 - **`colocate_package.py`** — co-locates every layer into one flat `simready_usd/`
-  with `./` references, so nothing uses `../`. All variant payloads
-  (PhysX/Newton/compliant/tactile) are copied and both `Physics` and `Fingertip`
-  variant sets survive.
-- **`simready-validate --profile Package-Candidate`** on the interface USD only —
-  the packaging conformance gate. Sublayers are dependencies, not standalone
-  assets, so validating the root is the correct scope (and it passes).
+  with `./` references, so nothing uses `../`. The root is written as `.usda`. All
+  variant payloads (PhysX/Newton/compliant/tactile) are copied and both `Physics`
+  and `Fingertip` variant sets survive.
+- **`simready-validate --profile Robot-Gripper --stamp-asset-validation`** on the
+  interface USD — the guide's step 1 for a gripper. It writes the feature-level
+  results into the root's `customLayerData`, and because Robot-Gripper 2.1.0 also
+  requires `FET_031` (self-contained / AA.001) and `FET_033` (thumbnail + metadata
+  / SR.002-003), the one run is both the asset-conformance stamp and the packaging
+  gate. (Robot-Gripper is the gripper-appropriate profile; the prop
+  `Prop-Robotics-*` profiles the guide lists require graspable-line + semantic
+  labels a gripper isn't authored for — see the open profile-clarification issue.)
 - **`simready-package --skip-*-validation`** writes the package definition
   (nobom form, like NVIDIA's `apple_a01_nobom`).
 
@@ -76,7 +81,9 @@ Run the **`hf-publish`** workflow from the Actions tab (`workflow_dispatch`).
 The job:
 1. **Gates** on `simready-validate` (Robot-Gripper). No pass → no publish.
 2. Builds the package: `stage_package.sh` → `colocate_package.py` →
-   `simready-package --repo <local>` (Package-Candidate pre+post validation, BOM).
+   `simready-validate --profile Robot-Gripper --stamp-asset-validation` (asset
+   conformance + packaging gate + writes the stamp) → `simready-package
+   --skip-*-validation` (nobom package definition).
 3. `hf upload … --repo-type dataset --delete` the unpacked package into the
    `Robotiq_2F_85/` folder, then prints the **immutable submission URL** to the job
    summary and saves it as the `submission-url.txt` artifact.
