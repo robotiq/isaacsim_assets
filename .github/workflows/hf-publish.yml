@@ -11,10 +11,10 @@
 #
 # Packaging follows NVIDIA's Runtime-Variants + multi-file model rather than
 # flattening (which would bake a single solver). Concretely:
-#   - stage_package.sh   -> one `simready_usd/` intermediate folder (NP.005),
-#   - colocate_package.py -> flatten the FOLDER layout so every layer sits side by
-#     side with anchored `./` references (no `../` escaping a layer's dir, which
-#     packaging's AA.001 rejects) while keeping all sublayers/payloads/variants,
+#   - stage_package.sh -> the one `simready_usd/` intermediate folder (NP.005),
+#     keeping the organized subfolder layout (NVIDIA's reference packages are
+#     nested; Isaac RC.001 clean-folder requires it). All references stay within
+#     simready_usd/, so root-only validation resolves them and AA.001 passes,
 #   - simready-validate --profile Robot-Gripper --stamp-asset-validation ->
 #     validates the interface USD (guide step 1) and writes the feature-level
 #     results into its customLayerData. Robot-Gripper 2.1.0 also requires the
@@ -166,75 +166,58 @@ jobs:
               fh.write(f"VERSION={version}\n")
           PY
 
-      - name: Build the SimReady package (stage -> co-locate -> stamp -> package def)
+      - name: Build the SimReady package (stage -> stamp -> package def)
         run: |
           set -euo pipefail
           CI_DIR="$GITHUB_WORKSPACE/asset/ci/simready"
           LOGICAL="$(basename '${{ inputs.asset_dir }}')"
-          # Root is .usda (ASCII): matches the co-located content, and lets
-          # simready-validate --stamp-asset-validation save the stamp (a generic
-          # .usd extension makes its atomic-save pass format="usd", which USD
-          # rejects). The guide treats .usd/.usda as interchangeable.
-          ROOT_NAME="sm_${LOGICAL}_01.usda"
           TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
 
-          # 1. one intermediate folder (NP.005)
-          STAGED=$(bash "$CI_DIR/stage_package.sh" \
-            "$GITHUB_WORKSPACE/asset/${{ inputs.asset_dir }}" "$ROOT_USD" "$GITHUB_WORKSPACE/staged")
+          # 1. Stage into the one intermediate folder simready-package needs
+          #    (NP.005). The organized subfolder layout (configuration/ payloads/
+          #    parts/ materials/) is PRESERVED — NVIDIA's reference packages are
+          #    nested and Isaac RC.001 (clean-folder) requires it. Every reference
+          #    stays within simready_usd/, so root-only validation resolves them and
+          #    AA.001 passes without flattening. (An earlier co-locate step was only
+          #    needed for the abandoned --repo/WRAPP per-file validation; it broke
+          #    RC.001, so it is gone.)
+          PKG_DIR=$(bash "$CI_DIR/stage_package.sh" \
+            "$GITHUB_WORKSPACE/asset/${{ inputs.asset_dir }}" "$ROOT_USD" "$GITHUB_WORKSPACE/deliverable")
+          ROOT="$PKG_DIR/simready_usd/$ROOT_USD"
 
-          # 2. flat, self-contained ./ layout that keeps every layer + variant
-          LOGICAL_DIR=$(python3 "$CI_DIR/colocate_package.py" \
-            --src-root "$STAGED/simready_usd/$ROOT_USD" \
-            --out "$GITHUB_WORKSPACE/deliverable" --asset-name "$LOGICAL" \
-            --thumbnail "$STAGED/simready_usd/.thumbs/256x256/$ROOT_USD.png" \
-            --root-usd-name "$ROOT_NAME")
-          ROOT="$LOGICAL_DIR/simready_usd/$ROOT_NAME"
-
-          # 3. Validate + STAMP against Robot-Gripper (the gripper-appropriate
+          # 2. Validate + STAMP against Robot-Gripper (the gripper-appropriate
           #    profile; the guide's step 1). Robot-Gripper 2.1.0 also requires the
           #    packaging features FET_031 (self-contained/AA.001) and FET_033
-          #    (thumbnail + nested metadata / SR.002-003), so this one run covers
-          #    both asset conformance AND packaging, and writes the feature-level
-          #    results into the root USD's customLayerData for NVIDIA review.
+          #    (thumbnail + nested metadata / SR.002-003), so this one root-only run
+          #    covers asset conformance AND packaging, and writes the feature-level
+          #    results into the root's customLayerData for NVIDIA review.
           simready-validate \
             --rules-path "$TC/capabilities" --features-path "$TC/features" \
             --profiles-path "$TC/profiles/robot_gripper.toml" \
             --profile Robot-Gripper --version 2.1.0 --stamp-asset-validation \
             --output rgstamp.json "$ROOT" 2>rgstamp.log || true
-          python3 - <<'PY'
-          import json, sys
-          try:
-              data = json.load(open("rgstamp.json"))
-          except Exception as e:
-              sys.exit(f"::error::Robot-Gripper validation produced no results.json ({e}); see rgstamp.log")
-          info = next(iter(data.values()))
-          feats = info.get("features_summary", {})
-          if not feats:
-              sys.exit("::error::Robot-Gripper validation registered no features")
-          blocking = {n: f.get("failing requirements")
-                      for n, f in feats.items()
-                      if (f.get("failing requirements") or "[]") != "[]"}
-          print(f"Robot-Gripper features: {sorted(feats)}")
-          if blocking:
-              sys.exit(f"::error::Robot-Gripper blocking failures: {blocking}")
-          print("Robot-Gripper: PASSED + stamped (root-only)")
-          PY
+          # Gate (the publish tier of the baseline ratchet): blocking failures AND
+          # optional-feature regressions vs the committed baseline (ci/simready/
+          # expected.json) fail; improvements are ACCEPTED (the published artifact
+          # may legitimately improve on the repo asset). The validate-gate job uses
+          # the same baseline without --allow-improvements (strict).
+          python3 "$CI_DIR/summarize.py" --allow-improvements rgstamp.json
           # Confirm the stamp landed in the root USD.
           grep -q "dictionary validation" "$ROOT" \
             || { echo "::error::--stamp-asset-validation did not write the validation stamp into $ROOT"; exit 1; }
 
-          # 4. Write the package definition (nobom form, like NVIDIA's
+          # 3. Write the package definition (nobom form, like NVIDIA's
           #    apple_a01_nobom). --skip-*-validation avoids the plain flow's
           #    every-file validation AND the wrapp freeze; conformance is covered
-          #    and stamped in step 3.
+          #    and stamped in step 2.
           NAME="simready.hf.${DATASET//\//.}.${LOGICAL}"
           simready-package --skip-pre-validation --skip-post-validation \
             --name "$NAME" --version "$VERSION" --license "$LICENSE_ID" \
-            --root-usd "simready_usd/$ROOT_NAME" "$LOGICAL_DIR"
+            --root-usd "simready_usd/$ROOT_USD" "$PKG_DIR"
 
-          PKG_JSON="$LOGICAL_DIR/com.nvidia.simready.packaging.json"
+          PKG_JSON="$PKG_DIR/com.nvidia.simready.packaging.json"
           [ -f "$PKG_JSON" ] || { echo "::error::simready-package produced no $PKG_JSON"; exit 1; }
-          echo "PKG_DIR=$LOGICAL_DIR" >> "$GITHUB_ENV"
+          echo "PKG_DIR=$PKG_DIR" >> "$GITHUB_ENV"
           echo "LOGICAL=$LOGICAL" >> "$GITHUB_ENV"
           {
             echo "### Package definition"
