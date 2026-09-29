@@ -71,7 +71,7 @@ def Xform "Robotiq_2F_85"
                 float physxJoint:maxJointVelocity = 0.30000001
             }
 
-            def PhysicsRevoluteJoint "right_driver_joint" (
+            def PhysicsRevoluteJoint "right_outer_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI", "NewtonMimicAPI"]
             )
             {
@@ -94,7 +94,7 @@ def Xform "Robotiq_2F_85"
                 rel newton:mimicJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
             }
 
-            def PhysicsRevoluteJoint "left_coupler_joint" (
+            def PhysicsRevoluteJoint "left_outer_finger_joint" (
                 prepend apiSchemas = ["MjcJointAPI", "PhysxLimitAPI:angular"]
             )
             {
@@ -114,7 +114,7 @@ def Xform "Robotiq_2F_85"
                 float physxLimit:angular:damping = 0.0099999998
             }
 
-            def PhysicsRevoluteJoint "right_coupler_joint" (
+            def PhysicsRevoluteJoint "right_outer_finger_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
@@ -133,7 +133,7 @@ def Xform "Robotiq_2F_85"
                 float physics:upperLimit = 0
             }
 
-            def PhysicsRevoluteJoint "left_spring_link_joint" (
+            def PhysicsRevoluteJoint "left_inner_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
@@ -153,7 +153,7 @@ def Xform "Robotiq_2F_85"
                 float physics:upperLimit = 45.836624
             }
 
-            def PhysicsRevoluteJoint "right_spring_link_joint" (
+            def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
@@ -173,7 +173,7 @@ def Xform "Robotiq_2F_85"
                 float physics:upperLimit = 45.836624
             }
 
-            def PhysicsRevoluteJoint "left_follower_joint" (
+            def PhysicsRevoluteJoint "left_inner_finger_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
@@ -192,7 +192,7 @@ def Xform "Robotiq_2F_85"
                 float physics:upperLimit = 49.999966
             }
 
-            def PhysicsRevoluteJoint "right_follower_joint" (
+            def PhysicsRevoluteJoint "right_inner_finger_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
