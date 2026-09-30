@@ -81,9 +81,9 @@ Run the **`hf-publish`** workflow from the Actions tab (`workflow_dispatch`).
 
 The job:
 1. **Gates** on `simready-validate` (Robot-Gripper). No pass → no publish.
-2. Builds the package: `stage_package.sh` → `colocate_package.py` →
-   `simready-validate --profile Robot-Gripper --stamp-asset-validation` (asset
-   conformance + packaging gate + writes the stamp) → `simready-package
+2. Builds the package: `stage_package.sh` (nested `simready_usd/`, no flatten) →
+   `simready-validate --profile Robot-Gripper --stamp-asset-validation` (root-only:
+   asset conformance + packaging gate + writes the stamp) → `simready-package
    --skip-*-validation` (nobom package definition).
 3. `hf upload … --repo-type dataset --delete` the unpacked package into the
    `Robotiq_2F_85/` folder, then prints the **immutable submission URL** to the job
