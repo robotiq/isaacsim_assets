@@ -5,9 +5,8 @@ public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 
 | File | Role |
 |---|---|
-| `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates on **blocking** failures (+ baseline ratchet). |
-| `stage_package.sh` | Adds the one intermediate folder `simready-package` requires (`<asset>/simready_usd/…`, NP.005). |
-| `colocate_package.py` | Flattens the *folder* layout to a self-contained flat `simready_usd/` with anchored `./` refs, **keeping all sublayers/payloads and both variant sets** (no `../`, which packaging's AA.001 rejects). Not a stage flatten. |
+| `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected.json`). Strict for the validate gate; `--allow-improvements` for publish. |
+| `stage_package.sh` | Copies the asset into the one intermediate folder `simready-package` requires (`<asset>/simready_usd/…`, NP.005), keeping the organized subfolders. |
 | `submit_to_central.sh` | Stage 2 — opens the SimReady Central PR from an immutable HF URL. Run locally. |
 
 ## Pipeline overview
@@ -16,38 +15,45 @@ public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 .github/workflows/simready-validate.yml   Robot-Gripper conformance (manual + reusable)
                     │  workflow_call (gate)
                     ▼
-.github/workflows/hf-publish.yml          stage → co-locate → validate (root-only) → package def → upload
+.github/workflows/hf-publish.yml          stage → Robot-Gripper stamp → package def → upload
                     │  emits immutable resolve URL
                     ▼
 ci/simready/submit_to_central.sh          PR to NVIDIA-Omniverse/simready-central (local)
 ```
 
-## How packaging preserves the variants
+## How packaging works (and keeps the variants + organized layout)
 
-`simready-package`'s Package-Candidate validation rejects USD refs that use `../`
-to escape a layer's own directory (AA.001), and — in the plain local flow — it
-validates *every* USD file as a standalone asset (so multi-layer assets fail on
-their sublayers). The fix is not to flatten the asset (that bakes a single
-solver) but to match NVIDIA's reference package shape:
+The asset is a multi-layer, multi-variant USD: a root that composes
+`configuration/ payloads/ parts/ materials/` sublayers, with `Physics` and
+`Fingertip` variant sets. It is published **as authored** (nested), matching
+NVIDIA's reference packages (`apple_a01_nobom` etc. are nested too):
 
-- **`colocate_package.py`** — co-locates every layer into one flat `simready_usd/`
-  with `./` references, so nothing uses `../`. All variant payloads
-  (PhysX/Newton/compliant/tactile) are copied and both `Physics` and `Fingertip`
-  variant sets survive.
-- **`simready-validate --profile Package-Candidate`** on the interface USD only —
-  the packaging conformance gate. Sublayers are dependencies, not standalone
-  assets, so validating the root is the correct scope (and it passes).
+- **`stage_package.sh`** — places the asset under one `simready_usd/` intermediate
+  folder (NP.005), preserving the subfolders. Every reference stays within
+  `simready_usd/`, so **root-only** validation resolves them and AA.001 passes —
+  no flattening. (Flattening would satisfy AA.001 but violate Isaac RC.001
+  "clean-folder"; it is not done.)
+- **`simready-validate --profile Robot-Gripper --stamp-asset-validation`** on the
+  interface USD — the guide's step 1 for a gripper. It writes the feature-level
+  results into the root's `customLayerData` and, because Robot-Gripper 2.1.0 also
+  requires `FET_031` (self-contained / AA.001) and `FET_033` (thumbnail + metadata
+  / SR.002-003) **and** `FET_021_ISAAC` (RC.001 clean-folder), one root-only run
+  is the asset-conformance stamp *and* the packaging gate. Gated with
+  `summarize.py --allow-improvements` (blocking failures + regressions vs baseline
+  fail; improvements are accepted). Robot-Gripper is the gripper-appropriate
+  profile; the prop `Prop-Robotics-*` profiles the guide lists require
+  graspable-line + semantic labels a gripper isn't authored for — see the open
+  profile-clarification issue.
 - **`simready-package --skip-*-validation`** writes the package definition
   (nobom form, like NVIDIA's `apple_a01_nobom`).
 
-> We avoid `simready-package[publish]`'s WRAPP `--repo` flow: although it does
-> root-only validation, its freeze step (`ovpackage`/`omni.wrapp`) crashes on the
-> CI runner with an asyncio "Semaphore bound to a different event loop" error.
-> Validating with `simready-validate` + writing the def with `--skip-*` gives the
-> same result without `wrapp`.
+> We avoid `simready-package[publish]`'s WRAPP `--repo` flow: its freeze step
+> (`ovpackage`/`omni.wrapp`) crashes on the CI runner with an asyncio "Semaphore
+> bound to a different event loop" error. `simready-validate` (root-only) + a
+> `--skip-*` package def gives the same result without `wrapp`.
 
 The uploaded HF folder is the package: `com.nvidia.simready.packaging.json` +
-`simready_usd/` (the co-located asset with its thumbnail).
+the nested `simready_usd/` (root + subfolders + thumbnail).
 
 ## One-time setup
 
@@ -76,7 +82,9 @@ Run the **`hf-publish`** workflow from the Actions tab (`workflow_dispatch`).
 The job:
 1. **Gates** on `simready-validate` (Robot-Gripper). No pass → no publish.
 2. Builds the package: `stage_package.sh` → `colocate_package.py` →
-   `simready-package --repo <local>` (Package-Candidate pre+post validation, BOM).
+   `simready-validate --profile Robot-Gripper --stamp-asset-validation` (asset
+   conformance + packaging gate + writes the stamp) → `simready-package
+   --skip-*-validation` (nobom package definition).
 3. `hf upload … --repo-type dataset --delete` the unpacked package into the
    `Robotiq_2F_85/` folder, then prints the **immutable submission URL** to the job
    summary and saves it as the `submission-url.txt` artifact.
