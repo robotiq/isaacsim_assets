@@ -3,6 +3,13 @@
 This folder holds the tooling that validates the gripper asset, publishes it to a
 public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 
+The authoritative source for the submission workflow is NVIDIA's OEM guide,
+[`docs/oem-asset-submission-guide.md`](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/docs/oem-asset-submission-guide.md)
+in `NVIDIA-Omniverse/simready-central` (and its
+[`submit-simready-assets`](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/.agents/skills/submit-simready-assets/SKILL.md)
+skill). The scripts here are a thin, CI-friendly automation of that guide — if the
+two ever disagree, the guide wins.
+
 | File | Role |
 |---|---|
 | `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected.json`). Strict for the validate gate; `--allow-improvements` for publish. |
@@ -81,9 +88,9 @@ Run the **`hf-publish`** workflow from the Actions tab (`workflow_dispatch`).
 
 The job:
 1. **Gates** on `simready-validate` (Robot-Gripper). No pass → no publish.
-2. Builds the package: `stage_package.sh` → `colocate_package.py` →
-   `simready-validate --profile Robot-Gripper --stamp-asset-validation` (asset
-   conformance + packaging gate + writes the stamp) → `simready-package
+2. Builds the package: `stage_package.sh` (nested `simready_usd/`, no flatten) →
+   `simready-validate --profile Robot-Gripper --stamp-asset-validation` (root-only:
+   asset conformance + packaging gate + writes the stamp) → `simready-package
    --skip-*-validation` (nobom package definition).
 3. `hf upload … --repo-type dataset --delete` the unpacked package into the
    `Robotiq_2F_85/` folder, then prints the **immutable submission URL** to the job
@@ -107,6 +114,13 @@ ci/simready/submit_to_central.sh \
 It appends the URL to `submissions/Robotiq-Official/simready-assets` (keeping
 older versions), commits with a DCO sign-off (`git commit -s`), and opens the PR.
 Use `--no-pr` to prepare the branch/commit without pushing.
+
+This implements step 2 of NVIDIA's
+[OEM asset submission guide](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/docs/oem-asset-submission-guide.md)
+(the submission-file path/format, one immutable URL per line, DCO sign-off, PR
+title/body). Read that guide — and the
+[`submit-simready-assets`](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/.agents/skills/submit-simready-assets/SKILL.md)
+skill — before submitting; they are the source of truth and may change.
 
 ## Versioning model
 
