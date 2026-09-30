@@ -3,6 +3,13 @@
 This folder holds the tooling that validates the gripper asset, publishes it to a
 public Hugging Face **dataset**, and submits it to the NVIDIA SimReady Catalog.
 
+The authoritative source for the submission workflow is NVIDIA's OEM guide,
+[`docs/oem-asset-submission-guide.md`](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/docs/oem-asset-submission-guide.md)
+in `NVIDIA-Omniverse/simready-central` (and its
+[`submit-simready-assets`](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/.agents/skills/submit-simready-assets/SKILL.md)
+skill). The scripts here are a thin, CI-friendly automation of that guide — if the
+two ever disagree, the guide wins.
+
 | File | Role |
 |---|---|
 | `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected.json`). Strict for the validate gate; `--allow-improvements` for publish. |
@@ -107,6 +114,13 @@ ci/simready/submit_to_central.sh \
 It appends the URL to `submissions/Robotiq-Official/simready-assets` (keeping
 older versions), commits with a DCO sign-off (`git commit -s`), and opens the PR.
 Use `--no-pr` to prepare the branch/commit without pushing.
+
+This implements step 2 of NVIDIA's
+[OEM asset submission guide](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/docs/oem-asset-submission-guide.md)
+(the submission-file path/format, one immutable URL per line, DCO sign-off, PR
+title/body). Read that guide — and the
+[`submit-simready-assets`](https://github.com/NVIDIA-Omniverse/simready-central/blob/main/.agents/skills/submit-simready-assets/SKILL.md)
+skill — before submitting; they are the source of truth and may change.
 
 ## Versioning model
 
