@@ -188,8 +188,8 @@ def Xform "Robotiq_2F_85"
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physics:lowerLimit = -49.999966
-                float physics:upperLimit = 49.999966
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
             }
 
             def PhysicsRevoluteJoint "right_inner_finger_knuckle_joint" (
@@ -207,8 +207,8 @@ def Xform "Robotiq_2F_85"
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physics:lowerLimit = -49.999966
-                float physics:upperLimit = 49.999966
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
             }
 
 
