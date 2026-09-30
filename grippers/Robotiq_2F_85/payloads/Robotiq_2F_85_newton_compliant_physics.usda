@@ -67,7 +67,7 @@ def Xform "Robotiq_2F_85"
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 float physics:lowerLimit = 0
-                float physics:upperLimit = 45.836624
+                float physics:upperLimit = 47
                 float physxJoint:maxJointVelocity = 0.30000001
             }
 
@@ -89,7 +89,7 @@ def Xform "Robotiq_2F_85"
                 uniform double[] mjc:solref = [0.005, 1]
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 float physics:lowerLimit = 0
-                float physics:upperLimit = 45.836624
+                float physics:upperLimit = 47
                 rel mjc:target = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
                 rel newton:mimicJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
             }
@@ -149,8 +149,8 @@ def Xform "Robotiq_2F_85"
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 uniform double mjc:springref = -2.62
                 uniform double mjc:stiffness = 2
-                float physics:lowerLimit = -45.836624
-                float physics:upperLimit = 17
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
             }
 
             def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
@@ -169,8 +169,8 @@ def Xform "Robotiq_2F_85"
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 uniform double mjc:springref = 2.62
                 uniform double mjc:stiffness = 2
-                float physics:lowerLimit = -17
-                float physics:upperLimit = 45.836624
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
             }
 
             def PhysicsRevoluteJoint "left_inner_finger_knuckle_joint" (
