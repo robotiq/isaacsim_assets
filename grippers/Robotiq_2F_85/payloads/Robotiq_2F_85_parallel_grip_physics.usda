@@ -278,13 +278,13 @@ def Xform "Robotiq_2F_85" (
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
                 point3f physics:localPos0 = (0, -0.06776, 0.09809)
                 point3f physics:localPos1 = (0, -0.06776, 0.09809)
-                quatf physics:localRot0 = (0.5, -0.5, -0.5, 0.5)
-                quatf physics:localRot1 = (0.5, -0.5, -0.5, 0.5)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 float physics:lowerLimit = -180
                 float physics:upperLimit = 180
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
-                float physxMimicJoint:rotX:gearing = 1
+                float physxMimicJoint:rotX:gearing = -1
                 float physxMimicJoint:rotX:naturalFrequency = 0
                 rel physxMimicJoint:rotX:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
                 float state:angular:physics:position = 0
