@@ -110,7 +110,7 @@ def Xform "Robotiq_2F_85"
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
                 float physics:lowerLimit = 0
-                float physics:upperLimit = 89.954376
+                float physics:upperLimit = 45
                 float physxLimit:angular:damping = 0.0099999998
             }
 
@@ -129,7 +129,7 @@ def Xform "Robotiq_2F_85"
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
-                float physics:lowerLimit = -89.954376
+                float physics:lowerLimit = -45
                 float physics:upperLimit = 0
             }
 
