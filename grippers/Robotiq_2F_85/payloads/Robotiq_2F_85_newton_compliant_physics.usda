@@ -51,13 +51,13 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI", "PhysxJointAPI", "PhysicsDriveAPI:angular"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
                 point3f physics:localPos0 = (0, -0.030601099, 0.054943997)
                 point3f physics:localPos1 = (0, -0.030601099, 0.054944001)
-                quatf physics:localRot0 = (0, 0, 0, 1)
-                quatf physics:localRot1 = (0, 0, 0, 1)
+                quatf physics:localRot0 = (0.5, 0.5, -0.5, -0.5)
+                quatf physics:localRot1 = (0.5, 0.5, -0.5, -0.5)
                 float drive:angular:physics:damping = 2.7576203
                 float drive:angular:physics:maxForce = 15
                 float drive:angular:physics:stiffness = 24.993114
@@ -75,13 +75,13 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI", "NewtonMimicAPI"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
                 point3f physics:localPos0 = (0, 0.030601099, 0.054943997)
                 point3f physics:localPos1 = (0, 0.030601099, 0.054944001)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
@@ -98,19 +98,19 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI", "PhysxLimitAPI:angular"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
                 point3f physics:localPos0 = (0, -0.0621011, 0.050843999)
                 point3f physics:localPos1 = (0, -0.0621011, 0.050843999)
-                quatf physics:localRot0 = (0, 0, 0, 1)
-                quatf physics:localRot1 = (0, 0, 0, 1)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
-                float physics:lowerLimit = -89.954376
-                float physics:upperLimit = 0
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 89.954376
                 float physxLimit:angular:damping = 0.0099999998
             }
 
@@ -118,13 +118,13 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
                 point3f physics:localPos0 = (0, 0.0621011, 0.050843999)
                 point3f physics:localPos1 = (0, 0.0621011, 0.050843999)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
@@ -137,33 +137,33 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
                 point3f physics:localPos0 = (0, -0.0132, 0.060939997)
                 point3f physics:localPos1 = (0, -0.0132, 0.060940001)
-                quatf physics:localRot0 = (0, 0, 0, 1)
-                quatf physics:localRot1 = (0, 0, 0, 1)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                uniform double mjc:springref = 2.62
+                uniform double mjc:springref = -2.62
                 uniform double mjc:stiffness = 2
-                float physics:lowerLimit = -17
-                float physics:upperLimit = 45.836624
+                float physics:lowerLimit = -45.836624
+                float physics:upperLimit = 17
             }
 
             def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
                 point3f physics:localPos0 = (0, 0.0132, 0.060939997)
                 point3f physics:localPos1 = (0, 0.0132, 0.060940001)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solreflimit = [0.02, 2]
@@ -177,13 +177,13 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
                 point3f physics:localPos0 = (0, -0.0502, 0.10494)
                 point3f physics:localPos1 = (0, -0.0502, 0.10494)
-                quatf physics:localRot0 = (0, 0, 0, 1)
-                quatf physics:localRot1 = (0, 0, 0, 1)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
@@ -196,13 +196,13 @@ def Xform "Robotiq_2F_85"
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "X"
+                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
                 point3f physics:localPos0 = (0, 0.0502, 0.10494)
                 point3f physics:localPos1 = (0, 0.0502, 0.10494)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
