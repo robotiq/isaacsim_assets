@@ -1,0 +1,233 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary omni_layer = {
+            string authoring_layer = "../Robotiq_2F_140.usda"
+        }
+    }
+    defaultPrim = "World"
+    endTimeCode = 0
+    metersPerUnit = 1
+    startTimeCode = -1
+    upAxis = "Z"
+)
+
+over "Robotiq_2F_140" (
+    prepend apiSchemas = ["IsaacRobotAPI"]
+)
+{
+    string[] isaac:changelog (
+        displayName = "Changelog"
+    )
+    string isaac:description = "Robotiq 2F-140 adaptive parallel-jaw gripper (2 fingers, 140 mm stroke)." (
+        displayName = "Description"
+    )
+    token isaac:license (
+        displayName = "License"
+    )
+    string isaac:namespace (
+        displayName = "Namespace"
+        doc = "Namespace of the prim in Isaac Sim"
+    )
+    rel isaac:physics:robotJoints (
+        displayName = "Robot Joints"
+    )
+    rel isaac:physics:robotLinks (
+        displayName = "Robot Links"
+    )
+    prepend rel isaac:physics:robotLinks = [
+        </Robotiq_2F_140/Robotiq_2F_140/base_link>,
+        </Robotiq_2F_140/Robotiq_2F_140/left_outer_knuckle>,
+        </Robotiq_2F_140/Robotiq_2F_140/left_outer_finger>,
+        </Robotiq_2F_140/Robotiq_2F_140/left_inner_finger>,
+        </Robotiq_2F_140/Robotiq_2F_140/left_inner_knuckle>,
+        </Robotiq_2F_140/Robotiq_2F_140/right_outer_knuckle>,
+        </Robotiq_2F_140/Robotiq_2F_140/right_outer_finger>,
+        </Robotiq_2F_140/Robotiq_2F_140/right_inner_finger>,
+        </Robotiq_2F_140/Robotiq_2F_140/right_inner_knuckle>,
+        </Robotiq_2F_140/Robotiq_2F_140/left_fingertip>,
+        </Robotiq_2F_140/Robotiq_2F_140/right_fingertip>,
+    ]
+    token isaac:robotType = "End Effector" (
+        displayName = "Robot Type"
+    )
+    string isaac:source = "Robotiq" (
+        displayName = "Source"
+    )
+    string isaac:version = "1.0.0" (
+        displayName = "Version"
+    )
+
+    # robotJoints is variant-specific (the PhysX variants model the four-bar with
+    # different joint sets), so it is authored per-variant rather than on the
+    # default prim. Only Physx_parallel_grip ships today.
+    variantSet "Physics" = {
+        "Physx_parallel_grip" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_140/Robotiq_2F_140/root_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/left_outer_finger/FixedJoint>,
+                </Robotiq_2F_140/Robotiq_2F_140/right_outer_finger/FixedJoint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
+        "Physx_compliant" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_140/Robotiq_2F_140/root_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_outer_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_outer_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
+    }
+
+    over "Robotiq_2F_140"
+    {
+        string isaac:namespace (
+            displayName = "Namespace"
+            doc = "Namespace of the prim in Isaac Sim"
+        )
+
+        over "base_link" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+                doc = "Name override for prim lookup in base name search"
+            )
+
+            over "grip_frame" (
+                prepend apiSchemas = ["IsaacSiteAPI"]
+            )
+            {
+                string isaac:Description = "Tool center point (grasp frame) centered between the fingertips." (
+                    displayName = "Reference Description"
+                )
+                uniform token isaac:forwardAxis = "Z" (
+                    displayName = "Forward Axis"
+                )
+            }
+        }
+
+        over "left_outer_knuckle" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "left_outer_finger" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            over "FixedJoint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+        }
+
+        over "left_inner_finger" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "left_inner_knuckle" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "right_outer_knuckle" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "right_outer_finger" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            over "FixedJoint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+        }
+
+        over "right_inner_finger" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "right_inner_knuckle" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "left_fingertip" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "right_fingertip" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "Joints"
+        {
+            over "finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_outer_knuckle_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "left_inner_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_inner_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "left_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+        }
+    }
+}

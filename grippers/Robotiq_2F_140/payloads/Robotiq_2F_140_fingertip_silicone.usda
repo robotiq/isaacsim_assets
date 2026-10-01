@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    # "silicone" fingertip variant: deactivate the default flat tip and reference the
+    # silicone tip parts (baked into the Isaac frame at the pad mount). The tip
+    # collider is authored (inert) in Robotiq_2F_140_fingertip_physics.usda so it
+    # composes only under a Physics variant. The fingertip rigid-body mass is the
+    # shared value from fingertip_physics (refine per-tip later).
+    defaultPrim = "Robotiq_2F_140"
+    metersPerUnit = 1
+    subLayers = [
+        @./base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Meshes"
+{
+    over "fingertip_left"
+    {
+        over "tip_flat" (
+            active = false
+        )
+        {
+        }
+
+        def Xform "tip_silicone" (
+            instanceable = false
+            kind = "subcomponent"
+            prepend references = @../parts/Robotiq_2F_140_fingertip_silicone_left.usd@
+        )
+        {
+        }
+    }
+
+    over "fingertip_right"
+    {
+        over "tip_flat" (
+            active = false
+        )
+        {
+        }
+
+        def Xform "tip_silicone" (
+            instanceable = false
+            kind = "subcomponent"
+            prepend references = @../parts/Robotiq_2F_140_fingertip_silicone_right.usd@
+        )
+        {
+        }
+    }
+}

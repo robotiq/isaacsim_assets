@@ -1,0 +1,279 @@
+#usda 1.0
+(
+    # Kinematic body tree + geometry for the Robotiq 2F-140. Mirrors the 2F-85
+    # layout: the visible body links live under /Robotiq_2F_140/Robotiq_2F_140,
+    # and the geometry is referenced from the invisible /Meshes scope (one part
+    # per link). Unlike the 2F-85, the per-link CAD parts are baked into the
+    # final Isaac frame (approach +Z, opening Y) during STEP->USD import, so every
+    # link Xform is identity and the "visuals" prims need no re-orienting op.
+    customLayerData = {
+        dictionary omni_layer = {
+            string authoring_layer = "./base.usda"
+        }
+    }
+    defaultPrim = "Robotiq_2F_140"
+    metersPerUnit = 1
+    # Canonical Isaac composition layout (SimReady ISA.001): named geometries +
+    # instances slots so all four layout layers are present. Empty today
+    # (geometry is referenced inline from /Meshes; materials come from the parts).
+    subLayers = [
+        @./geometries.usd@,
+        @./instances.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_2F_140" (
+    kind = "assembly"
+)
+{
+    def Xform "Robotiq_2F_140" (
+        kind = "assembly"
+    )
+    {
+        quatd xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Xform "base_link" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/base_link>
+            )
+            {
+            }
+
+            # Tool center point (grasp frame) on the gripper centerline, between the
+            # fingertips. Refined against the fingertip pads during validation.
+            def Xform "grip_frame"
+            {
+                double3 xformOp:translate = (0, 0, 0.18)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "left_outer_knuckle" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/left_outer_knuckle>
+            )
+            {
+            }
+        }
+
+        def Xform "left_outer_finger" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/left_outer_finger>
+            )
+            {
+            }
+        }
+
+        def Xform "left_inner_finger" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/left_inner_finger>
+            )
+            {
+            }
+        }
+
+        def Xform "left_inner_knuckle" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/left_inner_knuckle>
+            )
+            {
+            }
+        }
+
+        def Xform "right_outer_knuckle" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/right_outer_knuckle>
+            )
+            {
+            }
+        }
+
+        def Xform "right_outer_finger" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/right_outer_finger>
+            )
+            {
+            }
+        }
+
+        def Xform "right_inner_finger" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/right_inner_finger>
+            )
+            {
+            }
+        }
+
+        def Xform "right_inner_knuckle" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/right_inner_knuckle>
+            )
+            {
+            }
+        }
+
+        # Swappable fingertip links, fixed-jointed to their inner_finger in the
+        # physics payloads. Geometry supplied by the "Fingertip" variantSet on the
+        # root prim (Flat_Overmolded default). Left empty here until the tip parts
+        # are placed.
+        def Xform "left_fingertip" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_left>
+            )
+            {
+            }
+        }
+
+        def Xform "right_fingertip" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_right>
+            )
+            {
+            }
+        }
+    }
+}
+
+def Scope "Meshes"
+{
+    token visibility = "invisible"
+
+    def Xform "base_link" (
+        prepend references = @../parts/Robotiq_2F_140_base.usd@
+    )
+    {
+    }
+
+    def Xform "left_outer_knuckle" (
+        prepend references = @../parts/Robotiq_2F_140_outer_knuckle_left.usd@
+    )
+    {
+    }
+
+    def Xform "right_outer_knuckle" (
+        prepend references = @../parts/Robotiq_2F_140_outer_knuckle_right.usd@
+    )
+    {
+    }
+
+    def Xform "left_outer_finger" (
+        prepend references = @../parts/Robotiq_2F_140_outer_finger_left.usd@
+    )
+    {
+    }
+
+    def Xform "right_outer_finger" (
+        prepend references = @../parts/Robotiq_2F_140_outer_finger_right.usd@
+    )
+    {
+    }
+
+    def Xform "left_inner_finger" (
+        prepend references = @../parts/Robotiq_2F_140_inner_finger_left.usd@
+    )
+    {
+    }
+
+    def Xform "right_inner_finger" (
+        prepend references = @../parts/Robotiq_2F_140_inner_finger_right.usd@
+    )
+    {
+    }
+
+    def Xform "left_inner_knuckle" (
+        prepend references = @../parts/Robotiq_2F_140_inner_knuckle_left.usd@
+    )
+    {
+    }
+
+    def Xform "right_inner_knuckle" (
+        prepend references = @../parts/Robotiq_2F_140_inner_knuckle_right.usd@
+    )
+    {
+    }
+
+    # Fingertip geometry groups. The active tip child is chosen by the "Fingertip"
+    # variantSet: "tip_flat" (the stock Flat-Overmolded pad, default) is authored
+    # here; the Silicone / V-Groove / Tactile_TSF140 variants deactivate it and add
+    # their own tip child via the fingertip payloads.
+    def Xform "fingertip_left" (
+        kind = "group"
+    )
+    {
+        def Xform "tip_flat" (
+            prepend references = @../parts/Robotiq_2F_140_fingertip_flat_left.usd@
+        )
+        {
+        }
+    }
+
+    def Xform "fingertip_right" (
+        kind = "group"
+    )
+    {
+        def Xform "tip_flat" (
+            prepend references = @../parts/Robotiq_2F_140_fingertip_flat_right.usd@
+        )
+        {
+        }
+    }
+}
