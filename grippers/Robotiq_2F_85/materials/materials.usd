@@ -240,23 +240,23 @@ def Xform "World"
             }
         }
 
-        def Material "Blue_Ribbon"
+        def Material "LED_Blue"
         {
-            token outputs:mdl:displacement.connect = </World/Looks/Blue_Ribbon/Shader.outputs:out>
-            token outputs:mdl:surface.connect = </World/Looks/Blue_Ribbon/Shader.outputs:out>
-            token outputs:mdl:volume.connect = </World/Looks/Blue_Ribbon/Shader.outputs:out>
+            token outputs:mdl:displacement.connect = </World/Looks/LED_Blue/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/LED_Blue/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/LED_Blue/Shader.outputs:out>
 
             def Shader "Shader"
             {
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                color3f inputs:diffuse_color_constant = (0.13333334, 0.33333334, 1)
-                color3f inputs:emissive_color = (0, 0, 0)
-                float inputs:emissive_intensity = 0
-                bool inputs:enable_emission = 0
+                color3f inputs:diffuse_color_constant = (0.008, 0.02, 0.12)
+                color3f inputs:emissive_color = (0.0, 0.1, 0.85)
+                float inputs:emissive_intensity = 2000
+                bool inputs:enable_emission = 1
                 float inputs:metallic_constant = 0
-                float inputs:reflection_roughness_constant = 0.5
+                float inputs:reflection_roughness_constant = 0.35
                 token outputs:out
             }
         }
