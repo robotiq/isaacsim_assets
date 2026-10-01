@@ -54,8 +54,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
-                point3f physics:localPos0 = (0, -0.030601099, 0.054943997)
-                point3f physics:localPos1 = (0, -0.030601099, 0.054944001)
+                point3f physics:localPos0 = (0, -0.0306, 0.05466)
+                point3f physics:localPos1 = (0, -0.0306, 0.05466)
                 quatf physics:localRot0 = (0.5, 0.5, -0.5, -0.5)
                 quatf physics:localRot1 = (0.5, 0.5, -0.5, -0.5)
                 float drive:angular:physics:damping = 2.7576203
@@ -78,8 +78,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
-                point3f physics:localPos0 = (0, 0.030601099, 0.054943997)
-                point3f physics:localPos1 = (0, 0.030601099, 0.054944001)
+                point3f physics:localPos0 = (0, 0.0306, 0.05466)
+                point3f physics:localPos1 = (0, 0.0306, 0.05466)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
@@ -101,8 +101,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
-                point3f physics:localPos0 = (0, -0.0621011, 0.050843999)
-                point3f physics:localPos1 = (0, -0.0621011, 0.050843999)
+                point3f physics:localPos0 = (0, -0.06213, 0.0509)
+                point3f physics:localPos1 = (0, -0.06213, 0.0509)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
@@ -121,8 +121,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
-                point3f physics:localPos0 = (0, 0.0621011, 0.050843999)
-                point3f physics:localPos1 = (0, 0.0621011, 0.050843999)
+                point3f physics:localPos0 = (0, 0.06213, 0.0509)
+                point3f physics:localPos1 = (0, 0.06213, 0.0509)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
@@ -140,8 +140,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
-                point3f physics:localPos0 = (0, -0.0132, 0.060939997)
-                point3f physics:localPos1 = (0, -0.0132, 0.060940001)
+                point3f physics:localPos0 = (0, -0.0127, 0.06118)
+                point3f physics:localPos1 = (0, -0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
@@ -160,8 +160,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
-                point3f physics:localPos0 = (0, 0.0132, 0.060939997)
-                point3f physics:localPos1 = (0, 0.0132, 0.060940001)
+                point3f physics:localPos0 = (0, 0.0127, 0.06118)
+                point3f physics:localPos1 = (0, 0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
@@ -180,8 +180,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
-                point3f physics:localPos0 = (0, -0.0502, 0.10494)
-                point3f physics:localPos1 = (0, -0.0502, 0.10494)
+                point3f physics:localPos0 = (0, -0.04986, 0.1046)
+                point3f physics:localPos1 = (0, -0.04986, 0.1046)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
@@ -199,8 +199,8 @@ def Xform "Robotiq_2F_85"
                 uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
-                point3f physics:localPos0 = (0, 0.0502, 0.10494)
-                point3f physics:localPos1 = (0, 0.0502, 0.10494)
+                point3f physics:localPos0 = (0, 0.04986, 0.1046)
+                point3f physics:localPos1 = (0, 0.04986, 0.1046)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
