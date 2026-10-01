@@ -19,6 +19,7 @@ physics authored yet.
     metersPerUnit = 1
     subLayers = [
         @./Robotiq_2F_85_body_mass_physics.usda@,
+        @./Robotiq_2F_85_kinematics_physics.usda@,
         @./base.usda@
     ]
     upAxis = "Z"
@@ -45,19 +46,21 @@ def Xform "Robotiq_2F_85"
             quatf physics:localRot1 = (1, 0, 0, 0)
         }
 
-        def Scope "Joints"
+        # Joint frames/limits/bodies + PhysicsJointStateAPI are the shared neutral
+        # defs in ./Robotiq_2F_85_kinematics_physics.usda (sublayered above). These overlays
+        # add ONLY the Newton/MuJoCo engine physics: the finger_joint driver, the
+        # right_outer_knuckle NewtonMimic, mjc solver params, and the inner_knuckle
+        # spring_link springs. Newton closes the four-bar with the loop_closure
+        # spherical equalities below (kept local) instead of PhysX's inner_finger
+        # revolutes -> those are suppressed (active=false). inner_finger_knuckle keeps
+        # Newton's body order (inner_knuckle -> inner_finger): Newton requires the
+        # parent as body0, opposite the kinematics/PhysX order.
+        over "Joints"
         {
-            def PhysicsRevoluteJoint "finger_joint" (
+            over "finger_joint" (
                 prepend apiSchemas = ["MjcJointAPI", "PhysxJointAPI", "PhysicsDriveAPI:angular"]
             )
             {
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
-                point3f physics:localPos0 = (0, -0.0306, 0.05466)
-                point3f physics:localPos1 = (0, -0.0306, 0.05466)
-                quatf physics:localRot0 = (0.5, 0.5, -0.5, -0.5)
-                quatf physics:localRot1 = (0.5, 0.5, -0.5, -0.5)
                 float drive:angular:physics:damping = 2.7576203
                 float drive:angular:physics:maxForce = 15
                 float drive:angular:physics:stiffness = 24.993114
@@ -66,150 +69,96 @@ def Xform "Robotiq_2F_85"
                 uniform double mjc:damping = 0.1
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physics:lowerLimit = 0
-                float physics:upperLimit = 47
                 float physxJoint:maxJointVelocity = 0.30000001
             }
 
-            def PhysicsRevoluteJoint "right_outer_knuckle_joint" (
+            over "right_outer_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI", "NewtonMimicAPI"]
             )
             {
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
-                point3f physics:localPos0 = (0, 0.0306, 0.05466)
-                point3f physics:localPos1 = (0, 0.0306, 0.05466)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solref = [0.005, 1]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physics:lowerLimit = 0
-                float physics:upperLimit = 47
                 rel mjc:target = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
                 rel newton:mimicJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
             }
 
-            def PhysicsRevoluteJoint "left_outer_finger_joint" (
+            over "left_outer_finger_joint" (
                 prepend apiSchemas = ["MjcJointAPI", "PhysxLimitAPI:angular"]
             )
             {
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
-                point3f physics:localPos0 = (0, -0.06213, 0.0509)
-                point3f physics:localPos1 = (0, -0.06213, 0.0509)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
-                float physics:lowerLimit = 0
-                float physics:upperLimit = 45
                 float physxLimit:angular:damping = 0.0099999998
             }
 
-            def PhysicsRevoluteJoint "right_outer_finger_joint" (
+            over "right_outer_finger_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
-                point3f physics:localPos0 = (0, 0.06213, 0.0509)
-                point3f physics:localPos1 = (0, 0.06213, 0.0509)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
-                float physics:lowerLimit = -45
-                float physics:upperLimit = 0
             }
 
-            def PhysicsRevoluteJoint "left_inner_knuckle_joint" (
+            over "left_inner_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
-                point3f physics:localPos0 = (0, -0.0127, 0.06118)
-                point3f physics:localPos1 = (0, -0.0127, 0.06118)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 uniform double mjc:springref = -2.62
                 uniform double mjc:stiffness = 2
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
             }
 
-            def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
+            over "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
-                point3f physics:localPos0 = (0, 0.0127, 0.06118)
-                point3f physics:localPos1 = (0, 0.0127, 0.06118)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 uniform double mjc:springref = 2.62
                 uniform double mjc:stiffness = 2
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
             }
 
-            def PhysicsRevoluteJoint "left_inner_finger_knuckle_joint" (
+            # Newton body order (inner_knuckle -> inner_finger) overrides the neutral
+            # layer's PhysX order; Newton requires the joint parent as body0.
+            over "left_inner_finger_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
-                point3f physics:localPos0 = (0, -0.04986, 0.1046)
-                point3f physics:localPos1 = (0, -0.04986, 0.1046)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
             }
 
-            def PhysicsRevoluteJoint "right_inner_finger_knuckle_joint" (
+            over "right_inner_finger_knuckle_joint" (
                 prepend apiSchemas = ["MjcJointAPI"]
             )
             {
-                uniform token physics:axis = "Z"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
-                point3f physics:localPos0 = (0, 0.04986, 0.1046)
-                point3f physics:localPos1 = (0, 0.04986, 0.1046)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
             }
+
+            # PhysX four-bar revolutes Newton replaces with the loop_closure spherical
+            # equalities (below) -> suppressed.
+            over "left_inner_finger_joint" (active = false) {}
+            over "right_inner_finger_joint" (active = false) {}
 
 
             def PhysicsSphericalJoint "right_loop_closure" (

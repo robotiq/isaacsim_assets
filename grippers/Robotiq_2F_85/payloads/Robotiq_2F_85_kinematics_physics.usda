@@ -1,0 +1,205 @@
+#usda 1.0
+(
+    defaultPrim = "Robotiq_2F_85"
+    doc = """Shared, engine-NEUTRAL kinematic tree for the Robotiq 2F-85.
+
+Single source of truth for the revolute joint set: frames (axis / localPos /
+localRot), limits, body relations, and PhysicsJointStateAPI. Sublayered by
+base.usda so it is present in every physics variant; each variant payload then
+OVERLAYS only its engine-specific physics (PhysX drive/mimic, Mjc/Newton
+actuators + equalities, armature), suppresses the joints its topology does not
+use (active=false), and adds its variant-only joints (parallel welds, Newton
+loop-closure).
+
+Neutrality rule (SimReady RV.011): only UsdPhysics + PhysicsJointStateAPI here --
+NO Physx*/Mjc*/Newton* schemas, no drives/mimics/actuators, no armature, and no
+physics:excludeFromArticulation (the articulation-tree/loop-closure choice is
+per-engine and lives in the variant overlays). The union is the full 10-revolute
+compliant set; inner_finger_knuckle_joint uses the PhysX body order
+(inner_finger -> inner_knuckle) and the Newton overlay overrides its body rels
+(Newton requires parent=body0 in the opposite direction). root_joint and the
+fingertip/mass welds remain in their existing layers.
+"""
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_2F_85"
+{
+    def Xform "Robotiq_2F_85"
+    {
+        def Scope "Joints"
+        {
+            def PhysicsRevoluteJoint "finger_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
+                point3f physics:localPos0 = (0, -0.0306, 0.05466)
+                point3f physics:localPos1 = (0, -0.0306, 0.05466)
+                quatf physics:localRot0 = (0.5, 0.5, -0.5, -0.5)
+                quatf physics:localRot1 = (0.5, 0.5, -0.5, -0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 47
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "right_outer_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
+                point3f physics:localPos0 = (0, 0.0306, 0.05466)
+                point3f physics:localPos1 = (0, 0.0306, 0.05466)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 47
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "left_outer_finger_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
+                point3f physics:localPos0 = (0, -0.06213, 0.0509)
+                point3f physics:localPos1 = (0, -0.06213, 0.0509)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 45
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "right_outer_finger_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
+                point3f physics:localPos0 = (0, 0.06213, 0.0509)
+                point3f physics:localPos1 = (0, 0.06213, 0.0509)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -45
+                float physics:upperLimit = 0
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "left_inner_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
+                point3f physics:localPos0 = (0, -0.0127, 0.06118)
+                point3f physics:localPos1 = (0, -0.0127, 0.06118)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
+                point3f physics:localPos0 = (0, 0.0127, 0.06118)
+                point3f physics:localPos1 = (0, 0.0127, 0.06118)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "left_inner_finger_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+                point3f physics:localPos0 = (0, -0.06776, 0.09809)
+                point3f physics:localPos1 = (0, -0.06776, 0.09809)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "right_inner_finger_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+                point3f physics:localPos0 = (0, 0.06776, 0.09809)
+                point3f physics:localPos1 = (0, 0.06776, 0.09809)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "left_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
+                point3f physics:localPos0 = (0, -0.04986, 0.1046)
+                point3f physics:localPos1 = (0, -0.04986, 0.1046)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            def PhysicsRevoluteJoint "right_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+            )
+            {
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
+                point3f physics:localPos0 = (0, 0.04986, 0.1046)
+                point3f physics:localPos1 = (0, 0.04986, 0.1046)
+                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
+                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+        }
+    }
+}
+
