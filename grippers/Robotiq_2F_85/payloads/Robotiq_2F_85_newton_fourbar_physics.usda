@@ -1,0 +1,321 @@
+#usda 1.0
+(
+    defaultPrim = "Robotiq_2F_85"
+    doc = """Shared Newton (MuJoCo-Warp) four-bar physics for the Robotiq 2F-85, common to
+every Newton grip formulation (newton_compliant, newton_parallel_grip, ...).
+
+Single source of truth for the closed four-bar linkage + its MuJoCo solver tuning that
+is IDENTICAL across those variants: the finger_joint driver, the right_outer_knuckle
+NewtonMimic, the inner-knuckle spring_link springs, the Newton-order inner_finger_knuckle
+couplers, the loop_closure spherical equalities (MjcEqualityConnectAPI) that close the
+four-bar in place of PhysX's inner_finger revolutes, the outer_finger loop-closure
+self-collision exclusion, and the per-material / per-mesh MuJoCo tuning (MjcMaterialAPI,
+MjcCollisionAPI). Also authors the shared fixed-base root_joint + articulation root.
+
+Each Newton variant payload sublayers this (stronger than kinematics, so these overlays
+win over the neutral joint defs) and adds ONLY its variant-specific distal-coupler delta:
+  * newton_compliant:     left/right_outer_finger_joint as live revolute couplers
+                          (the four-bar's distal DOF -> encompassing grip).
+  * newton_parallel_grip: left/right_outer_finger_joint SUPPRESSED (active=false) +
+                          outer_finger WELDED to outer_knuckle (distal DOF removed
+                          -> parallel grip).
+
+Rigid-body mass / inertia / colliders / fingertip welds / pad material are the
+Newton-pure shared values in ./Robotiq_2F_85_newton_common_physics.usda; the neutral
+joint frames/limits/bodies are in ./Robotiq_2F_85_kinematics_physics.usda. This layer
+carries the Mjc* solver tuning for both, so newton_common stays Newton-pure (RV.011).
+"""
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "Robotiq_2F_85"
+{
+    over "Robotiq_2F_85" (
+        prepend apiSchemas = ["PhysicsArticulationRootAPI"]
+    )
+    {
+        # World-pinned root joint (RC.009 fixed-base root). Same name/structure and
+        # path as the PhysX physics layers, so the teleop demo's mounted-gripper
+        # override `over "root_joint" (active = false)` applies to every Newton variant.
+        # The Isaac robot schema (IsaacRobotAPI + Newton robotJoints + shared robotLinks)
+        # is on the DEFAULT prim, authored in Robotiq_2F_85_robot.usda's Physics
+        # variantSet, so the RC validators read it there.
+        def PhysicsFixedJoint "root_joint"
+        {
+            rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
+        # Joint frames/limits/bodies + PhysicsJointStateAPI are the shared neutral defs
+        # in ./Robotiq_2F_85_kinematics_physics.usda (sublayered weaker than this). These
+        # overlays add ONLY the Newton/MuJoCo engine physics: the finger_joint driver,
+        # the right_outer_knuckle NewtonMimic, mjc solver params, and the inner_knuckle
+        # spring_link springs. Newton closes the four-bar with the loop_closure spherical
+        # equalities below (kept local) instead of PhysX's inner_finger revolutes -> those
+        # are suppressed (active=false). inner_finger_knuckle keeps Newton's body order
+        # (inner_knuckle -> inner_finger): Newton requires the parent as body0, opposite
+        # the kinematics/PhysX order. left/right_outer_finger_joint is NOT touched here --
+        # its treatment is the per-variant delta.
+        over "Joints"
+        {
+            over "finger_joint" (
+                prepend apiSchemas = ["MjcJointAPI", "PhysxJointAPI", "PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 2.7576203
+                float drive:angular:physics:maxForce = 15
+                float drive:angular:physics:stiffness = 24.993114
+                float drive:angular:physics:targetPosition = 0
+                uniform double mjc:armature = 0.3
+                uniform double mjc:damping = 0.1
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.02, 2]
+                float physxJoint:maxJointVelocity = 0.30000001
+            }
+
+            over "right_outer_knuckle_joint" (
+                prepend apiSchemas = ["MjcJointAPI", "NewtonMimicAPI"]
+            )
+            {
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.005, 1]
+                uniform double[] mjc:solreflimit = [0.02, 2]
+                rel mjc:target = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
+                rel newton:mimicJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
+            }
+
+            over "left_inner_knuckle_joint" (
+                prepend apiSchemas = ["MjcJointAPI"]
+            )
+            {
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:springref = -2.62
+                uniform double mjc:stiffness = 2
+            }
+
+            over "right_inner_knuckle_joint" (
+                prepend apiSchemas = ["MjcJointAPI"]
+            )
+            {
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solreflimit = [0.02, 2]
+                uniform double mjc:springref = 2.62
+                uniform double mjc:stiffness = 2
+            }
+
+            # Newton body order (inner_knuckle -> inner_finger) overrides the neutral
+            # layer's PhysX order; Newton requires the joint parent as body0.
+            over "left_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["MjcJointAPI"]
+            )
+            {
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.02, 2]
+            }
+
+            over "right_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["MjcJointAPI"]
+            )
+            {
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+                uniform double mjc:armature = 0
+                uniform double mjc:damping = 0.5
+                uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solreflimit = [0.02, 2]
+            }
+
+            # PhysX four-bar revolutes Newton replaces with the loop_closure spherical
+            # equalities (below) -> suppressed.
+            over "left_inner_finger_joint" (active = false) {}
+            over "right_inner_finger_joint" (active = false) {}
+
+
+            def PhysicsSphericalJoint "right_loop_closure" (
+                prepend apiSchemas = ["MjcEqualityConnectAPI"]
+            )
+            {
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.005, 1]
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
+                uniform bool physics:excludeFromArticulation = 1
+                point3f physics:localPos0 = (0, 0.0682, 0.098439999)
+                point3f physics:localPos1 = (0, 0.0682, 0.098439999)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+
+            def PhysicsSphericalJoint "left_loop_closure" (
+                prepend apiSchemas = ["MjcEqualityConnectAPI"]
+            )
+            {
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.005, 1]
+                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
+                uniform bool physics:excludeFromArticulation = 1
+                point3f physics:localPos0 = (0, -0.0682, 0.098439999)
+                point3f physics:localPos1 = (0, -0.0682, 0.098439999)
+                quatf physics:localRot0 = (0, 0, 0, 1)
+                quatf physics:localRot1 = (0, 0, 0, 1)
+            }
+        }
+
+        # Loop-closure self-collision exclusion: outer_finger and inner_finger are joined
+        # only by the loop_closure equality (no revolute between them), so their convex
+        # hulls would otherwise collide. Bodies / fingertips / pad material / colliders
+        # themselves are the shared Newton values in
+        # ./Robotiq_2F_85_newton_common_physics.usda; the per-variant distal weld (parallel)
+        # is added on top of this outer_finger overlay in that variant's payload.
+        over "left_outer_finger" (
+            prepend apiSchemas = ["PhysicsFilteredPairsAPI"]
+        )
+        {
+            prepend rel physics:filteredPairs = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
+        }
+
+        over "right_outer_finger" (
+            prepend apiSchemas = ["PhysicsFilteredPairsAPI"]
+        )
+        {
+            prepend rel physics:filteredPairs = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
+        }
+
+        # MuJoCo pad-material tuning on top of the shared Newton GripMaterial.
+        over "Physics"
+        {
+            over "GripMaterial" (
+                prepend apiSchemas = ["MjcMaterialAPI"]
+            )
+            {
+            }
+        }
+    }
+}
+
+# MuJoCo per-mesh solver tuning on top of the shared Newton convex-hull colliders.
+over "Meshes"
+{
+    over "base_link"
+    {
+        over "Defeatured_2F_85_PAD_OPEN_basestep_01"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_basestep" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:condim = 3
+                uniform double mjc:gap = 0
+                uniform int mjc:group = 2
+                uniform double mjc:margin = 0
+                uniform int mjc:priority = 1
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double mjc:solmix = 1
+                uniform double[] mjc:solref = [0.004, 2]
+            }
+        }
+    }
+
+    over "inner_finger"
+    {
+        over "Defeatured_2F_85_PAD_OPEN_finger4step_01"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_finger4step" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:group = 2
+            }
+        }
+    }
+
+    over "inner_knuckle"
+    {
+        over "Defeatured_2F_85_PAD_OPEN_finger3step_01"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_finger3step" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:condim = 3
+                uniform double mjc:gap = 0
+                uniform int mjc:group = 2
+                uniform double mjc:margin = 0
+                uniform int mjc:priority = 1
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double mjc:solmix = 1
+                uniform double[] mjc:solref = [0.004, 2]
+            }
+        }
+    }
+
+    over "outer_finger"
+    {
+        over "Defeatured_2F_85_PAD_OPEN_finger2step_01"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_finger2step" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:group = 2
+            }
+        }
+    }
+
+    over "outer_knuckle"
+    {
+        over "Defeatured_2F_85_PAD_OPEN_Finger1step_01"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_Finger1step" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:group = 2
+            }
+        }
+    }
+
+    over "fingertip"
+    {
+        over "tip_standard"
+        {
+            over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:group = 3
+                uniform int mjc:priority = 1
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.004, 2]
+            }
+        }
+
+        over "tip_tsf85"
+        {
+            over "TSF_85_case" (
+                prepend apiSchemas = ["MjcCollisionAPI"]
+            )
+            {
+                uniform int mjc:group = 3
+                uniform int mjc:priority = 1
+                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solref = [0.004, 2]
+            }
+        }
+    }
+}
