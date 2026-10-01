@@ -36,7 +36,8 @@
     startTimeCode = -1
     subLayers = [
         @./Robotiq_2F_85_body_mass_physics.usda@,
-        @./Robotiq_2F_85_fingertip_physics.usda@
+        @./Robotiq_2F_85_fingertip_physics.usda@,
+        @./Robotiq_2F_85_kinematics_physics.usda@
     ]
     upAxis = "Z"
 )
@@ -128,10 +129,17 @@ def Xform "Robotiq_2F_85" (
             quatf physics:localRot1 = (1, 0, 0, 0)
         }
 
-        def Scope "Joints"
+        # Joint frames/limits/bodies + PhysicsJointStateAPI are the shared neutral
+        # defs in ./Robotiq_2F_85_kinematics_physics.usda (sublayered above). These overlays
+        # add ONLY the PhysX engine physics: the finger_joint driver drive + armature,
+        # and the mimic coupling that algebraically ties the passive joints to it.
+        # The open-tree parallel grip does NOT use the compliant four-bar's
+        # outer_finger / inner_knuckle revolutes -> suppressed (active=false); the
+        # outer_knuckle<->outer_finger link is a rigid FixedJoint weld (see below).
+        over "Joints"
         {
-            def PhysicsRevoluteJoint "finger_joint" (
-                prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+            over "finger_joint" (
+                prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:angular"]
             )
             {
                 float drive:angular:physics:damping = 0.0002
@@ -139,157 +147,92 @@ def Xform "Robotiq_2F_85" (
                 float drive:angular:physics:stiffness = 3
                 float drive:angular:physics:targetPosition = 0
                 float drive:angular:physics:targetVelocity = 0
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
-                point3f physics:localPos0 = (0, -0.0306, 0.05466)
-                point3f physics:localPos1 = (0, -0.0306, 0.05466)
-                quatf physics:localRot0 = (0.5, 0.5, -0.5, -0.5)
-                quatf physics:localRot1 = (0.5, 0.5, -0.5, -0.5)
-                float physics:lowerLimit = 0
-                float physics:upperLimit = 47
                 float physxJoint:armature = 0.0001
                 float physxJoint:maxJointVelocity = 146.46
-                float state:angular:physics:position = 0
-                float state:angular:physics:velocity = 0
             }
 
-            def PhysicsRevoluteJoint "right_outer_knuckle_joint" (
-                active = true
+            over "right_outer_knuckle_joint" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
-                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotZ", "PhysicsJointStateAPI:angular"]
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotZ"]
             )
             {
                 float drive:angular:physics:damping = 0
                 float drive:angular:physics:maxForce = 0
                 float drive:angular:physics:stiffness = 0
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
-                point3f physics:localPos0 = (0, 0.0306, 0.05466)
-                point3f physics:localPos1 = (0, 0.0306, 0.05466)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = 0
-                float physics:upperLimit = 47
                 float physxJoint:armature = 0.0001
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotZ:dampingRatio = 0
                 float physxMimicJoint:rotZ:gearing = -1
                 float physxMimicJoint:rotZ:naturalFrequency = 0
                 rel physxMimicJoint:rotZ:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
-                float state:angular:physics:position = 0
-                float state:angular:physics:velocity = 0
             }
 
-            def PhysicsRevoluteJoint "right_inner_finger_joint" (
-                active = true
+            over "right_inner_finger_joint" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
-                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX", "PhysicsJointStateAPI:angular"]
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
                 float drive:angular:physics:damping = 0
                 float drive:angular:physics:maxForce = 0
                 float drive:angular:physics:stiffness = 0
                 float drive:angular:physics:targetPosition = 0
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
-                point3f physics:localPos0 = (0, 0.06776, 0.09809)
-                point3f physics:localPos1 = (0, 0.06776, 0.09809)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = 1
                 float physxMimicJoint:rotX:naturalFrequency = 0
                 rel physxMimicJoint:rotX:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
-                float state:angular:physics:position = 0
-                float state:angular:physics:velocity = 0
             }
 
-            def PhysicsRevoluteJoint "right_inner_finger_knuckle_joint" (
-                active = true
+            over "right_inner_finger_knuckle_joint" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
-                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX", "PhysicsJointStateAPI:angular"]
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
                 float drive:angular:physics:damping = 0
                 float drive:angular:physics:stiffness = 0
                 float drive:angular:physics:targetPosition = 0
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
-                point3f physics:localPos0 = (0, 0.04986, 0.1046)
-                point3f physics:localPos1 = (0, 0.04986, 0.1046)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = -1
                 float physxMimicJoint:rotX:naturalFrequency = 0
                 rel physxMimicJoint:rotX:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
-                float state:angular:physics:position = 0
-                float state:angular:physics:velocity = 0
             }
 
-            def PhysicsRevoluteJoint "left_inner_finger_knuckle_joint" (
-                active = true
+            over "left_inner_finger_knuckle_joint" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
-                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX", "PhysicsJointStateAPI:angular"]
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
                 float drive:angular:physics:damping = 0
                 float drive:angular:physics:stiffness = 0
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
-                point3f physics:localPos0 = (0, -0.04986, 0.1046)
-                point3f physics:localPos1 = (0, -0.04986, 0.1046)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = 1
                 float physxMimicJoint:rotX:naturalFrequency = 0
                 rel physxMimicJoint:rotX:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
-                float state:angular:physics:position = 0
-                float state:angular:physics:velocity = 0
             }
 
-            def PhysicsRevoluteJoint "left_inner_finger_joint" (
-                active = true
+            over "left_inner_finger_joint" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
-                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX", "PhysicsJointStateAPI:angular"]
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
                 float drive:angular:physics:damping = 0
                 float drive:angular:physics:maxForce = 0
                 float drive:angular:physics:stiffness = 0
                 float drive:angular:physics:targetPosition = 0
-                uniform token physics:axis = "Z"
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
-                point3f physics:localPos0 = (0, -0.06776, 0.09809)
-                point3f physics:localPos1 = (0, -0.06776, 0.09809)
-                quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
-                quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = -1
                 float physxMimicJoint:rotX:naturalFrequency = 0
                 rel physxMimicJoint:rotX:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
-                float state:angular:physics:position = 0
-                float state:angular:physics:velocity = 0
             }
+
+            # Compliant four-bar joints the open-tree parallel grip does not use.
+            over "left_outer_finger_joint" (active = false) {}
+            over "right_outer_finger_joint" (active = false) {}
+            over "left_inner_knuckle_joint" (active = false) {}
+            over "right_inner_knuckle_joint" (active = false) {}
         }
 
         # base_link + left/right_outer_knuckle rigid-body mass is authored once in
