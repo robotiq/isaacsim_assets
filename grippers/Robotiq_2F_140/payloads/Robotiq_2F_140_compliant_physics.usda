@@ -1,0 +1,166 @@
+#usda 1.0
+(
+    # PhysX "compliant" variant of the 2F-140. Mirrors OUR 2F-85 Physx_compliant
+    # payload structure: the shared neutral joint frames/limits/bodies live in
+    # ./Robotiq_2F_140_kinematics_physics.usda (sublayered below); this layer
+    # OVERLAYS only the PhysX engine physics -- drive gains, the right_outer_knuckle
+    # mimic, and the closed five-bar loop (loop-closing excludeFromArticulation
+    # inner_finger_joint + a weak compliance spring). All 10 revolute joints are
+    # used. Drive gains/mimic are the 85's; only the joint positions (in the
+    # kinematics layer) are the 2F-140's. Masses are shared from
+    # ./Robotiq_2F_140_body_mass_physics.usda.
+    defaultPrim = "Robotiq_2F_140"
+    metersPerUnit = 1
+    upAxis = "Z"
+    subLayers = [
+        @./Robotiq_2F_140_kinematics_physics.usda@,
+        @./Robotiq_2F_140_body_mass_physics.usda@,
+        @./Robotiq_2F_140_fingertip_physics.usda@
+    ]
+)
+
+def Xform "Robotiq_2F_140" (
+    kind = "assembly"
+)
+{
+    over Xform "Robotiq_2F_140" (
+        prepend apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+        kind = "assembly"
+    )
+    {
+        bool physxArticulation:enabledSelfCollisions = 0
+
+        # Root/mount joint pinning the gripper base to the world (fixed base).
+        def PhysicsFixedJoint "root_joint"
+        {
+            rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/base_link>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
+        # Engine overlay on the shared neutral joints. The closed five-bar loop is
+        # formed by the excludeFromArticulation inner_finger_joint (weak compliance
+        # spring, target +-92) plus the right_outer_knuckle mimic; the other passive
+        # joints carry zero-gain drives so the loop is free to articulate.
+        over "Joints"
+        {
+            over "finger_joint" (
+                prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.0002
+                float drive:angular:physics:maxForce = 16.5
+                float drive:angular:physics:stiffness = 0.17
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                float physxJoint:maxJointVelocity = 130
+            }
+
+            over "right_outer_knuckle_joint" (
+                delete apiSchemas = ["PhysicsDriveAPI:angular"]
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotZ"]
+            )
+            {
+                float drive:angular:physics:damping = 5000
+                float drive:angular:physics:maxForce = 5
+                float drive:angular:physics:stiffness = 0
+                float physxJoint:maxJointVelocity = 130
+                float physxMimicJoint:rotZ:dampingRatio = 0.01
+                float physxMimicJoint:rotZ:gearing = -1
+                float physxMimicJoint:rotZ:naturalFrequency = 5000
+                rel physxMimicJoint:rotZ:referenceJoint = </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>
+            }
+
+            over "right_outer_finger_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0
+                float drive:angular:physics:stiffness = 0
+            }
+
+            over "right_inner_finger_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00001
+                float drive:angular:physics:maxForce = 0.5
+                float drive:angular:physics:stiffness = 0.0004
+                float drive:angular:physics:targetPosition = -92
+                uniform bool physics:excludeFromArticulation = 1
+            }
+
+            over "right_inner_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0
+                float drive:angular:physics:stiffness = 0
+                uniform bool physics:excludeFromArticulation = 0
+            }
+
+            over "right_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0
+                float drive:angular:physics:stiffness = 0
+            }
+
+            over "left_outer_finger_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0
+                float drive:angular:physics:stiffness = 0
+            }
+
+            over "left_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0
+                float drive:angular:physics:stiffness = 0
+            }
+
+            over "left_inner_finger_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00001
+                float drive:angular:physics:maxForce = 0.5
+                float drive:angular:physics:stiffness = 0.0004
+                float drive:angular:physics:targetPosition = 92
+                uniform bool physics:excludeFromArticulation = 1
+            }
+
+            over "left_inner_knuckle_joint" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0
+                float drive:angular:physics:stiffness = 0
+                uniform bool physics:excludeFromArticulation = 0
+            }
+        }
+    }
+}
+
+# Collision-group plumbing: keep the shared /Meshes colliders from colliding with
+# the articulation-body copies (same pattern as the 2F-85 / parallel_grip).
+over "Meshes"
+{
+    def PhysicsCollisionGroup "CollisionGroup"
+    {
+        rel collection:colliders:includes = </Meshes>
+        rel physics:filteredGroups
+    }
+
+    def PhysicsCollisionGroup "CollisionGroup_01"
+    {
+        rel collection:colliders:includes = </Robotiq_2F_140>
+        rel physics:filteredGroups = </Meshes/CollisionGroup>
+    }
+}

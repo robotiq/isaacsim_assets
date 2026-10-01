@@ -1,0 +1,15 @@
+#usda 1.0
+# Canonical SimReady "materials" payload layer.
+#
+# The gripper's shared MDL material library lives in ../materials/materials.usd
+# (a single source of truth that every geometry part sublayers). This layer is
+# the canonical, top-level materials entry point for the SimReady asset: it
+# sublayers that library so the Looks can be resolved as ./payloads/materials.usda.
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [
+        @../materials/materials.usd@
+    ]
+    upAxis = "Z"
+)

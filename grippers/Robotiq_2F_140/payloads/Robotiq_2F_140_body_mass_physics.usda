@@ -1,0 +1,223 @@
+#usda 1.0
+# Shared rigid-body mass + colliders for the nine 2F-140 body links.
+#
+# Every body link carries its collider in the shared invisible /Meshes scope
+# (not as a rigid-body child), so PhysX cannot auto-compute mass -- it is authored
+# explicitly here. Mass, centre-of-mass and inertia are identical across the
+# PhysX variants, so they live here once and are `subLayers`-referenced by both
+# the parallel_grip and compliant payloads (same pattern as the 2F-85).
+#
+# Values are taken from NVIDIA's official Isaac 2F-140 asset
+# (Robotiq_2F_140_physics_edit.usd), re-expressed in this asset's base-link frame
+# (which is the world/identity frame for every link here). base_link has no mass
+# in the official asset; its value comes from the ROS robotiq_description URDF
+# (base is a fixed base via root_joint, so its inertia is inert).
+#
+# Colliders are authored here too (convex hull) so they compose only when a
+# Physics variant is selected -- never under Physics = "None", which keeps that
+# variant pure kinematic geometry.
+(
+    defaultPrim = "Robotiq_2F_140"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "Robotiq_2F_140"
+{
+    over "Robotiq_2F_140"
+    {
+        over "base_link" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0.03145)
+            float3 physics:diagonalInertia = (0.00020005, 0.00017832, 0.00013478)
+            float physics:mass = 0.22652
+            quatf physics:principalAxes = (1, 0, 0, 0)
+        }
+
+        over "left_outer_knuckle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, -0.052894, 0.052941)
+            float3 physics:diagonalInertia = (0.000000213107, 0.000000673439, 0.000000751601)
+            float physics:mass = 0.009163
+            quatf physics:principalAxes = (1, 0, 0, 0)
+        }
+
+        over "right_outer_knuckle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0.052894, 0.052941)
+            float3 physics:diagonalInertia = (0.000000213107, 0.000000673439, 0.000000751601)
+            float physics:mass = 0.009163
+            quatf physics:principalAxes = (1, 0, 0, 0)
+        }
+
+        over "left_outer_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0.000003, -0.076708, 0.084331)
+            float3 physics:diagonalInertia = (0.00000681569, 0.0000535424, 0.0000575694)
+            float physics:mass = 0.077064
+            quatf physics:principalAxes = (0.356478, 0.610675, 0.610675, -0.356478)
+        }
+
+        over "right_outer_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (-0.000003, 0.076708, 0.084331)
+            float3 physics:diagonalInertia = (0.00000681569, 0.0000535424, 0.0000575694)
+            float physics:mass = 0.077064
+            quatf physics:principalAxes = (-0.356478, 0.610675, -0.610675, -0.356478)
+        }
+
+        over "left_inner_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (-0.000001, -0.081480, 0.160890)
+            float3 physics:diagonalInertia = (0.0000030511, 0.0000191144, 0.0000171297)
+            float physics:mass = 0.049834
+            quatf physics:principalAxes = (0.076951, 0.702633, 0.07576, 0.703311)
+        }
+
+        over "right_inner_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (-0.000001, 0.081477, 0.160888)
+            float3 physics:diagonalInertia = (0.0000030511, 0.0000191144, 0.0000171297)
+            float physics:mass = 0.049834
+            quatf physics:principalAxes = (-0.075845, 0.702516, -0.076863, 0.703428)
+        }
+
+        over "left_inner_knuckle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, -0.048258, 0.100770)
+            float3 physics:diagonalInertia = (0.00000731063, 0.0000453843, 0.0000510923)
+            float physics:mass = 0.068112
+            quatf physics:principalAxes = (0.640339, -0.30047, 0.295076, 0.64235)
+        }
+
+        over "right_inner_knuckle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0.048258, 0.100770)
+            float3 physics:diagonalInertia = (0.00000731063, 0.0000453843, 0.0000510923)
+            float physics:mass = 0.068112
+            quatf physics:principalAxes = (0.64235, 0.295076, 0.30047, -0.640339)
+        }
+    }
+}
+
+# Convex-hull colliders for the nine body links, on the baked per-link meshes in
+# the shared /Meshes scope (instanced under each link's "visuals").
+over "Meshes"
+{
+    over "base_link"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_outer_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_outer_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_outer_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_outer_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_inner_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_inner_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_inner_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_inner_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+}
