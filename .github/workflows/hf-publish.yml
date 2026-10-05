@@ -17,7 +17,7 @@
 #     simready_usd/, so root-only validation resolves them and AA.001 passes,
 #   - simready-validate --profile Robot-Gripper --stamp-asset-validation ->
 #     validates the interface USD (guide step 1) and writes the feature-level
-#     results into its customLayerData. Robot-Gripper 2.1.0 also requires the
+#     results into its customLayerData. Robot-Gripper 3.0.0 also requires the
 #     packaging features (FET_031 self-contained / AA.001, FET_033 thumbnail +
 #     metadata / SR.002-003), so this one run is both the asset-conformance stamp
 #     AND the packaging gate,
@@ -55,7 +55,7 @@ on:
         default: cc-by-4.0
       simready_foundation_ref:
         description: "NVIDIA/simready-foundation commit or tag (packaging spec)"
-        default: v2026.07.1
+        default: v2026.08.0
       dry_run:
         description: "Build + package but DO NOT upload to Hugging Face"
         type: boolean
@@ -68,7 +68,7 @@ jobs:
     with:
       asset: ${{ format('{0}/{1}', inputs.asset_dir, inputs.root_usd) }}
       profile: Robot-Gripper
-      version: "2.1.0"
+      version: "3.0.0"
       simready_foundation_ref: ${{ inputs.simready_foundation_ref }}
 
   publish:
@@ -122,7 +122,8 @@ jobs:
           # create the package definition with --skip-*-validation (see below), so
           # `wrapp` is never used.
           pip install \
-            simready-package \
+            simready-package==2026.8.0 \
+            simready-validate==2026.8.0 \
             usd-core==26.8 \
             numpy==2.5.1 \
             huggingface_hub
@@ -186,7 +187,7 @@ jobs:
           ROOT="$PKG_DIR/simready_usd/$ROOT_USD"
 
           # 2. Validate + STAMP against Robot-Gripper (the gripper-appropriate
-          #    profile; the guide's step 1). Robot-Gripper 2.1.0 also requires the
+          #    profile; the guide's step 1). Robot-Gripper 3.0.0 also requires the
           #    packaging features FET_031 (self-contained/AA.001) and FET_033
           #    (thumbnail + nested metadata / SR.002-003), so this one root-only run
           #    covers asset conformance AND packaging, and writes the feature-level
@@ -194,7 +195,7 @@ jobs:
           simready-validate \
             --rules-path "$TC/capabilities" --features-path "$TC/features" \
             --profiles-path "$TC/profiles/robot_gripper.toml" \
-            --profile Robot-Gripper --version 2.1.0 --stamp-asset-validation \
+            --profile Robot-Gripper --version 3.0.0 --stamp-asset-validation \
             --output rgstamp.json "$ROOT" 2>rgstamp.log || true
           # Gate (the publish tier of the baseline ratchet): blocking failures AND
           # optional-feature regressions vs the committed baseline (ci/simready/

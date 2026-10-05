@@ -42,15 +42,24 @@ NVIDIA's reference packages (`apple_a01_nobom` etc. are nested too):
   "clean-folder"; it is not done.)
 - **`simready-validate --profile Robot-Gripper --stamp-asset-validation`** on the
   interface USD — the guide's step 1 for a gripper. It writes the feature-level
-  results into the root's `customLayerData` and, because Robot-Gripper 2.1.0 also
-  requires `FET_031` (self-contained / AA.001) and `FET_033` (thumbnail + metadata
-  / SR.002-003) **and** `FET_021_ISAAC` (RC.001 clean-folder), one root-only run
-  is the asset-conformance stamp *and* the packaging gate. Gated with
+  results into the root's `customLayerData` and, because Robot-Gripper 3.0.0 also
+  requires `FET_031` (self-contained / AA.001), `FET_033` (thumbnail + metadata
+  / SR.002-003), `FET_021_ISAAC` (RC.001 clean-folder) **and** `FET_006`
+  (UsdPreviewSurface materials / VM.PS.002), one root-only run is the
+  asset-conformance stamp *and* the packaging gate. Gated with
   `summarize.py --allow-improvements` (blocking failures + regressions vs baseline
   fail; improvements are accepted). Robot-Gripper is the gripper-appropriate
   profile; the prop `Prop-Robotics-*` profiles the guide lists require
   graspable-line + semantic labels a gripper isn't authored for — see the open
   profile-clarification issue.
+
+  Pinned to SimReady Foundation **v2026.08.0** (`simready-validate`/`-package`
+  `2026.8.0`, profile **3.0.0**). v2026.08.0 added two blocking checks the asset
+  is authored to satisfy: `RB.COL.004` (a rigid body's `principalAxes` and
+  `diagonalInertia` must be both-or-neither authored — the PAD colliders carry an
+  identity `principalAxes` beside their `diagonalInertia`) and `VM.PS.002`
+  (every rendered material connects a `UsdPreviewSurface` on `outputs:surface`,
+  authored alongside the existing OmniPBR/MDL surface in `materials/materials.usd`).
 - **`simready-package --skip-*-validation`** writes the package definition
   (nobom form, like NVIDIA's `apple_a01_nobom`).
 

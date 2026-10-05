@@ -6,7 +6,8 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.007"
+        "com.nvidia.simready.RV.007",
+        "com.nvidia.simready.SR.001"
       ]
     },
     "FET_000_NEWTON": {
@@ -14,7 +15,8 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.004"
+        "com.nvidia.simready.RV.004",
+        "com.nvidia.simready.SR.001"
       ]
     },
     "FET_000_PHYSX": {
@@ -22,14 +24,16 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.001"
+        "com.nvidia.simready.RV.001",
+        "com.nvidia.simready.SR.001"
       ]
     },
     "FET_000_STANDARD": {
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008"
+        "com.nvidia.simready.NP.008",
+        "com.nvidia.simready.SR.001"
       ]
     },
     "FET_001_STANDARD": {
@@ -79,6 +83,26 @@
     "FET_004_STANDARD": {
       "blocking": [],
       "optional": []
+    },
+    "FET_006_MDL": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_006_OPENPBR": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.VM.PBR.001"
+      ]
+    },
+    "FET_006_STANDARD": {
+      "blocking": [],
+      "optional": []
+    },
+    "FET_010_STANDARD": {
+      "blocking": [],
+      "optional": [
+        "com.nvidia.simready.DISP.001"
+      ]
     },
     "FET_021_ISAAC": {
       "blocking": [],
@@ -154,5 +178,5 @@
     }
   },
   "profile_id": "Robot-Gripper",
-  "profile_version": "2.1.0"
+  "profile_version": "3.0.0"
 }
