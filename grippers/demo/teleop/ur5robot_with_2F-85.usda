@@ -187,7 +187,7 @@ def Xform "World" (
                 displayName = "Name Override"
             )
             rel physics:simulationOwner
-            quatd xformOp:orient = (0.3668284013468218, -0.3668277669076424, 0.6045141801971133, 0.604513787544585)
+            quatd xformOp:orient = (0.4304596219873764, -0.43045903725530293, 0.5609857609810122, 0.5609853002176417)
             double3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0, 0, 0.16249999403953552)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
@@ -196,27 +196,27 @@ def Xform "World" (
         over "forearm_link"
         {
             rel physics:simulationOwner
-            quatd xformOp:orient = (-0.2705974481913155, 0.2705981399939478, 0.6532814487383302, 0.6532817281988781)
+            quatd xformOp:orient = (-0.21263075951681765, 0.21263147234061297, 0.6743796139775213, 0.6743798286789826)
             double3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.19624317188672705, -2.0356767971296819e-7, 0.5394796057171234)
+            double3 xformOp:translate = (0.10999810450652811, -1.1023339294147227e-7, 0.5730184797837814)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
         over "wrist_1_link"
         {
             rel physics:simulationOwner
-            quatd xformOp:orient = (0.4978139782441824, -0.49781345299766183, 0.5021770311836061, 0.5021765012730736)
+            quatd xformOp:orient = (0.5396870269593554, -0.5396865533046074, 0.4568790112933627, 0.4568784369540378)
             double3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.47357080459556744, 0.1332995076360575, 0.2621525470904258)
+            double3 xformOp:translate = (0.4312696670067143, 0.13329955489375872, 0.34806179790235103)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
         over "wrist_2_link"
         {
             rel physics:simulationOwner
-            quatd xformOp:orient = (-0.477884725568426, 0.5215055552759394, -0.48207361790486725, 0.516975020484391)
+            quatd xformOp:orient = (-0.5180814667607845, 0.4744639719324582, -0.4385889690952107, 0.560459855230569)
             double3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.5732670051870548, 0.13329940241542676, 0.2612825631113354)
+            double3 xformOp:translate = (0.529602342613941, 0.13329945157840511, 0.36451701568961414)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -226,9 +226,9 @@ def Xform "World" (
                 displayName = "Name Override"
             )
             rel physics:simulationOwner
-            quatd xformOp:orient = (0.036710289177032715, 0.8822766505341342, -0.46907086172075146, 0.014587435530611538)
+            quatd xformOp:orient = (-0.0043113530800786524, 0.8776479537775884, -0.47048546059323915, 0.0914270902686867)
             double3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.5724005640310641, 0.1254845440202843, 0.16199340106344012)
+            double3 xformOp:translate = (0.5459903674982911, 0.1254845744587626, 0.26658581142773985)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "flange"
@@ -258,7 +258,7 @@ def Xform "World" (
 
             over "shoulder_lift_joint"
             {
-                float drive:angular:physics:targetPosition = -63.2
+                float drive:angular:physics:targetPosition = -75
                 bool[] isaac:actuator (
                     displayName = "Actuator"
                 )
@@ -274,13 +274,13 @@ def Xform "World" (
                 quatf physics:localRot1 = (1, 0, 0, 0)
                 float physics:lowerLimit = -180
                 float physics:upperLimit = 360
-                float state:angular:physics:position = -62.5
+                float state:angular:physics:position = -75
                 float state:angular:physics:velocity = 0
             }
 
             over "elbow_joint"
             {
-                float drive:angular:physics:targetPosition = 107.499954
+                float drive:angular:physics:targetPosition = 110
                 bool[] isaac:actuator (
                     displayName = "Actuator"
                 )
@@ -292,7 +292,7 @@ def Xform "World" (
                 )
                 float physics:lowerLimit = -180
                 float physics:upperLimit = 180
-                float state:angular:physics:position = 107.499954
+                float state:angular:physics:position = 110
                 float state:angular:physics:velocity = 0
             }
 
@@ -378,12 +378,12 @@ def Xform "World" (
                     </World/ur5e/joints/wrist_2_joint>,
                     </World/ur5e/joints/wrist_3_joint>,
                 ]
-                float[] isaac:robot:pose:jointValues = [-0.00006633832, -62.5, 107.499954, -134.49998, -94.50019, -33.984856]
+                float[] isaac:robot:pose:jointValues = [-0.00006633832, -75, 110, -134.49998, -94.50019, -33.984856]
                 rel isaac:robot:pose:startLink = </World/ur5e/base_link>
                 bool isaac:robot:pose:valid = 1
-                quatd xformOp:orient = (-0.03671026138999425, -0.882276624687919, 0.4690709156717055, -0.014587333850984041)
+                quatd xformOp:orient = (0.0043113858875597905, -0.8776479540724137, 0.4704854788472005, -0.09142699195618836)
                 float3 xformOp:scale = (1, 1, 1)
-                double3 xformOp:translate = (0.5724005553678944, 0.12548452413006292, 0.16199343205253497)
+                double3 xformOp:translate = (0.5459903570151318, 0.12548453993113381, 0.2665858420206838)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
             }
         }
