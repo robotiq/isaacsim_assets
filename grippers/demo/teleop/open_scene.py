@@ -6,12 +6,13 @@ Run by run_demo.sh through Kit's --exec, i.e. INSIDE Isaac.
 There is no post-play runtime step on the PhysX path: the Action Graph is baked into the scene and the physx
 gripper variant needs no tuning after Stop -> Play. Open, select, play, done.
 
-The variant IS set explicitly rather than trusted to its default. The scene
-carries both gripper backends behind a `Gripper` variant set on /World, and the
-selection is saved IN the file -- so whoever last switched it to `newton` and
-saved decides what you get. Selecting it here costs nothing and makes the run
-reproducible. Set TELEOP_GRIPPER_VARIANT=newton to go the other way (then you
-also need the Newton experience and its runtime tuning step).
+The variants ARE set explicitly rather than trusted to their defaults. The scene
+carries two variant sets on /World -- `Gripper` (2F85 | 2F140) and `Physics`
+(Physx_compliant | Physx_parallel_grip | Newton_compliant | Newton_parallel_grip)
+-- and the selections are saved IN the file, so whoever last switched them and
+saved decides what you get. Selecting them here costs nothing and makes the run
+reproducible. Set TELEOP_GRIPPER / TELEOP_PHYSICS to choose (a Newton_* physics
+also needs the Newton experience and its runtime tuning step).
 
 As in autostart.py, the work happens on Kit's update tick and never calls
 omni.kit.app.update(): pumping frames from inside a callback re-enters Kit's
@@ -22,7 +23,12 @@ import sys
 import time
 
 SCENE = "ur5robot_with_2F-85.usda"
-VARIANT = os.environ.get("TELEOP_GRIPPER_VARIANT", "physx")
+GRIPPER = os.environ.get("TELEOP_GRIPPER", "2F85")
+PHYSICS = os.environ.get("TELEOP_PHYSICS") or {
+    # Deprecated single-variant names (both were the 2F-85).
+    "physx": "Physx_compliant", "newton": "Newton_compliant",
+}.get(os.environ.get("TELEOP_GRIPPER_VARIANT", ""), "Physx_compliant")
+VARIANTS = {"Physics": PHYSICS, "Gripper": GRIPPER}
 
 # Benchmark knobs, applied BEFORE play so no stop -> play cycle is needed --
 # the PhysX substep rate is only picked up when the scene starts playing, and
@@ -95,7 +101,7 @@ NEWTON_NJMAX = int(os.environ.get("TELEOP_NEWTON_NJMAX", "2400"))
 def _raise_newton_contact_limit():
     """Give the MJWarp solver room for the props, before its buffers are sized.
 
-    Gated on being able to acquire a Newton stage rather than on VARIANT: the
+    Gated on being able to acquire a Newton stage rather than on PHYSICS: the
     gripper variant and the physics engine are chosen separately -- the engine
     comes from the experience (isaac-sim.newton.sh) -- so asking Newton itself
     is the only honest test. On PhysX the extension is not loaded and this is
@@ -129,19 +135,25 @@ def _select_variant(stage):
     """Returns a human-readable note about what it did."""
     prim = stage.GetPrimAtPath("/World")
     if not prim or not prim.IsValid():
-        return "no /World prim; variant NOT selected"
-    vset = prim.GetVariantSets().GetVariantSet("Gripper")
-    if not vset or not vset.GetVariantNames():
-        return "no Gripper variant set; nothing to select"
-    names = list(vset.GetVariantNames())
-    if VARIANT not in names:
-        return "variant %r not in %s; left at %r" % (VARIANT, names,
-                                                     vset.GetVariantSelection())
-    was = vset.GetVariantSelection()
-    if was == VARIANT:
-        return "Gripper variant already %r" % VARIANT
-    vset.SetVariantSelection(VARIANT)
-    return "Gripper variant %r -> %r" % (was, VARIANT)
+        return "no /World prim; variants NOT selected"
+    notes = []
+    for name, want in VARIANTS.items():
+        vset = prim.GetVariantSets().GetVariantSet(name)
+        if not vset or not vset.GetVariantNames():
+            notes.append("no %s variant set; nothing to select" % name)
+            continue
+        names = list(vset.GetVariantNames())
+        if want not in names:
+            notes.append("%s %r not in %s; left at %r"
+                         % (name, want, names, vset.GetVariantSelection()))
+            continue
+        was = vset.GetVariantSelection()
+        if was == want:
+            notes.append("%s variant already %r" % (name, want))
+        else:
+            vset.SetVariantSelection(want)
+            notes.append("%s variant %r -> %r" % (name, was, want))
+    return "; ".join(notes)
 
 
 def _set_render_mode():

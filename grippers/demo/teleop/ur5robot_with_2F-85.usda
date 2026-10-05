@@ -50,9 +50,10 @@
 
 def Xform "World" (
     variants = {
-        string Gripper = "physx"
+        string Gripper = "2F85"
+        string Physics = "Physx_compliant"
     }
-    prepend variantSets = "Gripper"
+    prepend variantSets = ["Physics", "Gripper"]
 )
 {
     def Scope "Looks"
@@ -860,37 +861,10 @@ def Xform "World" (
         double3 xformOp:translate = (0.42, 0.07, 0.0505)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
-    variantSet "Gripper" = {
-        "newton" {
+    variantSet "Physics" = {
+        "Newton_compliant" {
             over "ur5e"
             {
-                over "wrist_3_link"
-                {
-                    def "Robotiq_2F_85_edit" (
-                        prepend payload = @../../Robotiq_2F_85/Robotiq_2F_85.usda@
-                        variants = {
-                            string Physics = "Newton_compliant"
-                        }
-                    )
-                    {
-                        quatf xformOp:orient = (1, 0, 0, 0)
-                        float3 xformOp:scale = (1, 1, 1)
-                        double3 xformOp:translate = (0, 0, 0)
-                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-                        over "Robotiq_2F_85" (
-                            delete apiSchemas = ["PhysicsArticulationRootAPI"]
-                        )
-                        {
-                            over "root_joint" (
-                                active = false
-                            )
-                            {
-                            }
-                        }
-                    }
-                }
-
                 over "joints"
                 {
                     over "shoulder_pan_joint"
@@ -929,192 +903,94 @@ def Xform "World" (
                         uniform double mjc:armature = 0.3
                     }
                 }
-            }
 
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </World/ur5e/wrist_3_link>
-                rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/base_link>
-                float physics:breakForce = 3.4028235e38
-                float physics:breakTorque = 3.4028235e38
-                point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)
-                point3f physics:localPos1 = (-0.3129819, 0.27369457, 0.19359241)
-                quatf physics:localRot0 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
-                quatf physics:localRot1 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
-            }
-
-        }
-        "physx" {
-            over "ur5e"
-            {
                 over "wrist_3_link"
                 {
-                    def "Robotiq_2F_85_edit" (
-                        prepend payload = @../../Robotiq_2F_85/Robotiq_2F_85.usda@
+                    over "Robotiq_2F_85_edit" (
                         variants = {
-                            string Physics = "Physx_compliant"
+                            string Physics = "Newton_compliant"
                         }
                     )
                     {
-                        string isaac:namespace (
-                            displayName = "Namespace"
-                            doc = "Namespace of the prim in Isaac Sim"
-                        )
-                        quatf xformOp:orient = (1, 0, 0, 0)
-                        float3 xformOp:scale = (1, 1, 1)
-                        double3 xformOp:translate = (0, 0, 0)
-                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
 
-                        over "Robotiq_2F_85" (
-                            delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
-                        )
-                        {
-                            over "root_joint" (
-                                active = false
-                            )
-                            {
-                            }
-
-                            over "base_link"
-                            {
-                                string isaac:nameOverride (
-                                    displayName = "Name Override"
-                                )
-                                rel physics:simulationOwner
-                            }
-
-                            over "left_outer_knuckle"
-                            {
-                                rel physics:simulationOwner
-                            }
-
-                            over "left_outer_finger" (
-                                prepend apiSchemas = ["PhysxRigidBodyAPI"]
-                            )
-                            {
-                                rel physics:simulationOwner
-                                int physxRigidBody:solverPositionIterationCount = 64
-                                int physxRigidBody:solverVelocityIterationCount = 8
-                            }
-
-                            over "left_inner_finger" (
-                                prepend apiSchemas = ["PhysxRigidBodyAPI"]
-                            )
-                            {
-                                rel physics:simulationOwner
-                                int physxRigidBody:solverPositionIterationCount = 64
-                                int physxRigidBody:solverVelocityIterationCount = 8
-                            }
-
-                            over "left_inner_knuckle"
-                            {
-                                rel physics:simulationOwner
-                            }
-
-                            over "right_outer_knuckle"
-                            {
-                                rel physics:simulationOwner
-                            }
-
-                            over "right_outer_finger" (
-                                prepend apiSchemas = ["PhysxRigidBodyAPI"]
-                            )
-                            {
-                                rel physics:simulationOwner
-                                int physxRigidBody:solverPositionIterationCount = 64
-                                int physxRigidBody:solverVelocityIterationCount = 8
-                            }
-
-                            over "right_inner_finger" (
-                                prepend apiSchemas = ["PhysxRigidBodyAPI"]
-                            )
-                            {
-                                rel physics:simulationOwner
-                                int physxRigidBody:solverPositionIterationCount = 64
-                                int physxRigidBody:solverVelocityIterationCount = 8
-                            }
-
-                            over "right_inner_knuckle"
-                            {
-                                rel physics:simulationOwner
-                            }
-
-                            over "Joints"
-                            {
-                                over "finger_joint"
-                                {
-                                    float drive:angular:physics:damping = 3
-                                    float drive:angular:physics:maxForce = 1
-                                    float drive:angular:physics:stiffness = 50
-                                    float drive:angular:physics:targetPosition = 0
-                                    bool[] isaac:actuator (
-                                        displayName = "Actuator"
-                                    )
-                                    string isaac:NameOverride (
-                                        displayName = "Joint Name Override"
-                                    )
-                                    token[] isaac:physics:DofOffsetOpOrder (
-                                        displayName = "Dof Offset Op Order"
-                                    )
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "right_outer_knuckle_joint"
-                                {
-                                    bool[] isaac:actuator (
-                                        displayName = "Actuator"
-                                    )
-                                    string isaac:NameOverride (
-                                        displayName = "Joint Name Override"
-                                    )
-                                    token[] isaac:physics:DofOffsetOpOrder (
-                                        displayName = "Dof Offset Op Order"
-                                    )
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "left_inner_finger_knuckle_joint"
-                                {
-                                    bool[] isaac:actuator (
-                                        displayName = "Actuator"
-                                    )
-                                    string isaac:NameOverride (
-                                        displayName = "Joint Name Override"
-                                    )
-                                    token[] isaac:physics:DofOffsetOpOrder (
-                                        displayName = "Dof Offset Op Order"
-                                    )
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "right_inner_finger_knuckle_joint"
-                                {
-                                    bool[] isaac:actuator (
-                                        displayName = "Actuator"
-                                    )
-                                    string isaac:NameOverride (
-                                        displayName = "Joint Name Override"
-                                    )
-                                    token[] isaac:physics:DofOffsetOpOrder (
-                                        displayName = "Dof Offset Op Order"
-                                    )
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-
-                                over "left_outer_finger_joint"
-                                {
-                                    float state:angular:physics:position = 0
-                                    float state:angular:physics:velocity = 0
-                                }
-                            }
+                    over "Robotiq_2F_140_edit" (
+                        variants = {
+                            string Physics = "Newton_compliant"
                         }
+                    )
+                    {
+                    }
+                }
+            }
+
+        }
+        "Newton_parallel_grip" {
+            over "ur5e"
+            {
+                over "joints"
+                {
+                    over "shoulder_pan_joint"
+                    {
+                        float drive:angular:physics:damping = 940.0501
+                        uniform double mjc:armature = 1
+                    }
+
+                    over "shoulder_lift_joint"
+                    {
+                        float drive:angular:physics:damping = 1002.092
+                        uniform double mjc:armature = 1
+                    }
+
+                    over "elbow_joint"
+                    {
+                        float drive:angular:physics:damping = 1023.0221
+                        uniform double mjc:armature = 1
+                    }
+
+                    over "wrist_1_joint"
+                    {
+                        float drive:angular:physics:damping = 394.0629
+                        uniform double mjc:armature = 0.3
+                    }
+
+                    over "wrist_2_joint"
+                    {
+                        float drive:angular:physics:damping = 394.0629
+                        uniform double mjc:armature = 0.3
+                    }
+
+                    over "wrist_3_joint"
+                    {
+                        float drive:angular:physics:damping = 100.00809
+                        uniform double mjc:armature = 0.3
                     }
                 }
 
+                over "wrist_3_link"
+                {
+                    over "Robotiq_2F_85_edit" (
+                        variants = {
+                            string Physics = "Newton_parallel_grip"
+                        }
+                    )
+                    {
+                    }
+
+                    over "Robotiq_2F_140_edit" (
+                        variants = {
+                            string Physics = "Newton_parallel_grip"
+                        }
+                    )
+                    {
+                    }
+                }
+            }
+
+        }
+        "Physx_compliant" {
+            over "ur5e"
+            {
                 over "joints"
                 {
                     over "shoulder_pan_joint"
@@ -1145,6 +1021,158 @@ def Xform "World" (
                     over "wrist_3_joint"
                     {
                         float drive:angular:physics:damping = 33.33603
+                    }
+                }
+
+                over "wrist_3_link"
+                {
+                    over "Robotiq_2F_85_edit" (
+                        prepend inherits = </_TeleopPhysxGripperTuning_2F85>
+                        variants = {
+                            string Physics = "Physx_compliant"
+                        }
+                    )
+                    {
+                    }
+
+                    over "Robotiq_2F_140_edit" (
+                        prepend inherits = </_TeleopPhysxGripperTuning_2F140>
+                        variants = {
+                            string Physics = "Physx_compliant"
+                        }
+                    )
+                    {
+                    }
+                }
+            }
+
+        }
+        "Physx_parallel_grip" {
+            over "ur5e"
+            {
+                over "joints"
+                {
+                    over "shoulder_pan_joint"
+                    {
+                        float drive:angular:physics:damping = 313.35004
+                    }
+
+                    over "shoulder_lift_joint"
+                    {
+                        float drive:angular:physics:damping = 334.03067
+                    }
+
+                    over "elbow_joint"
+                    {
+                        float drive:angular:physics:damping = 341.00735
+                    }
+
+                    over "wrist_1_joint"
+                    {
+                        float drive:angular:physics:damping = 131.3543
+                    }
+
+                    over "wrist_2_joint"
+                    {
+                        float drive:angular:physics:damping = 131.3543
+                    }
+
+                    over "wrist_3_joint"
+                    {
+                        float drive:angular:physics:damping = 33.33603
+                    }
+                }
+
+                over "wrist_3_link"
+                {
+                    over "Robotiq_2F_85_edit" (
+                        prepend inherits = </_TeleopPhysxGripperTuning_2F85>
+                        variants = {
+                            string Physics = "Physx_parallel_grip"
+                        }
+                    )
+                    {
+                    }
+
+                    over "Robotiq_2F_140_edit" (
+                        prepend inherits = </_TeleopPhysxGripperTuning_2F140>
+                        variants = {
+                            string Physics = "Physx_parallel_grip"
+                        }
+                    )
+                    {
+                    }
+                }
+            }
+
+        }
+    }
+    variantSet "Gripper" = {
+        "2F140" {
+            over "ur5e"
+            {
+                over "wrist_3_link"
+                {
+                    def "Robotiq_2F_140_edit" (
+                        prepend payload = @../../Robotiq_2F_140/Robotiq_2F_140.usda@
+                    )
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        over "Robotiq_2F_140" (
+                            delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+                        )
+                        {
+                            over "root_joint" (
+                                active = false
+                            )
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+
+            def PhysicsFixedJoint "FixedJoint"
+            {
+                rel physics:body0 = </World/ur5e/wrist_3_link>
+                rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_2F_140_edit/Robotiq_2F_140/base_link>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)
+                point3f physics:localPos1 = (-0.3129819, 0.27369457, 0.19359241)
+                quatf physics:localRot0 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+                quatf physics:localRot1 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+            }
+
+        }
+        "2F85" {
+            over "ur5e"
+            {
+                over "wrist_3_link"
+                {
+                    def "Robotiq_2F_85_edit" (
+                        prepend payload = @../../Robotiq_2F_85/Robotiq_2F_85.usda@
+                    )
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        over "Robotiq_2F_85" (
+                            delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+                        )
+                        {
+                            over "root_joint" (
+                                active = false
+                            )
+                            {
+                            }
+                        }
                     }
                 }
             }
@@ -1362,5 +1390,291 @@ over "OmniverseKit_Top" (
     float3 xformOp:scale = (1, 1, 1)
     double3 xformOp:translate = (0, 0, 5)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+
+class "_TeleopPhysxGripperTuning_2F85"
+{
+    over "Robotiq_2F_85"
+    {
+        over "base_link"
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+            )
+            rel physics:simulationOwner
+        }
+
+        over "left_outer_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "left_outer_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "left_inner_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "left_inner_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "right_outer_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "right_outer_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "right_inner_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "right_inner_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "Joints"
+        {
+            over "finger_joint"
+            {
+                float drive:angular:physics:damping = 3
+                float drive:angular:physics:maxForce = 1
+                float drive:angular:physics:stiffness = 50
+                float drive:angular:physics:targetPosition = 0
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "right_outer_knuckle_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "left_inner_finger_knuckle_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "right_inner_finger_knuckle_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "left_outer_finger_joint"
+            {
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+        }
+    }
+}
+
+class "_TeleopPhysxGripperTuning_2F140"
+{
+    over "Robotiq_2F_140"
+    {
+        over "base_link"
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+            )
+            rel physics:simulationOwner
+        }
+
+        over "left_outer_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "left_outer_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "left_inner_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "left_inner_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "right_outer_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "right_outer_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "right_inner_finger" (
+            prepend apiSchemas = ["PhysxRigidBodyAPI"]
+        )
+        {
+            rel physics:simulationOwner
+            int physxRigidBody:solverPositionIterationCount = 64
+            int physxRigidBody:solverVelocityIterationCount = 8
+        }
+
+        over "right_inner_knuckle"
+        {
+            rel physics:simulationOwner
+        }
+
+        over "Joints"
+        {
+            over "finger_joint"
+            {
+                float drive:angular:physics:damping = 3
+                float drive:angular:physics:maxForce = 1
+                float drive:angular:physics:stiffness = 50
+                float drive:angular:physics:targetPosition = 0
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "right_outer_knuckle_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "left_inner_finger_knuckle_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "right_inner_finger_knuckle_joint"
+            {
+                bool[] isaac:actuator (
+                    displayName = "Actuator"
+                )
+                string isaac:NameOverride (
+                    displayName = "Joint Name Override"
+                )
+                token[] isaac:physics:DofOffsetOpOrder (
+                    displayName = "Dof Offset Op Order"
+                )
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+
+            over "left_outer_finger_joint"
+            {
+                float state:angular:physics:position = 0
+                float state:angular:physics:velocity = 0
+            }
+        }
+    }
 }
 
