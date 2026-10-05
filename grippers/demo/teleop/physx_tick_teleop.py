@@ -553,7 +553,8 @@ class Teleop:
 
             grip = None
             for prim in Usd.PrimRange(self.stage.GetPrimAtPath(ARM)):
-                if prim.GetName() == GRIPPER_PRIM:
+                n = prim.GetName()
+                if n == GRIPPER_PRIM or (n.startswith("Robotiq_") and n.endswith("_edit")):
                     grip = prim
                     break
             if grip is not None:

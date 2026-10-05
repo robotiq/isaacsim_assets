@@ -59,8 +59,25 @@ try:
     # The 2F-85 fingertip pad is now its own rigid body
     # (left/right_fingertip), split out of inner_finger, so the grasp contact
     # (and its force) lands on the fingertip body — watch that, not inner_finger.
-    LEFT_PAD ="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/left_fingertip"
-    RIGHT_PAD="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/right_fingertip"
+    # Resolve the mounted gripper (Robotiq_2F_85_edit, Robotiq_2F_140_edit, ...) under
+    # the wrist, so this works for whichever gripper the scene's Gripper variant picked.
+    def _resolve_pads():
+        import omni.usd
+        from pxr import Usd
+        stage=omni.usd.get_context().get_stage()
+        wrist=stage.GetPrimAtPath("/World/ur5e/wrist_3_link")
+        L=R=None
+        if wrist and wrist.IsValid():
+            for c in wrist.GetChildren():
+                if c.GetName().startswith("Robotiq") and c.GetName().endswith("_edit"):
+                    for p in Usd.PrimRange(c):
+                        if p.GetName()=="left_fingertip": L=str(p.GetPath())
+                        elif p.GetName()=="right_fingertip": R=str(p.GetPath())
+                    break
+        b="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85"   # fallback: 2F-85 layout
+        return L or b+"/left_fingertip", R or b+"/right_fingertip"
+    LEFT_PAD,RIGHT_PAD=_resolve_pads()
+    print("contact pads:", LEFT_PAD, RIGHT_PAD)
     SCAN_INTERVAL=2.0      # Newton: re-find the live Data at most this often (s)
 
     def A(x):
