@@ -27,6 +27,8 @@ the mjc:* params tune the MuJoCo-Warp (Newton) solver; no Physx* runtime data he
         @./Robotiq_2F_85_newton_fourbar_physics.usda@,
         @./Robotiq_2F_85_newton_common_physics.usda@,
         @./Robotiq_2F_85_body_mass_physics.usda@,
+        # fingertip_physics only authors values nothing else overrides, so its slot is arbitrary.
+        @./Robotiq_2F_85_fingertip_physics.usda@,
         @./Robotiq_2F_85_kinematics_physics.usda@,
         @./base.usda@
     ]

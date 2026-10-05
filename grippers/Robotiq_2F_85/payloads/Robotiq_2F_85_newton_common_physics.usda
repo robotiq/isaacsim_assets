@@ -7,7 +7,7 @@ grip formulation (newton_compliant, newton_parallel_grip, ...).
 Single source of truth for the Newton-tuned values that are identical across those
 variants: rigid-body mass / CoM / isotropic diagonal inertia / principalAxes for the
 non-shared-mass bodies (outer_finger, inner_finger, inner_knuckle + the outer_knuckle
-inertia override), the fingertip bodies + their inner_finger welds, the GripMaterial
+inertia override), the GripMaterial
 pad friction, and the per-mesh convex-hull colliders (+ pad material binding).
 Sublayered by each Newton variant payload, which then overlays only its variant- and
 engine-specific bits on top:
@@ -16,8 +16,9 @@ engine-specific bits on top:
     self-collision exclusion), and the MuJoCo tuning -- MjcMaterialAPI on GripMaterial,
     MjcCollisionAPI + mjc:* solver params on the mesh colliders.
 
-base_link + left/right_outer_knuckle MASS stay in ./Robotiq_2F_85_body_mass_physics.usda
-(shared with the PhysX variants too). This layer is Newton-pure: only UsdPhysics +
+base_link + left/right_outer_knuckle MASS stay in ./Robotiq_2F_85_body_mass_physics.usda, and the
+fingertip bodies + their inner_finger welds come from ./Robotiq_2F_85_fingertip_physics.usda (both
+shared with the PhysX variants too; the Newton variant payloads sublayer them). This layer is Newton-pure: only UsdPhysics +
 Newton* schemas, no Physx*/Mjc* (RV.011); the Mjc tuning lives in the compliant overlay.
 """
     metersPerUnit = 1
@@ -100,48 +101,6 @@ over "Robotiq_2F_85"
             point3f physics:centerOfMass = (0, 0.057154, 0.110919)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
-        }
-
-        # Fingertips welded to inner_finger (screwed-on pad), Standard-pad mass. Identical
-        # across the Newton variants, so the weld lives here (not per-variant).
-        over "left_fingertip" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            float physics:mass = 0.02598171
-            point3f physics:centerOfMass = (0, -0.05063447, 0.12616345)
-            float3 physics:diagonalInertia = (0.0000013906384, 0.0000033053761, 0.0000037298817)
-            quatf physics:principalAxes = (0.550085, -0.4443045, -0.4443045, 0.550085)
-
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_fingertip>
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
-        }
-
-        over "right_fingertip" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            float physics:mass = 0.02598171
-            point3f physics:centerOfMass = (0, 0.05063447, 0.12616345)
-            float3 physics:diagonalInertia = (0.0000013906384, 0.0000033053761, 0.0000037298817)
-            quatf physics:principalAxes = (0.550085, 0.4443045, 0.4443045, 0.550085)
-
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_fingertip>
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
 
         # Silicone fingertip pad friction. The compliant overlay adds MjcMaterialAPI.

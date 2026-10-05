@@ -20,8 +20,9 @@ win over the neutral joint defs) and adds ONLY its variant-specific distal-coupl
                           outer_finger WELDED to outer_knuckle (distal DOF removed
                           -> parallel grip).
 
-Rigid-body mass / inertia / colliders / fingertip welds / pad material are the
-Newton-pure shared values in ./Robotiq_2F_85_newton_common_physics.usda; the neutral
+Rigid-body mass / inertia / colliders / pad material are the Newton-pure shared values in
+./Robotiq_2F_85_newton_common_physics.usda (fingertip bodies + welds: the engine-neutral
+./Robotiq_2F_85_fingertip_physics.usda); the neutral
 joint frames/limits/bodies are in ./Robotiq_2F_85_kinematics_physics.usda. This layer
 carries the Mjc* solver tuning for both, so newton_common stays Newton-pure (RV.011).
 """
@@ -177,9 +178,9 @@ over "Robotiq_2F_85"
 
         # Loop-closure self-collision exclusion: outer_finger and inner_finger are joined
         # only by the loop_closure equality (no revolute between them), so their convex
-        # hulls would otherwise collide. Bodies / fingertips / pad material / colliders
+        # hulls would otherwise collide. Bodies / pad material / colliders
         # themselves are the shared Newton values in
-        # ./Robotiq_2F_85_newton_common_physics.usda; the per-variant distal weld (parallel)
+        # ./Robotiq_2F_85_newton_common_physics.usda (fingertips: fingertip_physics); the per-variant distal weld (parallel)
         # is added on top of this outer_finger overlay in that variant's payload.
         over "left_outer_finger" (
             prepend apiSchemas = ["PhysicsFilteredPairsAPI"]
