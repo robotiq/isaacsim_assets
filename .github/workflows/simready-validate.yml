@@ -1,4 +1,8 @@
-# Manually-triggered SimReady conformance check for the Robotiq gripper asset.
+# SimReady conformance check for ONE Robotiq gripper asset (default 2F-85).
+#
+# Reusable building block: dispatched by hand, called by hf-publish.yml (publish
+# gate) and called per gripper by simready-validate-pr.yml (the automatic PR gate,
+# which validates only the grippers whose folder a PR touches).
 #
 # Runs NVIDIA's official `simready-validate` against a SimReady profile using
 # ONLY public PyPI packages (Python 3.12) plus a pinned checkout of the public
@@ -69,6 +73,11 @@ jobs:
       statuses: write
     steps:
       - name: Mark commit status pending
+        # Only for manual dispatches. Under pull_request (simready-validate-pr.yml)
+        # the per-gripper runs must not write the shared "validate" context: the
+        # 2F-140 run would overwrite a 2F-85 failure. The PR workflow's aggregate
+        # job is the "validate" check there.
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -150,22 +159,29 @@ jobs:
         id: summarize
         if: always()
         # Fails on any blocking failure AND on any optional-feature regression
-        # versus the committed baseline (ci/simready/expected.json). After an
+        # versus the committed baseline (ci/simready/expected/<asset>.json, one per gripper). After an
         # intended change, refresh it with:
         #   python3 ci/simready/summarize.py --update results.json
         run: python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" results.json
+
+      - name: Name results artifact (unique per asset)
+        id: artifact
+        if: always()
+        run: |
+          asset="${{ inputs.asset || 'grippers/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
+          stem="$(basename "$asset")"; echo "name=simready-results-${stem%.*}" >> "$GITHUB_OUTPUT"
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: simready-results
+          name: ${{ steps.artifact.outputs.name }}
           path: |
             results.json
             validation.log
 
-      - name: Report commit status (the required check on PRs)
-        if: always()
+      - name: Report commit status (manual runs only; see above)
+        if: always() && github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
