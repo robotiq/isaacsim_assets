@@ -21,7 +21,7 @@ Newton->PhysX frame: rotate 90 deg about +Z, translate Z by -0.01076 m (the Newt
 plate). Apply to any ported geometric coordinate.
 
 RV.011: shared Newton+MuJoCo tuning (from the fourbar layer) -- the mjc:* params tune the
-MuJoCo-Warp (Newton) solver; no Physx* runtime data beyond the outer_finger_joint limit."""
+MuJoCo-Warp (Newton) solver; no Physx* data here."""
     metersPerUnit = 1
     subLayers = [
         @./Robotiq_2F_85_newton_fourbar_physics.usda@,
@@ -44,14 +44,13 @@ over "Robotiq_2F_85"
             # untouched so each variant decides its fate). MuJoCo tuning only; the neutral
             # frames/limits/bodies come from the kinematics layer.
             over "left_outer_finger_joint" (
-                prepend apiSchemas = ["MjcJointAPI", "PhysxLimitAPI:angular"]
+                prepend apiSchemas = ["MjcJointAPI"]
             )
             {
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
-                float physxLimit:angular:damping = 0.0099999998
             }
 
             over "right_outer_finger_joint" (

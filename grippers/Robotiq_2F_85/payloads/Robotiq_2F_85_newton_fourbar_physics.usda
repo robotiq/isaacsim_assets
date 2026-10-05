@@ -63,7 +63,7 @@ over "Robotiq_2F_85"
         over "Joints"
         {
             over "finger_joint" (
-                prepend apiSchemas = ["MjcJointAPI", "PhysxJointAPI", "PhysicsDriveAPI:angular"]
+                prepend apiSchemas = ["MjcJointAPI", "PhysicsDriveAPI:angular"]
             )
             {
                 float drive:angular:physics:damping = 2.7576203
@@ -74,7 +74,6 @@ over "Robotiq_2F_85"
                 uniform double mjc:damping = 0.1
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.02, 2]
-                float physxJoint:maxJointVelocity = 0.30000001
             }
 
             over "right_outer_knuckle_joint" (
