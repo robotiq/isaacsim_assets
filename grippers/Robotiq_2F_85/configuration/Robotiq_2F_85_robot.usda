@@ -77,7 +77,7 @@ over "Robotiq_2F_85" (
         displayName = "Version"
     )
 
-    # robotJoints is variant-specific -- the three Physics variants model the 2F-85
+    # robotJoints is variant-specific -- the four Physics variants model the 2F-85
     # four-bar with different joint sets -- so it is authored per-variant here rather
     # than once on the default prim. (A default-prim value is Local-strength and could
     # not be overridden by a variant.) robotLinks stays shared above: the bodies are
@@ -89,11 +89,13 @@ over "Robotiq_2F_85" (
                 </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_outer_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
             ]
         }
@@ -117,6 +119,19 @@ over "Robotiq_2F_85" (
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_outer_finger_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
+        "Newton_parallel_grip" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/WeldToKnuckle>,
+                </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/WeldToKnuckle>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
@@ -169,6 +184,12 @@ over "Robotiq_2F_85" (
             )
             {
             }
+
+            over "WeldToKnuckle" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
         }
 
         over "left_inner_finger" (
@@ -194,6 +215,12 @@ over "Robotiq_2F_85" (
         )
         {
             over "FixedJoint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "WeldToKnuckle" (
                 prepend apiSchemas = ["IsaacJointAPI"]
             )
             {
@@ -245,6 +272,30 @@ over "Robotiq_2F_85" (
             }
 
             over "left_inner_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "left_outer_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_outer_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "left_inner_knuckle_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["IsaacJointAPI"]
             )
             {
