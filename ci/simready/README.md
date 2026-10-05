@@ -12,14 +12,17 @@ two ever disagree, the guide wins.
 
 | File | Role |
 |---|---|
-| `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected.json`). Strict for the validate gate; `--allow-improvements` for publish. |
+| `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected/<asset>.json`, one per gripper). Strict for the validate gate; `--allow-improvements` for publish. |
 | `stage_package.sh` | Copies the asset into the one intermediate folder `simready-package` requires (`<asset>/simready_usd/…`, NP.005), keeping the organized subfolders. |
 | `submit_to_central.sh` | Stage 2 — opens the SimReady Central PR from an immutable HF URL. Run locally. |
 
 ## Pipeline overview
 
 ```
-.github/workflows/simready-validate.yml   Robot-Gripper conformance (manual + reusable)
+.github/workflows/simready-validate-pr.yml   PR gate: validates only the gripper(s) whose folder changed
+                    │  calls, per gripper
+                    ▼
+.github/workflows/simready-validate.yml   Robot-Gripper conformance (one asset; manual + reusable)
                     │  workflow_call (gate)
                     ▼
 .github/workflows/hf-publish.yml          stage → Robot-Gripper stamp → package def → upload
@@ -27,6 +30,21 @@ two ever disagree, the guide wins.
                     ▼
 ci/simready/submit_to_central.sh          PR to NVIDIA-Omniverse/simready-central (local)
 ```
+
+## PR validation is per gripper
+
+`simready-validate-pr.yml` runs on every pull request. It validates the 2F-85 when
+the PR changes `grippers/Robotiq_2F_85/**`, the 2F-140 when it changes
+`grippers/Robotiq_2F_140/**`, both when it changes the tooling (`ci/simready/**`,
+the validate workflows), and nothing otherwise. Each gripper is gated against its
+own baseline, `ci/simready/expected/<asset>.json`. Its `validate` job is the
+required check. Refresh a baseline after an intended change with
+`python3 ci/simready/summarize.py --update results.json` (the file is picked from
+the validated asset's name). Manual dispatches of `simready-validate.yml` still
+work and still post the `validate` commit status.
+
+`devel_helpers/author_mesh_extents_normals.py` fills in `extent` + `normals` on CAD-imported
+meshes (the 2F-140 parts needed it for VG.002/VG.027).
 
 ## How packaging works (and keeps the variants + organized layout)
 

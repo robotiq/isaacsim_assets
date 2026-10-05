@@ -1,0 +1,85 @@
+# Automatic SimReady gate for pull requests, scoped per gripper.
+#
+# A PR that changes files under grippers/Robotiq_2F_85/ must pass the 2F-85
+# validation; one that changes grippers/Robotiq_2F_140/ must pass the 2F-140
+# validation; one that changes both must pass both. Changes to the validation
+# tooling itself (ci/simready/**, the validate workflows) re-validate every
+# gripper. A PR touching none of these (docs, demo, ...) validates nothing and
+# the gate passes.
+#
+# Each gripper is checked by the reusable simready-validate.yml against its own
+# baseline (ci/simready/expected/<asset>.json). The final `validate` job is what
+# the branch ruleset requires: it fails if any validated gripper failed, and
+# always runs so the required check is reported even when nothing was validated.
+#
+# To add a gripper: add its folder to GRIPPERS below, add the entry to the matrix
+# in `gripper`, and commit its baseline in ci/simready/expected/.
+name: simready-validate-pr
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      grippers: ${{ steps.scope.outputs.grippers }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select grippers touched by this PR
+        id: scope
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed="$(git diff --name-only "$BASE...$HEAD")"
+          echo "Changed files:"; echo "$changed"
+          # Tooling changes affect every gripper.
+          all=false
+          if grep -qE '^(ci/simready/|\.github/workflows/simready-validate)' <<<"$changed"; then all=true; fi
+          out=()
+          for g in 2F_85 2F_140; do
+            if $all || grep -q "^grippers/Robotiq_$g/" <<<"$changed"; then out+=("$g"); fi
+          done
+          json="$(printf '%s\n' "${out[@]}" | jq -R . | jq -sc 'map(select(length>0))')"
+          echo "Grippers to validate: $json"
+          echo "grippers=$json" >> "$GITHUB_OUTPUT"
+
+  gripper:
+    needs: changes
+    if: needs.changes.outputs.grippers != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        gripper: ${{ fromJSON(needs.changes.outputs.grippers) }}
+    # statuses:write is only to satisfy the called workflow's declared permissions;
+    # it does not write commit statuses on pull_request events.
+    permissions:
+      contents: read
+      statuses: write
+    uses: ./.github/workflows/simready-validate.yml
+    with:
+      asset: grippers/Robotiq_${{ matrix.gripper }}/Robotiq_${{ matrix.gripper }}.usda
+
+  # The required check (ruleset context "validate").
+  validate:
+    needs: [changes, gripper]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          GRIPPER: ${{ needs.gripper.result }}
+        run: |
+          echo "changes=$CHANGES gripper=$GRIPPER"
+          # `gripper` is "skipped" when no gripper folder changed: that passes.
+          if [ "$CHANGES" != success ] || { [ "$GRIPPER" != success ] && [ "$GRIPPER" != skipped ]; }; then
+            echo "::error::SimReady validation failed (or could not run)"
+            exit 1
+          fi
