@@ -2,8 +2,8 @@
 (
     # "silicone" fingertip variant: deactivate the default flat tip and reference the
     # silicone tip parts (baked into the Isaac frame at the pad mount). The tip
-    # collider is authored (inert) in Robotiq_2F_140_fingertip_physics.usda so it
-    # composes only under a Physics variant. The fingertip rigid-body mass is the
+    # collider is authored (inert) in Robotiq_2F_140_physx_common_physics.usda so it
+    # composes only under a PhysX Physics variant. The fingertip rigid-body mass is the
     # shared value from fingertip_physics (refine per-tip later).
     defaultPrim = "Robotiq_2F_140"
     metersPerUnit = 1

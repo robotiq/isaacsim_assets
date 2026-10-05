@@ -1,19 +1,18 @@
 #usda 1.0
 (
-    # Shared fingertip physics for the 2F-140: the screwed-on fingertip rigid
-    # bodies, their PhysicsFixedJoints (welded to inner_finger, rigid like a
-    # screw), the default Flat-Overmolded pad mass/inertia, and the tip collider.
-    # Identical for the parallel_grip and compliant variants, so it lives here once
-    # and is sublayered by both. All link frames are identity/world, so the welds
-    # use identity local frames.
+    # Engine-neutral fingertip physics for the 2F-140 (UsdPhysics only, no Physx*/Newton*):
+    # the screwed-on fingertip rigid bodies, their PhysicsFixedJoints (welded to
+    # inner_finger, rigid like a screw) and the default Flat-Overmolded pad mass/inertia.
+    # Sublayered by every Physics variant (PhysX and Newton alike), so it lives here once.
+    # All link frames are identity/world, so the welds use identity local frames. The
+    # PhysX tip colliders live in Robotiq_2F_140_physx_common_physics.usda.
     #
     # Mass/inertia for the Flat-Overmolded pad are authored here (not in the
     # "Fingertip" variantSet) so they are reachable on the configuration/
     # integration path, which sublayers this payload + base.usda but never
     # Robotiq_2F_140.usda. The Silicone / V-Groove / Tactile_TSF140 Fingertip
-    # variants override them with their own values. The tip collider is authored
-    # here too so it composes only when a Physics variant is selected -- never
-    # under Physics = "None".
+    # variants override them with their own values. This layer is only sublayered by
+    # Physics variants, so it never composes under Physics = "None".
     #
     # Pad mass/CoM: CoM is the baked pad geometry centre; mass + inertia are
     # box-model estimates for the overmolded pad (refine against CAD if needed).
@@ -72,107 +71,6 @@ over "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, 0, 0)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
-            }
-        }
-    }
-}
-
-# Tip colliders for every Fingertip variant. Only the tip that the selected
-# "Fingertip" variant activates actually exists in the composed stage; the other
-# overs are inert. Authored here (not in the variant payloads) so no tip collider
-# ever composes under Physics = "None".
-over "Meshes"
-{
-    over "fingertip_left"
-    {
-        over "tip_flat"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "tip_silicone"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "tip_vgroove"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "tip_tsf140"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-    }
-
-    over "fingertip_right"
-    {
-        over "tip_flat"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "tip_silicone"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "tip_vgroove"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        over "tip_tsf140"
-        {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }
