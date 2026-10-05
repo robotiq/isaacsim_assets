@@ -14,6 +14,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Nobel/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Nobel/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Nobel/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Nobel/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -28,6 +29,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.7019608, 0.7019608, 0.7019608)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Rangoon_Green"
@@ -35,6 +45,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Rangoon_Green/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Rangoon_Green/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Rangoon_Green/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Rangoon_Green/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -49,6 +60,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.11764706, 0.11764706, 0.11764706)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Pumice"
@@ -56,6 +76,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Pumice/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Pumice/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Pumice/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Pumice/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -70,6 +91,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.78431374, 0.78431374, 0.78431374)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Cod_Gray"
@@ -77,6 +107,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Cod_Gray/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Cod_Gray/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Cod_Gray/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Cod_Gray/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -91,6 +122,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.039215688, 0.039215688, 0.039215688)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Stack"
@@ -98,6 +138,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Stack/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Stack/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Stack/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Stack/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -112,6 +153,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.5294118, 0.54901963, 0.54901963)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Periwinkle_Gray"
@@ -119,6 +169,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Periwinkle_Gray/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Periwinkle_Gray/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Periwinkle_Gray/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Periwinkle_Gray/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -133,6 +184,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.7921569, 0.81960785, 0.93333334)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Celeste"
@@ -140,6 +200,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Celeste/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Celeste/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Celeste/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Celeste/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -154,6 +215,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.8, 0.80784315, 0.8)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Chateau_Green"
@@ -161,6 +231,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Chateau_Green/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Chateau_Green/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Chateau_Green/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Chateau_Green/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -175,6 +246,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.28627452, 0.6627451, 0.32941177)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Gravel"
@@ -182,6 +262,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Gravel/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Gravel/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Gravel/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Gravel/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -196,6 +277,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.29803923, 0.29803923, 0.29803923)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Silver_Rust"
@@ -203,6 +293,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Silver_Rust/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Silver_Rust/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Silver_Rust/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Silver_Rust/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -217,6 +308,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.7764706, 0.75686276, 0.7372549)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Gallery"
@@ -224,6 +324,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Gallery/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Gallery/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Gallery/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Gallery/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -238,6 +339,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.9372549, 0.9372549, 0.9372549)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "LED_Blue"
@@ -245,6 +355,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/LED_Blue/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/LED_Blue/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/LED_Blue/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/LED_Blue/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -252,12 +363,22 @@ def Xform "World"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
                 color3f inputs:diffuse_color_constant = (0.008, 0.02, 0.12)
-                color3f inputs:emissive_color = (0.0, 0.1, 0.85)
+                color3f inputs:emissive_color = (0, 0.1, 0.85)
                 float inputs:emissive_intensity = 2000
                 bool inputs:enable_emission = 1
                 float inputs:metallic_constant = 0
                 float inputs:reflection_roughness_constant = 0.35
                 token outputs:out
+            }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.008, 0.02, 0.12)
+                color3f inputs:emissiveColor = (0, 0.1, 0.85)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.35
+                token outputs:surface
             }
         }
 
@@ -266,6 +387,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Dawn/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Dawn/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Dawn/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Dawn/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -280,6 +402,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.64705884, 0.61960787, 0.5882353)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "White"
@@ -287,6 +418,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/White/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/White/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/White/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/White/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -301,6 +433,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Gray"
@@ -308,6 +449,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Gray/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Gray/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Gray/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Gray/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -322,6 +464,15 @@ def Xform "World"
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
             }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.49411765, 0.49411765, 0.49411765)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
         }
 
         def Material "Mystic"
@@ -329,6 +480,7 @@ def Xform "World"
             token outputs:mdl:displacement.connect = </World/Looks/Mystic/Shader.outputs:out>
             token outputs:mdl:surface.connect = </World/Looks/Mystic/Shader.outputs:out>
             token outputs:mdl:volume.connect = </World/Looks/Mystic/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Mystic/PreviewSurface.outputs:surface>
 
             def Shader "Shader"
             {
@@ -342,6 +494,15 @@ def Xform "World"
                 float inputs:metallic_constant = 0
                 float inputs:reflection_roughness_constant = 0.5
                 token outputs:out
+            }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.8980392, 0.91764706, 0.92941177)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
             }
         }
     }
