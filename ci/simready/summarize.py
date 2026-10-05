@@ -9,7 +9,7 @@ Gating (a "ratchet"):
     mandatory feature) always fails the job.
   * An **optional** failure (an "optional requirements" entry — a requirement of
     an optional feature) does NOT fail on its own, BUT if it is a *regression*
-    versus the committed baseline (ci/simready/expected.json) it fails the job.
+    versus the asset's committed baseline (ci/simready/expected/<asset>.json) it fails the job.
     This keeps optional features from silently degrading.
   * An **improvement** (a requirement that the baseline records as failing but
     now passes) ALSO fails the job, until the baseline is refreshed. This is
@@ -38,9 +38,18 @@ import json
 import os
 import sys
 
-BASELINE_PATH = os.environ.get(
-    "SIMREADY_BASELINE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "expected.json")
-)
+BASELINE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "expected")
+
+
+def _baseline_path(asset):
+    """One baseline per gripper, named after the validated USD (Robotiq_2F_85.usda ->
+    expected/Robotiq_2F_85.json), so each gripper's ratchet moves independently.
+    SIMREADY_BASELINE overrides."""
+    override = os.environ.get("SIMREADY_BASELINE")
+    if override:
+        return override
+    stem = os.path.splitext(os.path.basename(asset))[0]
+    return os.path.join(BASELINE_DIR, stem + ".json")
 
 
 def _as_list(value):
@@ -74,18 +83,19 @@ def _load_results(path):
 
 
 def _write_baseline(path):
-    _, info = _load_results(path)
+    asset, info = _load_results(path)
+    baseline_path = _baseline_path(asset)
     baseline = {
         "profile_id": info.get("profile_id", "?"),
         "profile_version": info.get("profile_version", "?"),
         "_note": "SimReady feature baseline. Regenerate: python3 ci/simready/summarize.py --update results.json",
         "features": _feature_reqs(info.get("features_summary", {})),
     }
-    with open(BASELINE_PATH, "w") as fh:
+    with open(baseline_path, "w") as fh:
         json.dump(baseline, fh, indent=2, sort_keys=True)
         fh.write("\n")
     print(f"Wrote baseline for {baseline['profile_id']} v{baseline['profile_version']} "
-          f"({len(baseline['features'])} features) -> {BASELINE_PATH}")
+          f"({len(baseline['features'])} features) -> {baseline_path}")
     return 0
 
 
@@ -116,8 +126,9 @@ def main() -> int:
 
     # Load baseline and diff the optional/blocking sets per requirement.
     baseline = None
-    if os.path.exists(BASELINE_PATH):
-        with open(BASELINE_PATH) as fh:
+    baseline_path = _baseline_path(asset)
+    if os.path.exists(baseline_path):
+        with open(baseline_path) as fh:
             baseline = json.load(fh)
 
     regressions = {}   # feature -> [requirement codes newly failing vs baseline]
@@ -212,7 +223,7 @@ def main() -> int:
                   "```", "python3 ci/simready/summarize.py --update results.json", "```", ""]
         for name, reqs in sorted(improvements.items()):
             print(f"::error title=SimReady baseline out of date::{name}: {', '.join(reqs)} now passes; "
-                  f"run `python3 ci/simready/summarize.py --update results.json` and commit ci/simready/expected.json")
+                  f"run `python3 ci/simready/summarize.py --update results.json` and commit {os.path.relpath(baseline_path)}")
 
     _emit(lines)
     return 0 if ok else 1
