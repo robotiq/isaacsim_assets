@@ -58,9 +58,11 @@ over "Robotiq_2F_140" (
         displayName = "Version"
     )
 
-    # robotJoints is variant-specific (the PhysX variants model the four-bar with
-    # different joint sets), so it is authored per-variant rather than on the
-    # default prim. Only Physx_parallel_grip ships today.
+    # robotJoints is variant-specific -- the four Physics variants model the 2F-140
+    # four-bar with different joint sets -- so it is authored per-variant rather than
+    # on the default prim. Each list names the articulated joints of that variant
+    # (fingertip welds and Newton's loop_closure equalities are not listed, as on the
+    # 2F-85). robotLinks stays shared above: the bodies are the same across variants.
     variantSet "Physics" = {
         "Physx_parallel_grip" {
             prepend rel isaac:physics:robotJoints = [
@@ -90,8 +92,40 @@ over "Robotiq_2F_140" (
                 </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_knuckle_joint>,
             ]
         }
+        "Newton_compliant" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_140/Robotiq_2F_140/root_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_outer_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_outer_finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
+        "Newton_parallel_grip" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_2F_140/Robotiq_2F_140/root_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_outer_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/left_outer_finger/FixedJoint>,
+                </Robotiq_2F_140/Robotiq_2F_140/right_outer_finger/FixedJoint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/left_inner_finger_knuckle_joint>,
+                </Robotiq_2F_140/Robotiq_2F_140/Joints/right_inner_finger_knuckle_joint>,
+            ]
+        }
     }
 
+    # The IsaacLinkAPI/IsaacJointAPI overs below are the UNION over all Physics
+    # variants and live on the default prim (as on the 2F-85). An over whose prim a
+    # variant does not author is inert there: e.g. the outer_finger FixedJoint weld
+    # (both *_parallel_grip variants only) and the outer_finger / inner_knuckle
+    # joints (compliant + Newton variants only). The per-variant
+    # robotJoints lists above are the authority on which joints exist.
     over "Robotiq_2F_140"
     {
         string isaac:namespace (
@@ -131,6 +165,7 @@ over "Robotiq_2F_140" (
             prepend apiSchemas = ["IsaacLinkAPI"]
         )
         {
+            # outer_finger weld of both *_parallel_grip variants; inert under the others.
             over "FixedJoint" (
                 prepend apiSchemas = ["IsaacJointAPI"]
             )
@@ -160,6 +195,7 @@ over "Robotiq_2F_140" (
             prepend apiSchemas = ["IsaacLinkAPI"]
         )
         {
+            # outer_finger weld of both *_parallel_grip variants; inert under the others.
             over "FixedJoint" (
                 prepend apiSchemas = ["IsaacJointAPI"]
             )
@@ -224,6 +260,30 @@ over "Robotiq_2F_140" (
             }
 
             over "right_inner_finger_knuckle_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "left_outer_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_outer_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "left_inner_knuckle_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["IsaacJointAPI"]
             )
             {
