@@ -92,25 +92,44 @@ If you want to use a different stage, see
 [Building a compatible stage](#building-a-compatible-stage) at the
 bottom of this doc.
 
-### Gripper backend variant — PhysX vs Newton
+### Gripper and Physics variants
 
-The scene carries a `Gripper` variant set on `/World` (Stage panel →
-select `/World` → *Variants* → `Gripper`), so one file can test either
-gripper without maintaining a second stage:
+The scene carries two independent variant sets on `/World` (Stage panel →
+select `/World` → *Variants*), so one file can test any gripper on any
+physics without maintaining a second stage:
 
-| `Gripper` | Gripper asset | Launch with | After every Stop→Play |
-| --------- | ------------- | ----------- | --------------------- |
-| `physx` *(default)* | `Robotiq_2F_85/Robotiq_2F_85.usda` (+ its own `Physics` sub-variant) | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
-| `newton` | `Robotiq_2F_85/Robotiq_2F_85.usda` (`Physics = Newton_compliant`) | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run `Robotiq_2F_85/newton/apply_gripper_tuning.py` once |
+| `Gripper` | Gripper asset |
+| --------- | ------------- |
+| `2F85` *(default)* | `Robotiq_2F_85/Robotiq_2F_85.usda` |
+| `2F140` | `Robotiq_2F_140/Robotiq_2F_140.usda` |
 
-Both variants payload the same unified asset and differ only in the
-`Physics` variant they select (`Physx_compliant` vs `Newton_compliant`).
-The `newton` variant additionally deletes the variant's
-`PhysicsArticulationRootAPI` so it merges into the arm articulation
-(finger DOF stays named `finger_joint`), and welds `base_link` to
-`wrist_3_link` with a `FixedJoint`. The scene's `/PhysicsScene`
-carries `MjcSceneAPI` (inert under PhysX) so no scene edit is needed when
-switching.
+| `Physics` | Launch with | After every Stop→Play |
+| --------- | ----------- | --------------------- |
+| `Physx_compliant` *(default)* | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
+| `Physx_parallel_grip` | normal Isaac Sim | nothing |
+| `Newton_compliant` | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run the gripper's `newton/apply_gripper_tuning.py` once |
+| `Newton_parallel_grip` | **Newton experience** | run the gripper's `newton/apply_gripper_tuning.py` once |
+
+`Gripper` payloads the gripper's unified asset under `wrist_3_link`, deletes
+its own `PhysicsArticulationRootAPI` so it merges into the arm articulation
+(finger DOF stays named `finger_joint`), and welds its `base_link` to
+`wrist_3_link` with a `FixedJoint`. `Physics` selects the asset's own
+`Physics` variant of the same name and adds the engine's tuning: arm-joint
+drive damping (plus `mjc:armature` on Newton), and on PhysX the finger
+solver iterations and `finger_joint` drive (authored once per gripper in the
+`_TeleopPhysxGripperTuning_*` classes, which the PhysX variants inherit). The
+scene's `/PhysicsScene` carries `MjcSceneAPI` (inert under PhysX) so no
+scene edit is needed when switching.
+
+`Physics` is listed **before** `Gripper` on purpose: the asset's `Physics`
+variant set comes in through the payload inside the `Gripper` variant, and
+USD only honours a variant selection authored at least as strongly as that
+— so the scene's `Physics` variant must be the stronger arc.
+
+Switch variants by relaunching (`TELEOP_GRIPPER` / `TELEOP_PHYSICS`, below),
+not live in a running scene: grippers and grips have different DOF counts
+(e.g. compliant 8 vs parallel 6), and the tick teleop crashes (CUDA
+device-side assert) if the articulation changes under it.
 
 **The Newton runtime step is not optional.** Two Newton/MuJoCo settings
 cannot be persisted in USD (`opt.impratio` and the finger loop-closure
@@ -536,14 +555,18 @@ which needs neither Servo nor the gamepad node.
 ./run_demo.sh --no-frontend   # Isaac + Servo only
 ./run_demo.sh --no-isaac      # attach to an Isaac you already have running
 
-TELEOP_GRIPPER_VARIANT=newton ./run_demo.sh    # the Newton gripper
+TELEOP_GRIPPER=2F140 ./run_demo.sh                  # the 2F-140 (default 2F85)
+TELEOP_PHYSICS=Newton_compliant ./run_demo.sh       # the Newton gripper
+TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 ```
 
-The variant picks the Isaac experience, because the `newton` gripper only
+`TELEOP_PHYSICS` picks the Isaac experience, because the `Newton_*` physics only
 simulates under the Newton solver and that is a separate launcher rather than a
 flag — choosing one without the other gives a scene that loads and will not
 move. `ISAACSIM_LAUNCHER` overrides the derived default for anyone wrapping
-Isaac their own way, and the banner says which of the two you got.
+Isaac their own way, and the banner says which of the two you got. The old
+`TELEOP_GRIPPER_VARIANT=physx|newton` (both the 2F-85) still works and maps to
+`TELEOP_PHYSICS=Physx_compliant|Newton_compliant`.
 
 The scene opens in **RealTimePathTracing** rather than the saved
 `MinimalRendering`. Minimal does simplified lighting, so the soft sun angle and

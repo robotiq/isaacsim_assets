@@ -30,6 +30,10 @@ try:
         except Exception: pass
         try: prev["win"].destroy()
         except Exception: pass
+        try: prev["notice"].Revoke()      # gripper-switch listener
+        except Exception: pass
+        try: prev["udp"].close()
+        except Exception: pass
         try: carb._contactplot=None
         except Exception: pass
         print("OK: contact-force plot removed (window destroyed, per-frame subscription cancelled)")

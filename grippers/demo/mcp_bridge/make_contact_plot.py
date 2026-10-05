@@ -17,18 +17,25 @@ Alongside the plot it also UDP-broadcasts the two raw pad forces as an ASCII
 (e.g. the DualSense trigger-force-feedback node) can drive haptics from the
 exact same signal. Broadcasting to a port with no listener is a harmless no-op.
 
-Works on BOTH physics backends; the backend is detected once at creation:
+Follows the mounted gripper: the pads are re-resolved whenever the scene's
+Gripper variant changes (stop -> switch -> play keeps the plot and the haptics
+working). Works on BOTH physics backends; the backend is detected once at
+creation (switching engine needs a relaunch anyway):
   * Newton (mujoco_warp): reads per-contact `efc.force`. Re-attaches to the live
     solver Data on a 2 s throttle so it survives an Isaac Stop -> Play.
-  * PhysX: applies `PhysxContactReportAPI` to the two fingertip bodies and reads
+  * PhysX: applies `PhysxContactReportAPI` (on the session layer, so the scene
+    file is never dirtied) to the two fingertip bodies and reads
     `get_physx_simulation_interface().get_contact_report()` each frame, summing
     impulse / physics_dt for pad-vs-external-object contacts.
 
 Caveats:
   * PhysX contact reporting only activates after a Stop -> Play resync; if the
-    forces read 0 during a firm grasp, stop and replay once.
-  * The prim paths and Newton geom/joint indices below are specific to the
-    UR5e + 2F-85 teleop scene (ur5robot_with_2F-85.usda). Adjust for other scenes.
+    forces read 0 during a firm grasp, stop and replay once. After a Gripper
+    switch the API is applied to the new pads as soon as the switch lands
+    (while stopped), so the next Play already reports them.
+  * The prim paths below are specific to the UR5e teleop scene
+    (ur5robot_with_2F-85.usda): the gripper is the Robotiq_*_edit prim under
+    /World/ur5e/wrist_3_link. Adjust for other scenes.
   * Never scan the Python heap per frame — an earlier version fell back to
     `gc.get_objects()` every frame when it could not find the Newton solver,
     which dropped the sim from ~50 to ~2.6 FPS. Backend detection is one-shot.
@@ -59,8 +66,24 @@ try:
     # The 2F-85 fingertip pad is now its own rigid body
     # (left/right_fingertip), split out of inner_finger, so the grasp contact
     # (and its force) lands on the fingertip body — watch that, not inner_finger.
-    LEFT_PAD ="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/left_fingertip"
-    RIGHT_PAD="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/right_fingertip"
+    # Resolve the mounted gripper (Robotiq_2F_85_edit, Robotiq_2F_140_edit, ...) under
+    # the wrist, so this works for whichever gripper the scene's Gripper variant picked.
+    def _resolve_pads():
+        import omni.usd
+        from pxr import Usd
+        stage=omni.usd.get_context().get_stage()
+        wrist=stage.GetPrimAtPath("/World/ur5e/wrist_3_link")
+        L=R=None
+        if wrist and wrist.IsValid():
+            for c in wrist.GetChildren():
+                if c.GetName().startswith("Robotiq") and c.GetName().endswith("_edit"):
+                    for p in Usd.PrimRange(c):
+                        if p.GetName()=="left_fingertip": L=str(p.GetPath())
+                        elif p.GetName()=="right_fingertip": R=str(p.GetPath())
+                    break
+        b="/World/ur5e/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85"   # fallback: 2F-85 layout
+        return L or b+"/left_fingertip", R or b+"/right_fingertip"
+    WRIST="/World/ur5e/wrist_3_link"
     SCAN_INTERVAL=2.0      # Newton: re-find the live Data at most this often (s)
 
     def A(x):
@@ -150,7 +173,7 @@ try:
             st["obj_geoms"]={g for g in range(gb.size) if int(gb[g]) in obj_bodies}
             # Left/right finger body seeds, used by newton_side() to attribute a
             # contact to the left or right pad. Matched by BODY NAME (the raw MuJoCo
-            # model's names, e.g. "..._Robotiq_2F_85_left_inner_finger"), scoped to
+            # model's names, e.g. "..._Robotiq_2F_140_left_inner_finger"), scoped to
             # the gripper bodies. This is robust to (a) joint authoring order -- the
             # payload interleaves L/R joints and only the importer's body reordering
             # made a positional split work -- and (b) extra articulations / a second
@@ -162,7 +185,7 @@ try:
             if names:
                 for bid,nm in names.items():
                     low=nm.lower()
-                    if "robotiq_2f_85" not in low: continue   # gripper bodies only
+                    if "robotiq_2f_" not in low: continue     # gripper bodies only (2F-85, 2F-140, ...)
                     if "left_" in low:    lseed.add(bid)
                     elif "right_" in low: rseed.add(bid)
             if not lseed or not rseed:                         # fallback: positional
@@ -203,15 +226,26 @@ try:
         return fL,fR
 
     # -------------------------------------------------------- PHYSX discovery
+    def physx_report_pads(st):
+        """Apply PhysxContactReportAPI to the current pads. Authored on the SESSION
+        layer so the user's scene file is never dirtied. Returns True if it had to
+        apply it (i.e. PhysX only reports them after the next Stop -> Play)."""
+        import omni.usd
+        from pxr import PhysxSchema, Usd
+        stage=omni.usd.get_context().get_stage()
+        newly=False
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            for p in (st["L"],st["R"]):
+                prim=stage.GetPrimAtPath(p)
+                if not prim or not prim.IsValid(): continue
+                if not prim.HasAPI(PhysxSchema.PhysxContactReportAPI): newly=True
+                PhysxSchema.PhysxContactReportAPI.Apply(prim).CreateThresholdAttr(0.0)
+        return newly
     def physx_setup(st):
         import omni.physx, omni.usd
         from pxr import PhysxSchema
         stage=omni.usd.get_context().get_stage()
-        newly=False
-        for p in (LEFT_PAD,RIGHT_PAD):
-            prim=stage.GetPrimAtPath(p)
-            if not prim.HasAPI(PhysxSchema.PhysxContactReportAPI): newly=True
-            PhysxSchema.PhysxContactReportAPI.Apply(prim).CreateThresholdAttr(0.0)
+        newly=physx_report_pads(st)
         # physics dt
         dt=1.0/60.0
         for p in stage.Traverse():
@@ -226,7 +260,7 @@ try:
         return newly
     def read_physx(st):
         import math
-        si=st["si"]; dt=st["dt"]; P=st["_p"]
+        si=st["si"]; dt=st["dt"]; P=st["_p"]; LEFT_PAD=st["L"]; RIGHT_PAD=st["R"]
         hdrs,data=si.get_contact_report()
         fL=0.0; fR=0.0
         for h in hdrs:
@@ -246,6 +280,32 @@ try:
             else: fR+=f
         return fL,fR
 
+    # ------------------------------------------------- follow the mounted gripper
+    def refresh_pads(st):
+        """Re-resolve the pads (after a Gripper variant switch). On PhysX also apply
+        contact reporting to the new pads -- done while stopped, so the next Play
+        parses them with reporting on."""
+        L,R=_resolve_pads()
+        if (L,R)==(st.get("L"),st.get("R")): return False
+        st["L"],st["R"]=L,R
+        print("contact pads:", L, R)
+        if st.get("backend")=="physx":
+            try: physx_report_pads(st)
+            except Exception: print("ERR applying contact report:\n"+traceback.format_exc())
+        return True
+    def on_objects_changed(notice, sender):
+        # Only flag here -- authoring inside a USD notice handler is unsafe; the
+        # next app update (which ticks even while the sim is stopped) refreshes.
+        try:
+            import omni.usd
+            if notice.GetStage()!=omni.usd.get_context().get_stage(): return
+            for p in notice.GetResyncedPaths():
+                ps=str(p)
+                if ps=="/" or WRIST.startswith(ps) or ps.startswith(WRIST):
+                    st["pads_dirty"]=True; return
+        except Exception:
+            pass
+
     # ------------------------------------------------------------ teardown old
     prev=getattr(carb,"_contactplot",None)
     if prev is not None:
@@ -255,9 +315,14 @@ try:
         except: pass
         try: prev["udp"].close()
         except: pass
+        try: prev["notice"].Revoke()
+        except: pass
 
     # -------------------------------------------------- backend detect (once)
-    st={"smax":10.0,"backend":None,"last_scan":0.0,"mjm":None,"mjd":None,"solver":None}
+    st={"smax":10.0,"backend":None,"last_scan":0.0,"mjm":None,"mjd":None,"solver":None,
+        "pads_dirty":False}
+    st["L"],st["R"]=_resolve_pads()
+    print("contact pads:", st["L"], st["R"])
     newton_seed(st)
     if st["mjd"] is not None:
         st["backend"]="newton"; note="Newton (mujoco_warp efc.force)"
@@ -314,6 +379,9 @@ try:
     set_ticks(st["smax"])
 
     def on_update(e):
+        if st["pads_dirty"]:
+            st["pads_dirty"]=False
+            refresh_pads(st)
         # NEWTON only: re-find the live Data on a throttle (survives stop->play).
         # Never scan the heap per-frame -- that is what tanked FPS before.
         if st["backend"]=="newton":
@@ -347,7 +415,9 @@ try:
         ref["val"].text=f"left = {fL:7.2f} N   right = {fR:7.2f} N   (y-max {st['smax']:.0f})"
 
     sub=omni.kit.app.get_app().get_update_event_stream().create_subscription_to_pop(on_update, name="contact_force_plot")
-    carb._contactplot={"win":win,"sub":sub,"udp":udp}
+    from pxr import Tf, Usd
+    notice=Tf.Notice.RegisterGlobally(Usd.Notice.ObjectsChanged, on_objects_changed)
+    carb._contactplot={"win":win,"sub":sub,"udp":udp,"notice":notice}
     print("OK: contact-force plot recreated (backend="+st["backend"]+")")
 except Exception:
     print("ERR:\n"+traceback.format_exc())
