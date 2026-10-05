@@ -181,6 +181,22 @@ def Xform "Robotiq_2F_140" (
         ) {
 
         }
+        "Newton_compliant" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_2F_140_newton_compliant_physics.usda@
+        ) {
+
+        }
+        "Newton_parallel_grip" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_2F_140_newton_parallel_grip_physics.usda@
+        ) {
+
+        }
     }
     variantSet "Fingertip" = {
         "Flat_Overmolded" {
