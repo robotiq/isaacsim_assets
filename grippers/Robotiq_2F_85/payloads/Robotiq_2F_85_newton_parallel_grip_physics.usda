@@ -47,16 +47,17 @@ over "Robotiq_2F_85"
         }
 
         # Rigidly weld outer_finger to outer_knuckle (removes the four-bar's distal DOF
-        # -> forces parallel). Composes with the shared fourbar layer's outer_finger
+        # -> forces parallel). Same prim name, bodies and identity frames as the PhysX
+        # parallel_grip weld (all link frames are identity/world), so robot.usda covers both. Composes with the shared fourbar layer's outer_finger
         # loop-closure self-collision exclusion on the same prim.
         over "left_outer_finger"
         {
-            def PhysicsFixedJoint "WeldToKnuckle"
+            def PhysicsFixedJoint "FixedJoint"
             {
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
-                point3f physics:localPos0 = (0, -0.06213, 0.0509)
-                point3f physics:localPos1 = (0, -0.06213, 0.0509)
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
             }
@@ -64,12 +65,12 @@ over "Robotiq_2F_85"
 
         over "right_outer_finger"
         {
-            def PhysicsFixedJoint "WeldToKnuckle"
+            def PhysicsFixedJoint "FixedJoint"
             {
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
-                point3f physics:localPos0 = (0, 0.06213, 0.0509)
-                point3f physics:localPos1 = (0, 0.06213, 0.0509)
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
             }

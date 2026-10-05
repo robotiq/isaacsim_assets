@@ -130,8 +130,8 @@ over "Robotiq_2F_85" (
                 </Robotiq_2F_85/Robotiq_2F_85/root_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/WeldToKnuckle>,
-                </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/WeldToKnuckle>,
+                </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger/FixedJoint>,
+                </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
@@ -184,12 +184,6 @@ over "Robotiq_2F_85" (
             )
             {
             }
-
-            over "WeldToKnuckle" (
-                prepend apiSchemas = ["IsaacJointAPI"]
-            )
-            {
-            }
         }
 
         over "left_inner_finger" (
@@ -215,12 +209,6 @@ over "Robotiq_2F_85" (
         )
         {
             over "FixedJoint" (
-                prepend apiSchemas = ["IsaacJointAPI"]
-            )
-            {
-            }
-
-            over "WeldToKnuckle" (
                 prepend apiSchemas = ["IsaacJointAPI"]
             )
             {
