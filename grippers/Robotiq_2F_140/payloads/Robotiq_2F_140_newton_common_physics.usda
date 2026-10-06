@@ -6,7 +6,7 @@ grip formulation (newton_compliant, newton_parallel_grip, ...).
 
 Single source of truth for the Newton-tuned values that are identical across those
 variants: the isotropic diagonal inertia / principalAxes override for the eight moving
-finger-chain links (outer_knuckle, outer_finger, inner_knuckle, inner_finger), the fingertip bodies + their inner_finger welds, the GripMaterial
+finger-chain links (outer_knuckle, outer_finger, inner_knuckle, inner_finger), the GripMaterial
 pad friction, and the per-mesh convex-hull colliders (+ pad material binding).
 Sublayered by each Newton variant payload, together with the fourbar layer:
   * newton_fourbar (both variants): the four-bar loop closures, the
@@ -18,7 +18,9 @@ Sublayered by each Newton variant payload, together with the fourbar layer:
   * newton_compliant only: the outer_finger joint tuning.
 
 Every link's MASS + CoM (and its RigidBody/Mass APIs) comes from
-./Robotiq_2F_140_body_mass_physics.usda, shared with the PhysX variants -- not re-authored here. This layer is Newton-pure: only UsdPhysics +
+./Robotiq_2F_140_body_mass_physics.usda, and the fingertip bodies + their inner_finger welds from
+./Robotiq_2F_140_fingertip_physics.usda; both are shared with the PhysX variants and not re-authored
+here (the Newton variant payloads sublayer them). This layer is Newton-pure: only UsdPhysics +
 Newton* schemas, no Physx*/Mjc* (RV.011); the Mjc tuning lives in the fourbar overlay.
 
 Mass provenance (2F-140): there is no standalone Newton 2F-140 model to port from (the
@@ -26,7 +28,7 @@ Mass provenance (2F-140): there is no standalone Newton 2F-140 model to port fro
 2F-140 Newton variants simply inherit the real mass + CoM from the shared mass layer,
 with the 2F-85's intentional isotropic (0.001)^3 diagonal inertia + identity principal
 axes (solver-stability tuning for the soft loop-closure equalities -- see ../newton/README.md).
-Fingertips use the 2F-140 Flat-Overmolded pad values (as the PhysX fingertip layer).
+Fingertips use the 2F-140 Flat-Overmolded pad values (from the shared fingertip layer).
 """
     metersPerUnit = 1
     upAxis = "Z"
@@ -88,48 +90,6 @@ over "Robotiq_2F_140"
         {
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
-        }
-
-        # Fingertips welded to inner_finger (screwed-on pad), Flat-Overmolded pad mass. Identical
-        # across the Newton variants, so the weld lives here (not per-variant).
-        over "left_fingertip" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            float physics:mass = 0.04
-            point3f physics:centerOfMass = (0, -0.0799, 0.1768)
-            float3 physics:diagonalInertia = (0.0000153, 0.0000036, 0.0000165)
-            quatf physics:principalAxes = (1, 0, 0, 0)
-
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/left_inner_finger>
-                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/left_fingertip>
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
-        }
-
-        over "right_fingertip" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            float physics:mass = 0.04
-            point3f physics:centerOfMass = (0, 0.0793, 0.1772)
-            float3 physics:diagonalInertia = (0.0000153, 0.0000036, 0.0000165)
-            quatf physics:principalAxes = (1, 0, 0, 0)
-
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/right_inner_finger>
-                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/right_fingertip>
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
 
         # Fingertip pad friction. The compliant overlay adds MjcMaterialAPI.

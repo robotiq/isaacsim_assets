@@ -1,20 +1,18 @@
 #usda 1.0
 (
-    # Shared fingertip physics for the 2F-85: the screwed-on fingertip rigid
-    # bodies, their PhysicsFixedJoints (welded to inner_finger, rigid like a
-    # screw), the Standard-pad mass/inertia, and both tip colliders. This is
-    # identical for the parallel_grip and compliant physics variants, so it lives
-    # here once and is sublayered by both (instead of being duplicated in each).
-    # Link frames coincide with inner_finger (identity), so the joint anchors are
-    # at the origin.
+    # Engine-neutral fingertip physics for the 2F-85 (UsdPhysics only, no Physx*/Newton*):
+    # the screwed-on fingertip rigid bodies, their PhysicsFixedJoints (welded to
+    # inner_finger, rigid like a screw) and the Standard-pad mass/inertia. Sublayered by
+    # every Physics variant (PhysX and Newton alike), so it lives here once. Link frames
+    # coincide with inner_finger (identity), so the joint anchors are at the origin. The
+    # PhysX tip colliders live in Robotiq_2F_85_physx_common_physics.usda.
     #
     # Mass/inertia for the Standard pad are authored here (not in the "Fingertip"
     # variantSet) so they are reachable on the configuration/ integration path,
     # which sublayers this payload + base.usda but never Robotiq_2F_85.usda.
     # The "Tactile_TSF85" Fingertip variant overrides them with the sensor-case
-    # values. The tip colliders are authored here too so they compose only when a
-    # Physics variant is selected — never under Physics = "None", which keeps that
-    # variant pure kinematic geometry.
+    # values. This layer is only sublayered by Physics variants, so it never composes
+    # under Physics = "None", which stays pure kinematic geometry.
     defaultPrim = "Robotiq_2F_85"
     metersPerUnit = 1
     subLayers = [
@@ -72,39 +70,6 @@ over "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0, 0)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
-            }
-        }
-    }
-}
-
-over "Meshes"
-{
-    over "fingertip"
-    {
-        over "tip_standard"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-
-        # Only present when Fingertip = "Tactile_TSF85" (the tactile payload adds
-        # tip_tsf85); this over is inert otherwise. Authored here rather than in the
-        # tactile payload so the sensor-case collider never composes under
-        # Physics = "None" (which would otherwise leave a world-static actor with no
-        # rigid-body ancestor).
-        over "tip_tsf85"
-        {
-            over "TSF_85_case" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }

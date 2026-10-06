@@ -23,6 +23,8 @@ MuJoCo-Warp (Newton) solver; no Physx* data here."""
         @./Robotiq_2F_140_newton_fourbar_physics.usda@,
         @./Robotiq_2F_140_newton_common_physics.usda@,
         @./Robotiq_2F_140_body_mass_physics.usda@,
+        # fingertip_physics only authors values nothing else overrides, so its slot is arbitrary.
+        @./Robotiq_2F_140_fingertip_physics.usda@,
         @./Robotiq_2F_140_kinematics_physics.usda@,
         @./base.usda@
     ]

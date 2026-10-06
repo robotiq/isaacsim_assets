@@ -35,6 +35,7 @@
     metersPerUnit = 1
     startTimeCode = -1
     subLayers = [
+        @./Robotiq_2F_85_physx_common_physics.usda@,
         @./Robotiq_2F_85_body_mass_physics.usda@,
         @./Robotiq_2F_85_fingertip_physics.usda@,
         @./Robotiq_2F_85_kinematics_physics.usda@
@@ -110,24 +111,11 @@ def Xform "Robotiq_2F_85" (
 )
 {
     over Xform "Robotiq_2F_85" (
-        prepend apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
         kind = "assembly"
     )
     {
-        bool physxArticulation:enabledSelfCollisions = 0
         int physxArticulation:solverPositionIterationCount = 64
 
-        # Root/mount joint pinning the gripper base to the world (body0 empty).
-        # Makes this a fixed-base articulation, as expected for an End Effector
-        # interface asset. When mounting on an arm, retarget or deactivate this joint.
-        def PhysicsFixedJoint "root_joint"
-        {
-            rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
-            point3f physics:localPos0 = (0, 0, 0)
-            point3f physics:localPos1 = (0, 0, 0)
-            quatf physics:localRot0 = (1, 0, 0, 0)
-            quatf physics:localRot1 = (1, 0, 0, 0)
-        }
 
         # Joint frames/limits/bodies + PhysicsJointStateAPI are the shared neutral
         # defs in ./Robotiq_2F_85_kinematics_physics.usda (sublayered above). These overlays
@@ -340,89 +328,3 @@ def Xform "Robotiq_2F_85" (
         # variant; see the sublayered Robotiq_2F_85_fingertip_physics.usda.
     }
 }
-
-over "Meshes"
-{
-    over "base_link"
-    {
-        over "Defeatured_2F_85_PAD_OPEN_basestep_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_basestep" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-    }
-
-    over "inner_finger"
-    {
-        over "Defeatured_2F_85_PAD_OPEN_finger4step_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_finger4step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-    }
-
-    over "inner_knuckle"
-    {
-        over "Defeatured_2F_85_PAD_OPEN_finger3step_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_finger3step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-    }
-
-    over "outer_finger"
-    {
-        over "Defeatured_2F_85_PAD_OPEN_finger2step_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_finger2step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-    }
-
-    over "outer_knuckle"
-    {
-        over "Defeatured_2F_85_PAD_OPEN_Finger1step_01"
-        {
-            over "Defeatured_2F_85_PAD_OPEN_Finger1step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
-            )
-            {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
-            }
-        }
-    }
-
-    def PhysicsCollisionGroup "CollisionGroup"
-    {
-        rel collection:colliders:includes = </Meshes>
-        rel physics:filteredGroups
-    }
-
-    def PhysicsCollisionGroup "CollisionGroup_01"
-    {
-        rel collection:colliders:includes = </Robotiq_2F_85>
-        rel physics:filteredGroups = </Meshes/CollisionGroup>
-    }
-}
-
