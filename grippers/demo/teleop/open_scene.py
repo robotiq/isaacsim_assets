@@ -345,7 +345,7 @@ def install():
                      .get_update_event_stream()
                      .create_subscription_to_pop(_on_update,
                                                  name="physx_teleop_autostart"))
-    print("[physx-autostart] scheduled -- %s (variant %r)" % (d, VARIANT))
+    print("[physx-autostart] scheduled -- %s (variants %r)" % (d, VARIANTS))
     return sub
 
 
