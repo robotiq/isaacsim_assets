@@ -75,7 +75,7 @@ def Xform "Robotiq_2F_140" (
             {
                 float drive:angular:physics:damping = 0.00001
                 float drive:angular:physics:maxForce = 0.5
-                float drive:angular:physics:stiffness = 0.0004
+                float drive:angular:physics:stiffness = 0.00068
                 float drive:angular:physics:targetPosition = -92
                 uniform bool physics:excludeFromArticulation = 1
             }
@@ -119,7 +119,7 @@ def Xform "Robotiq_2F_140" (
             {
                 float drive:angular:physics:damping = 0.00001
                 float drive:angular:physics:maxForce = 0.5
-                float drive:angular:physics:stiffness = 0.0004
+                float drive:angular:physics:stiffness = 0.00068
                 float drive:angular:physics:targetPosition = 92
                 uniform bool physics:excludeFromArticulation = 1
             }
