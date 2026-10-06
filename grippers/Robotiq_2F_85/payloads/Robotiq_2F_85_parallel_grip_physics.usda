@@ -328,21 +328,3 @@ def Xform "Robotiq_2F_85" (
         # variant; see the sublayered Robotiq_2F_85_fingertip_physics.usda.
     }
 }
-
-# Collision-group plumbing: keep the shared /Meshes colliders from colliding with the
-# articulation-body copies. parallel_grip only (the compliant payload never authored it);
-# the colliders themselves are in ./Robotiq_2F_85_physx_common_physics.usda.
-over "Meshes"
-{
-    def PhysicsCollisionGroup "CollisionGroup"
-    {
-        rel collection:colliders:includes = </Meshes>
-        rel physics:filteredGroups
-    }
-
-    def PhysicsCollisionGroup "CollisionGroup_01"
-    {
-        rel collection:colliders:includes = </Robotiq_2F_85>
-        rel physics:filteredGroups = </Meshes/CollisionGroup>
-    }
-}
