@@ -105,7 +105,7 @@ over "Robotiq_2F_140"
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 uniform double mjc:springref = -2.62
-                uniform double mjc:stiffness = 2
+                uniform double mjc:stiffness = 3.4
             }
 
             over "right_inner_knuckle_joint" (
@@ -116,7 +116,7 @@ over "Robotiq_2F_140"
                 uniform double mjc:damping = 0.5
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 uniform double mjc:springref = 2.62
-                uniform double mjc:stiffness = 2
+                uniform double mjc:stiffness = 3.4
             }
 
             # Newton body order (inner_knuckle -> inner_finger) overrides the neutral
