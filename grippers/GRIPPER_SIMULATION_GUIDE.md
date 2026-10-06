@@ -12,7 +12,9 @@ The gripper assets referenced throughout live in this repo alongside this guide:
 | Asset | Backend | Path |
 |---|---|---|
 | 2F-85 (PhysX: `Physx_parallel_grip` + `Physx_compliant`) | PhysX | [`Robotiq_2F_85/`](Robotiq_2F_85/) |
-| 2F-85 (Newton: `Newton_compliant`) | Newton | [`Robotiq_2F_85/`](Robotiq_2F_85/) |
+| 2F-85 (Newton: `Newton_compliant` + `Newton_parallel_grip`) | Newton | [`Robotiq_2F_85/`](Robotiq_2F_85/) |
+| 2F-140 (PhysX: `Physx_parallel_grip` + `Physx_compliant`) | PhysX | [`Robotiq_2F_140/`](Robotiq_2F_140/) |
+| 2F-140 (Newton: `Newton_compliant` + `Newton_parallel_grip`) | Newton | [`Robotiq_2F_140/`](Robotiq_2F_140/) |
 
 The exact tuned USD values are given inline with each fix in §3.
 
@@ -153,11 +155,14 @@ The 2F-85 exposes two **independent** variant sets on its root prim
 (see §1.3). Pick one option from each:
 
 - **`Physics`** — how the finger linkage is simulated: `None` (kinematic only),
-  `Physx_parallel_grip`, or `Physx_compliant`.
+  `Physx_parallel_grip`, or `Physx_compliant` on PhysX; `Newton_compliant` or
+  `Newton_parallel_grip` on the Newton backend (§5).
 - **`Fingertip`** — what is mounted on the finger tip: `Standard` or
   `Tactile_TSF85`.
 
-Any `Physics` × `Fingertip` combination works.
+Any `Physics` × `Fingertip` combination works. The 2F-140 (`.../Robotiq_2F_140_edit`)
+exposes the same `Physics` variants; its `Fingertip` options are `Flat_Overmolded`
+(default), `Silicone`, `V_Groove` and `Tactile_TSF140`.
 
 Both variant sets live on the `edit` layer. If you integrate via the
 `configuration/` files (§2.2) you get the `Physx_parallel_grip` /
@@ -615,9 +620,13 @@ Sim 6 ships it bundled. You select the Newton backend on the physics scene; the
 gripper asset is authored with Newton-specific (`mjc:`) attributes and MuJoCo
 contact tuning rather than PhysX ones.
 
-The Newton 2F-85 is the `Newton_compliant` variant of the unified asset
-([`Robotiq_2F_85/`](Robotiq_2F_85/)) — select `Physics = Newton_compliant`, drop
-it in a scene with a `PhysicsScene`, and play. It is **open by default**
+The Newton 2F-85 comes as two variants of the unified asset
+([`Robotiq_2F_85/`](Robotiq_2F_85/)): `Newton_compliant`, where the coupler
+(`outer_finger_joint`) stays live so the fingers wrap around the object, and
+`Newton_parallel_grip`, where the coupler is welded so the fingers stay parallel.
+Select `Physics = Newton_compliant` or `Newton_parallel_grip`, drop it in a scene
+with a `PhysicsScene`, and play. The 2F-140 has the same two Newton variants
+([`Robotiq_2F_140/newton/`](Robotiq_2F_140/newton/)). It is **open by default**
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
 
@@ -694,11 +703,13 @@ The loop (five-bar) variant is where Newton earns its place:
 
 ### 5.3 Where to find the asset
 
-- **Newton 2F-85:** the `Newton_compliant` variant of
-  [`Robotiq_2F_85/`](Robotiq_2F_85/) — physics in
-  `payloads/Robotiq_2F_85_newton_compliant_physics.usda` (bodies, joints, the
-  five-bar loop closure, and collision cooked from the shared visual CADs), plus
-  the runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
+- **Newton 2F-85:** the `Newton_compliant` and `Newton_parallel_grip` variants of
+  [`Robotiq_2F_85/`](Robotiq_2F_85/) — physics in the shared
+  `payloads/Robotiq_2F_85_newton_fourbar_physics.usda` (joints, drive and the
+  five-bar loop closure) and `payloads/Robotiq_2F_85_newton_common_physics.usda`
+  (bodies and collision cooked from the shared visual CADs), with the thin
+  `..._newton_compliant_physics.usda` / `..._newton_parallel_grip_physics.usda`
+  on top, plus the runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
 
 **Provenance:** both the visual meshes (`Defeatured_2F_85_*`, shared with the
 PhysX asset) and the Newton physics parameters (masses/inertias, joints, the
