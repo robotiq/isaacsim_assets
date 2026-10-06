@@ -1,13 +1,12 @@
 {
-  "_note": "SimReady feature baseline for the 2F-140. Regenerate: python3 ci/simready/summarize.py --update results.json",
+  "_note": "SimReady feature baseline. Regenerate: python3 ci/simready/summarize.py --update results.json",
   "features": {
     "FET_000_MUJOCO": {
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.007",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.RV.007"
       ]
     },
     "FET_000_NEWTON": {
@@ -15,8 +14,7 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.004",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.RV.004"
       ]
     },
     "FET_000_PHYSX": {
@@ -24,16 +22,14 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.001",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.RV.001"
       ]
     },
     "FET_000_STANDARD": {
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.NP.008"
       ]
     },
     "FET_001_STANDARD": {
