@@ -31,6 +31,13 @@ def Xform "Robotiq_2F_140" (
         kind = "assembly"
     )
     {
+        # DISP.001: every renderable GPrim must resolve a display color. The
+        # visual meshes are instanceable and carry none, so author a single
+        # displayColor here on the geometry root; it is an inheritable primvar
+        # (constant interpolation by default), so every descendant visual
+        # (including the instance proxies) resolves it as a fallback when no
+        # material is shown. Dark gray matches the gripper's black body.
+        color3f[] primvars:displayColor = [(0.1, 0.1, 0.1)]
         quatd xformOp:orient = (1, 0, 0, 0)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (0, 0, 0)
