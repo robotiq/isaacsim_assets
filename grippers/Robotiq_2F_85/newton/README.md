@@ -1,14 +1,16 @@
 # Newton (MuJoCo-Warp) tuning — 2F-85
 
-Newton-specific runtime tuning and notes for the **`Newton_compliant`** variant
-of the unified 2F-85 asset ([`../Robotiq_2F_85.usda`](../Robotiq_2F_85.usda)).
-Select `Physics = Newton_compliant`, ensure the scene has a `PhysicsScene`, and
-play. The gripper is **open by default** (`finger_joint` drive target `0`); drive
+Newton-specific runtime tuning and notes for the **`Newton_compliant`** and
+**`Newton_parallel_grip`** variants of the unified 2F-85 asset
+([`../Robotiq_2F_85.usda`](../Robotiq_2F_85.usda)).
+Select `Physics = Newton_compliant` (encompassing grip) or `Newton_parallel_grip`,
+ensure the scene has a `PhysicsScene`, and play. The gripper is **open by default** (`finger_joint` drive target `0`); drive
 `finger_joint` toward ~0.8 rad (≈45°) to close.
 
-Everything the solver needs is baked into the payload
-([`../payloads/Robotiq_2F_85_newton_compliant_physics.usda`](../payloads/Robotiq_2F_85_newton_compliant_physics.usda))
-plus the shared Newton layers it sublayers (including the engine-neutral
+Everything the solver needs is baked into the variant payloads
+([`../payloads/Robotiq_2F_85_newton_compliant_physics.usda`](../payloads/Robotiq_2F_85_newton_compliant_physics.usda),
+[`../payloads/Robotiq_2F_85_newton_parallel_grip_physics.usda`](../payloads/Robotiq_2F_85_newton_parallel_grip_physics.usda))
+plus the shared Newton layers they sublayer (including the engine-neutral
 `Robotiq_2F_85_fingertip_physics.usda`), and rebuilds natively on load — **except** the items below.
 
 ## Runtime tuning — `apply_gripper_tuning.py` (each stop → play)
