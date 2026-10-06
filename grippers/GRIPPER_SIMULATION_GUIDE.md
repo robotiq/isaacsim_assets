@@ -507,23 +507,11 @@ toward the parallel configuration.*
 On the real hardware there is a **torsional spring at the inner-finger joint**:
 
 - **Pre-loaded by 90°**
-- **Spring constant ≈ 0.0004 N·m/deg**
-- In the open (parallel-finger) configuration this gives a **≈ 37 N·mm**
+- **Spring constant ≈ 0.0004 N·m/deg** (2F-85), **≈ 0.00068 N·m/deg** (2F-140)
+- In the open (parallel-finger) configuration this gives a **≈ 37 N·mm** (2F-85), **≈ 61 N·mm** (2F-140)
   restoring moment.
 
 Modelling this spring is what keeps the simulated fingertips parallel. It is accomplished by setting a drive with the aforementioned stiffness and target position.
-
-The **2F-140** uses the same spring design with a different wire. Rate computed
-from drawing C-082 with the Spring Store torsional calculator, cross-checked
-against C-040 (2F-85):
-
-| | 2F-85 (C-040) | 2F-140 (C-082) |
-|---|---|---|
-| Wire / inside diameter | 0.81 / 7.75 mm | 0.89 / 8 mm |
-| Coils | 6-1/6 | 5-1/6 |
-| Material | 17-7 PH H900 | 17-7 PH H900 |
-| **Spring constant** | **≈ 0.0004 N·m/deg** | **≈ 0.00068 N·m/deg** |
-| Restoring moment (90° pre-load) | ≈ 37 N·mm | ≈ 61 N·mm |
 
 ### 4.3 Maximum grip force
 
