@@ -6,8 +6,7 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.007",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.RV.007"
       ]
     },
     "FET_000_NEWTON": {
@@ -15,8 +14,7 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.004",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.RV.004"
       ]
     },
     "FET_000_PHYSX": {
@@ -24,16 +22,14 @@
       "optional": [
         "com.nvidia.simready.NP.005",
         "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.RV.001",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.RV.001"
       ]
     },
     "FET_000_STANDARD": {
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008",
-        "com.nvidia.simready.SR.001"
+        "com.nvidia.simready.NP.008"
       ]
     },
     "FET_001_STANDARD": {

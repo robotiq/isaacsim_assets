@@ -1,6 +1,13 @@
 #usda 1.0
 (
     customLayerData = {
+        # SR.001 requires these identity fields authored DIRECTLY in the root
+        # layer's customLayerData (not only nested in SimReady_Metadata). They
+        # mirror the matching SimReady_Metadata entries below.
+        string asset_name = "Robotiq_2F_85"
+        string asset_type = "gripper"
+        string source_file = "Defeatured_2F_85_PAD_OPEN.step"
+        string usd_date_generated = "2026-09-19"
         # SimReady provenance metadata (SimReady Foundations SR.003 / FET_033_STANDARD).
         # Required fields live inside this dictionary; asset_extents/mass/rigid_body_count
         # are computed from the default (Physx_parallel_grip) composed stage.
