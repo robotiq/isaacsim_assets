@@ -861,6 +861,15 @@ def Xform "World" (
         double3 xformOp:translate = (0.42, 0.07, 0.0505)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
+
+    def Xform "RobotiqLogo" (
+        prepend references = @./props/RobotiqLogo.usda@
+    )
+    {
+        quatf xformOp:orient = (0.83129096, 0.06869999, -0.04542871, -0.5497016)
+        double3 xformOp:translate = (0.15910875264334393, -0.02414751722799348, -0.006348887113970105)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+    }
     variantSet "Physics" = {
         "Newton_compliant" {
             over "ur5e"
