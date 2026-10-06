@@ -8,7 +8,8 @@ play. The gripper is **open by default** (`finger_joint` drive target `0`); driv
 
 Everything the solver needs is baked into the payload
 ([`../payloads/Robotiq_2F_85_newton_compliant_physics.usda`](../payloads/Robotiq_2F_85_newton_compliant_physics.usda))
-and rebuilds natively on load — **except** the items below.
+plus the shared Newton layers it sublayers (including the engine-neutral
+`Robotiq_2F_85_fingertip_physics.usda`), and rebuilds natively on load — **except** the items below.
 
 ## Runtime tuning — `apply_gripper_tuning.py` (each stop → play)
 

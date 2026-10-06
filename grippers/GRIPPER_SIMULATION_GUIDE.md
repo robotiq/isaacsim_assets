@@ -262,6 +262,14 @@ reproduces that. The fingertip is its own rigid body (`left_fingertip` /
 `right_fingertip`), welded to `inner_finger` by a `PhysicsFixedJoint`, and the
 variant swaps its geometry, collider and mass:
 
+Layer ownership: `payloads/<gripper>_fingertip_physics.usda` holds only the
+engine-neutral fingertip bodies, mass and welds, and every Physics variant (PhysX and
+Newton) sublayers it. All PhysX-only content (the articulation root and `root_joint`,
+plus the `/Meshes` collision groups and every PhysX collider, including the tip colliders for each `Fingertip` variant)
+lives in `payloads/<gripper>_physx_common_physics.usda`, shared by `Physx_parallel_grip`
+and `Physx_compliant`. Newton variants never sublayer it and author their own colliders in
+`<gripper>_newton_common_physics.usda`.
+
 | Variant | What it gives you |
 |---|---|
 | `Standard` | The stock plastic pad (`fingertipsstep`) — the default, behaves like the previous single-part finger |

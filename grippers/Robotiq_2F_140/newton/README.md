@@ -12,7 +12,9 @@ Everything the solver needs is baked into the payloads — the shared four-bar
 ([`../payloads/Robotiq_2F_140_newton_fourbar_physics.usda`](../payloads/Robotiq_2F_140_newton_fourbar_physics.usda)),
 the shared Newton bodies/colliders
 ([`../payloads/Robotiq_2F_140_newton_common_physics.usda`](../payloads/Robotiq_2F_140_newton_common_physics.usda)),
-and the thin per-variant overlays — and rebuilds natively on load — **except** the items below.
+the engine-neutral fingertip bodies and welds
+([`../payloads/Robotiq_2F_140_fingertip_physics.usda`](../payloads/Robotiq_2F_140_fingertip_physics.usda),
+shared with the PhysX variants), and the thin per-variant overlays — and rebuilds natively on load — **except** the items below.
 
 ## Runtime tuning — `apply_gripper_tuning.py` (each stop → play)
 
