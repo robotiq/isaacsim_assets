@@ -96,9 +96,7 @@
     },
     "FET_010_STANDARD": {
       "blocking": [],
-      "optional": [
-        "com.nvidia.simready.DISP.001"
-      ]
+      "optional": []
     },
     "FET_021_ISAAC": {
       "blocking": [],
