@@ -2,10 +2,10 @@
 
 Public [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) assets
 maintained by [Robotiq](https://robotiq.com). This repository is a home for
-Robotiq simulation assets and the documentation needed to use them. Only the
-**2F-85 gripper** is published here today, but the layout is organized by asset
-category so other assets (grippers, robots, tooling, scenes) can be added over
-time.
+Robotiq simulation assets and the documentation needed to use them. Two
+grippers are published here today, the **2F-85** and the **2F-140**, and the
+layout is organized by asset category so other assets (grippers, robots,
+tooling, scenes) can be added over time.
 
 ## Layout
 
@@ -13,7 +13,9 @@ time.
 grippers/                         Gripper assets
   GRIPPER_SIMULATION_GUIDE.md     How to simulate Robotiq grippers in Isaac Sim
   images/                         Figures used by the guide
-  Robotiq_2F_85/                   2F-85 gripper (PhysX + Newton solver variants)
+  Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
+  Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
+  demo/                           Demos, incl. the UR5e teleop for either gripper
 LICENSE                           Repository license + third-party attributions
 ```
 
@@ -22,17 +24,28 @@ New asset categories should be added as sibling top-level directories (e.g.
 
 ## Contents
 
-### Robotiq 2F-85 gripper
+### Robotiq 2F-85 and 2F-140 grippers
 
-A 2F-85 adaptive gripper authored for Isaac Sim 6, as a single asset
-([`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/)) whose `Physics` variant
-selects the solver — same body tree, geometry, and collision for both:
+The 2F-85 and 2F-140 adaptive grippers are authored for Isaac Sim 6 with the
+same layout: each is a single asset whose `Physics` variant selects the solver
+and grip — same body tree, geometry, and collision for all of them — and whose
+`Fingertip` variant selects the fingertip.
 
-- **PhysX** — `Physx_parallel_grip` (mimic-joint) and `Physx_compliant`
-  (closed five-bar loop) variants.
-- **Newton / MuJoCo-Warp** — `Newton_compliant`, which models the compliant
-  five-bar linkage more robustly. It needs a one-shot runtime tuning after each
-  Stop→Play; see [`Robotiq_2F_85/newton/`](grippers/Robotiq_2F_85/newton/).
+| | 2F-85 | 2F-140 |
+| --- | --- | --- |
+| Asset | [`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/) | [`grippers/Robotiq_2F_140/`](grippers/Robotiq_2F_140/) |
+| `Physics` — PhysX | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `Physx_parallel_grip` *(default)*, `Physx_compliant` |
+| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) |
+| `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` |
+
+`*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
+coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
+fingers wrap around the object. The Newton variants model the linkage more
+robustly but need a one-shot runtime tuning after each Stop→Play (see the
+gripper's `newton/` folder, linked in the table).
+
+The [UR5e teleop demo](grippers/demo/teleop/) runs either gripper on either
+solver (`TELEOP_GRIPPER=2F85|2F140`, `TELEOP_PHYSICS=<Physics variant>`).
 
 Start with the
 **[Gripper Simulation Guide](grippers/GRIPPER_SIMULATION_GUIDE.md)** — it covers
