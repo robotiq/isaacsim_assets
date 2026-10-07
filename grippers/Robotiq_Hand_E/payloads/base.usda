@@ -1,0 +1,166 @@
+#usda 1.0
+(
+    # Kinematic body tree + geometry for the Robotiq Hand-E. Same layout as the 2F-140:
+    # the visible body links live under /Robotiq_Hand_E/Robotiq_Hand_E, and the geometry is referenced from the
+    # invisible /Meshes scope (one part per link). The per-link CAD parts are baked into
+    # the final Isaac frame (approach +Z, fingers close along Y, base flange at z=0), so
+    # every link Xform is identity.
+    customLayerData = {
+        dictionary omni_layer = {
+            string authoring_layer = "./base.usda"
+        }
+    }
+    defaultPrim = "Robotiq_Hand_E"
+    metersPerUnit = 1
+    subLayers = [
+        @./geometries.usd@,
+        @./instances.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_Hand_E" (
+    kind = "assembly"
+)
+{
+    def Xform "Robotiq_Hand_E" (
+        kind = "assembly"
+    )
+    {
+        # DISP.001: every renderable GPrim must resolve a display color.
+        color3f[] primvars:displayColor = [(0.1, 0.1, 0.1)]
+        quatd xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Xform "base_link" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/base_link>
+            )
+            {
+            }
+
+            # Tool center point (grasp frame) on the gripper centerline, between the
+            # fingertip pads. Refined against the pads during validation.
+            def Xform "grip_frame"
+            {
+                double3 xformOp:translate = (0, 0, 0.13)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "left_finger" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/left_finger>
+            )
+            {
+            }
+        }
+
+        def Xform "right_finger" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/right_finger>
+            )
+            {
+            }
+        }
+
+        def Xform "left_fingertip" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_left>
+            )
+            {
+            }
+        }
+
+        def Xform "right_fingertip" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_right>
+            )
+            {
+            }
+        }
+    }
+}
+
+def Scope "Meshes"
+{
+    token visibility = "invisible"
+
+    def Xform "base_link" (
+        prepend references = @../parts/Robotiq_Hand_E_base.usd@
+    )
+    {
+    }
+
+    def Xform "left_finger" (
+        prepend references = @../parts/Robotiq_Hand_E_finger_left.usd@
+    )
+    {
+    }
+
+    def Xform "right_finger" (
+        prepend references = @../parts/Robotiq_Hand_E_finger_right.usd@
+    )
+    {
+    }
+
+    # Fingertip geometry groups. The active tip child is chosen by the "Fingertip"
+    # variantSet ("tip_std" is the default, authored here; the other variants
+    # deactivate it and add their own tip child). The group's translate is the
+    # "FingertipMount" variantSet's hook: Outside (default, 0) / Inside (tip moved one hole
+    # row towards the gripper centerline).
+    def Xform "fingertip_left" (
+        kind = "group"
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "tip_std" (
+            prepend references = @../parts/Robotiq_Hand_E_fingertip_std_left.usd@
+        )
+        {
+        }
+    }
+
+    def Xform "fingertip_right" (
+        kind = "group"
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "tip_std" (
+            prepend references = @../parts/Robotiq_Hand_E_fingertip_std_right.usd@
+        )
+        {
+        }
+    }
+}

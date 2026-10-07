@@ -1,0 +1,8 @@
+#usda 1.0
+# Canonical SimReady "instances" layer (ISA.001 layout slot). Instancing is authored
+# inline in ./base.usda (each link's `visuals` child is instanceable); this layer is
+# intentionally empty of overrides.
+(
+    metersPerUnit = 1
+    upAxis = "Z"
+)

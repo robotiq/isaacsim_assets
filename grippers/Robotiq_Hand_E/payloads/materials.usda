@@ -1,0 +1,10 @@
+#usda 1.0
+# Canonical SimReady "materials" payload layer: sublayers the shared material library.
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [
+        @../materials/materials.usd@
+    ]
+    upAxis = "Z"
+)

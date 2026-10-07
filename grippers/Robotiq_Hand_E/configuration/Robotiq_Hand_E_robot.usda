@@ -1,0 +1,136 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary omni_layer = {
+            string authoring_layer = "../Robotiq_Hand_E.usda"
+        }
+    }
+    defaultPrim = "World"
+    endTimeCode = 0
+    metersPerUnit = 1
+    startTimeCode = -1
+    upAxis = "Z"
+)
+
+over "Robotiq_Hand_E" (
+    prepend apiSchemas = ["IsaacRobotAPI"]
+)
+{
+    string[] isaac:changelog (
+        displayName = "Changelog"
+    )
+    string isaac:description = "Robotiq Hand-E adaptive parallel-jaw gripper (2 sliding fingers, 50 mm stroke)." (
+        displayName = "Description"
+    )
+    token isaac:license (
+        displayName = "License"
+    )
+    string isaac:namespace (
+        displayName = "Namespace"
+        doc = "Namespace of the prim in Isaac Sim"
+    )
+    rel isaac:physics:robotJoints (
+        displayName = "Robot Joints"
+    )
+    rel isaac:physics:robotLinks (
+        displayName = "Robot Links"
+    )
+    prepend rel isaac:physics:robotLinks = [
+        </Robotiq_Hand_E/Robotiq_Hand_E/base_link>,
+        </Robotiq_Hand_E/Robotiq_Hand_E/left_finger>,
+        </Robotiq_Hand_E/Robotiq_Hand_E/right_finger>,
+        </Robotiq_Hand_E/Robotiq_Hand_E/left_fingertip>,
+        </Robotiq_Hand_E/Robotiq_Hand_E/right_fingertip>,
+    ]
+    token isaac:robotType = "End Effector" (
+        displayName = "Robot Type"
+    )
+    string isaac:source = "Robotiq" (
+        displayName = "Source"
+    )
+    string isaac:version = "1.0.0" (
+        displayName = "Version"
+    )
+
+    # robotJoints is variant-specific (authored per Physics variant); fingertip welds are
+    # not listed, as on the 2F-85 / 2F-140. robotLinks stays shared: the bodies are the same
+    # across variants.
+    variantSet "Physics" = {
+        "PhysX" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_Hand_E/Robotiq_Hand_E/root_joint>,
+                </Robotiq_Hand_E/Robotiq_Hand_E/Joints/left_finger_joint>,
+                </Robotiq_Hand_E/Robotiq_Hand_E/Joints/right_finger_joint>,
+            ]
+        }
+    }
+
+    over "Robotiq_Hand_E"
+    {
+        string isaac:namespace (
+            displayName = "Namespace"
+            doc = "Namespace of the prim in Isaac Sim"
+        )
+
+        over "base_link" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+                doc = "Name override for prim lookup in base name search"
+            )
+
+            over "grip_frame" (
+                prepend apiSchemas = ["IsaacSiteAPI"]
+            )
+            {
+                string isaac:Description = "Tool center point (grasp frame) centered between the fingertips." (
+                    displayName = "Reference Description"
+                )
+                uniform token isaac:forwardAxis = "Z" (
+                    displayName = "Forward Axis"
+                )
+            }
+        }
+
+        over "left_finger" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "right_finger" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "left_fingertip" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "right_fingertip" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "Joints"
+        {
+            over "left_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "right_finger_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+        }
+    }
+}

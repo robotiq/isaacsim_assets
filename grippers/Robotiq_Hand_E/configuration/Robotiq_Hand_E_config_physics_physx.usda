@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    defaultPrim = "Robotiq_Hand_E"
+    metersPerUnit = 1
+    subLayers = [
+        @../payloads/Robotiq_Hand_E_physx_physics.usda@,
+        @../payloads/base.usda@
+    ]
+    upAxis = "Z"
+)
