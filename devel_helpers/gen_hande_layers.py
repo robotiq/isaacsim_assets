@@ -50,6 +50,7 @@ DENSITY = 2800.0  # kg/m^3 (aluminium); reproduces the published 0.864 kg body /
 BASE = dict(mass=0.8633, com=(0, 0, 0.0472), dims=(0.075, 0.075, 0.1041))
 STUB = dict(mass=0.01784, com=(-0.0141, -0.0139, 0.0925), dims=(0.0138, 0.0452, 0.0164))  # LEFT finger stub
 TIP = dict(mass=0.0201, com=(-0.0041, -0.0271, 0.1229), dims=(0.0292, 0.0174, 0.0465))  # LEFT Std tip, shared by ALL tips
+QCODE = "Q1340324"  # Wikidata Q-code SimReady SR.003 requires; same gripper concept as the 2F-85 / 2F-140
 GRIP_FRAME_Z = 0.13  # m, provisional TCP between the pads
 
 
@@ -742,6 +743,7 @@ def gen_root(meta):
             string asset_license = "CC-BY-4.0"
             string source_file = "ROBOTIQ_HAND-E_NO_FINGERTIPS_20190924.step"
             string usd_date_generated = "2026-10-07"
+            string qcode = "{QCODE}"
             int rigid_body_count = {meta["bodies"]}
             float3 asset_extents = ({meta["ext"][0]:.4f}, {meta["ext"][1]:.4f}, {meta["ext"][2]:.4f})
             float mass = {meta["mass"]:.4f}

@@ -19,6 +19,7 @@
             string asset_license = "CC-BY-4.0"
             string source_file = "ROBOTIQ_HAND-E_NO_FINGERTIPS_20190924.step"
             string usd_date_generated = "2026-10-07"
+            string qcode = "Q1340324"
             int rigid_body_count = 5
             float3 asset_extents = (0.0750, 0.0750, 0.1511)
             float mass = 0.9392
