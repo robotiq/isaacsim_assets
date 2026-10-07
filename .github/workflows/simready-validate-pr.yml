@@ -2,7 +2,8 @@
 #
 # A PR that changes files under grippers/Robotiq_2F_85/ must pass the 2F-85
 # validation; one that changes grippers/Robotiq_2F_140/ must pass the 2F-140
-# validation; one that changes both must pass both. Changes to the validation
+# validation; one that changes grippers/Robotiq_Hand_E/ must pass the Hand-E
+# validation; one that changes several must pass each of them. Changes to the validation
 # tooling itself (ci/simready/**, the validate workflows) re-validate every
 # gripper. A PR touching none of these (docs, demo, ...) validates nothing and
 # the gate passes.
@@ -43,7 +44,7 @@ jobs:
           all=false
           if grep -qE '^(ci/simready/|\.github/workflows/simready-validate)' <<<"$changed"; then all=true; fi
           out=()
-          for g in 2F_85 2F_140; do
+          for g in 2F_85 2F_140 Hand_E; do
             if $all || grep -q "^grippers/Robotiq_$g/" <<<"$changed"; then out+=("$g"); fi
           done
           json="$(printf '%s\n' "${out[@]}" | jq -R . | jq -sc 'map(select(length>0))')"
