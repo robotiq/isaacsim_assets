@@ -20,10 +20,10 @@ Gating (a "ratchet"):
 
     Pass --allow-improvements to accept improvements without failing (they are
     still reported). Use this when comparing a *different* asset against the
-    baseline — e.g. the hf-publish stamp gate validates the staged package,
-    which legitimately improves on the flat repo asset (it passes NP.005) — so
-    a gain there is expected and must not be treated as a stale baseline.
-    Blocking failures and regressions still fail.
+    baseline — e.g. validating a *staged* package (which gains NP.005 from the
+    `simready_usd/` intermediate folder) against an in-repo baseline — so a gain
+    there is expected and must not be treated as a stale baseline. Blocking
+    failures and regressions still fail.
 
 Regenerate the baseline after an intended change:
     python3 ci/simready/summarize.py --update results.json
