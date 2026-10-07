@@ -83,6 +83,14 @@ def Xform "Robotiq_Hand_E" (
         ) {
 
         }
+        "Newton" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_Hand_E_newton_physics.usda@
+        ) {
+
+        }
     }
     # Fingertip screw-hole row: "Outside" (default, the authored position) or "Inside" (every
     # fingertip moved 9 mm towards the gripper centerline).

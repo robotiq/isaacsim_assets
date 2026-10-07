@@ -36,12 +36,14 @@ and grip — same body tree, geometry, and collision for all of them — and who
 | --- | --- | --- | --- |
 | Asset | [`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/) | [`grippers/Robotiq_2F_140/`](grippers/Robotiq_2F_140/) | [`grippers/Robotiq_Hand_E/`](grippers/Robotiq_Hand_E/) |
 | `Physics` — PhysX | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `PhysX` *(default)* |
-| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | — |
+| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | `Newton` |
 | `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
 | `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) |
 
-The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it has a single
-`PhysX` physics variant (one driven finger joint, the other mimics it) and no Newton variant yet.
+The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it has one
+`PhysX` and one `Newton` physics variant (one driven finger joint, the other finger follows it).
+The Newton coupling is a stiff MuJoCo joint equality baked into the asset, so no runtime tuning
+script is needed.
 `*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
 coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
 fingers wrap around the object. The Newton variants model the linkage more
