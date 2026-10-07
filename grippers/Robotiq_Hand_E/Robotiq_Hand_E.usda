@@ -1,0 +1,123 @@
+#usda 1.0
+(
+    customLayerData = {
+        # SR.001 requires these identity fields authored DIRECTLY in the root layer's
+        # customLayerData (not only nested in SimReady_Metadata). They mirror the matching
+        # SimReady_Metadata entries below.
+        string asset_name = "Robotiq_Hand_E"
+        string asset_type = "gripper"
+        string source_file = "ROBOTIQ_HAND-E_NO_FINGERTIPS_20190924.step"
+        string usd_date_generated = "2026-10-07"
+        # SimReady provenance metadata (SimReady Foundations SR.003 / FET_033_STANDARD).
+        # rigid_body_count / mass / asset_extents are COMPUTED from the default composed stage
+        # by devel_helpers/gen_hande_layers.py -- re-run it instead of editing them by hand.
+        dictionary SimReady_Metadata = {
+            string asset_name = "Robotiq_Hand_E"
+            string asset_type = "gripper"
+            string category = "robot_gripper"
+            string author = "Robotiq"
+            string asset_license = "CC-BY-4.0"
+            string source_file = "ROBOTIQ_HAND-E_NO_FINGERTIPS_20190924.step"
+            string usd_date_generated = "2026-10-07"
+            int rigid_body_count = 5
+            float3 asset_extents = (0.0750, 0.0750, 0.1511)
+            float mass = 0.9392
+        }
+    }
+    defaultPrim = "Robotiq_Hand_E"
+    metersPerUnit = 1
+    subLayers = [
+        @./configuration/Robotiq_Hand_E_robot.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_Hand_E" (
+    kind = "component"
+    prepend references = @./payloads/base.usda@
+    variants = {
+        string FingertipMount = "Outside"
+        string Fingertip = "Std"
+        string Physics = "PhysX"
+    }
+    # FingertipMount is listed first: it must be stronger than Fingertip, whose payloads
+    # re-sublayer base.usda (translate = 0) and would otherwise cancel the Inside offset.
+    prepend variantSets = ["FingertipMount", "Fingertip", "Physics"]
+)
+{
+    string isaac:namespace (
+        displayName = "Namespace"
+        doc = "Namespace of the prim in Isaac Sim"
+    )
+
+    over "Robotiq_Hand_E"
+    {
+        string isaac:namespace (
+            displayName = "Namespace"
+            doc = "Namespace of the prim in Isaac Sim"
+        )
+    }
+
+    variantSet "Physics" = {
+        "None" (
+            customData = {
+                string[] variantPrimPaths = ["Robotiq_Hand_E/Joints"]
+            }
+        ) {
+            over "Robotiq_Hand_E"
+            {
+                over "Joints" (
+                    active = false
+                )
+                {
+                }
+            }
+
+        }
+        "PhysX" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_Hand_E_physx_physics.usda@
+        ) {
+
+        }
+    }
+    # Fingertip screw-hole row: "Outside" (default, the authored position) or "Inside" (every
+    # fingertip moved 9 mm towards the gripper centerline).
+    variantSet "FingertipMount" = {
+        "Outside" {
+
+        }
+        "Inside" (
+            prepend payload = @./payloads/Robotiq_Hand_E_fingertip_mount_inside.usda@
+        ) {
+
+        }
+    }
+    variantSet "Fingertip" = {
+        "Std" {
+
+        }
+        "Flat_Overmolded" (
+            prepend payload = @./payloads/Robotiq_Hand_E_fingertip_flat_overmolded.usda@
+        ) {
+
+        }
+        "Support" (
+            prepend payload = @./payloads/Robotiq_Hand_E_fingertip_support.usda@
+        ) {
+
+        }
+        "Extender" (
+            prepend payload = @./payloads/Robotiq_Hand_E_fingertip_extender.usda@
+        ) {
+
+        }
+        "Bin_Picking" (
+            prepend payload = @./payloads/Robotiq_Hand_E_fingertip_binpick.usda@
+        ) {
+
+        }
+    }
+}
