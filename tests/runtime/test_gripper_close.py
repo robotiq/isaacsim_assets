@@ -33,7 +33,7 @@ def _deg(x: float) -> float:
 
 
 @pytest.mark.parametrize("gripper", GRIPPERS)
-def test_gripper_closes(simulation_app, gripper: str) -> None:
+def test_gripper_closes(simulation_app, view, gripper: str) -> None:
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     stage = stage_utils.create_new_stage()
@@ -43,6 +43,7 @@ def test_gripper_closes(simulation_app, gripper: str) -> None:
         path="/World/Gripper",
         variants=[("Physics", PHYSICS)],
     )
+    view()  # --gui only: saved camera + lights for this case
     simulation_app.update()
 
     # The articulation root sits on the inner <gripper> prim, not the asset root.
