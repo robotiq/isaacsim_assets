@@ -16,6 +16,7 @@ The gripper assets referenced throughout live in this repo alongside this guide:
 | 2F-140 (PhysX: `Physx_parallel_grip` + `Physx_compliant`) | PhysX | [`Robotiq_2F_140/`](Robotiq_2F_140/) |
 | 2F-140 (Newton: `Newton_compliant` + `Newton_parallel_grip`) | Newton | [`Robotiq_2F_140/`](Robotiq_2F_140/) |
 | Hand-E (`PhysX`; `Fingertip` × `FingertipMount` variants) | PhysX | [`Robotiq_Hand_E/`](Robotiq_Hand_E/) |
+| Hand-E (`Newton`; same `Fingertip` × `FingertipMount` variants) | Newton | [`Robotiq_Hand_E/`](Robotiq_Hand_E/) |
 
 The exact tuned USD values are given inline with each fix in §3.
 

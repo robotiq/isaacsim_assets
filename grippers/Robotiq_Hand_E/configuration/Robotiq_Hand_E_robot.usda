@@ -63,6 +63,13 @@ over "Robotiq_Hand_E" (
                 </Robotiq_Hand_E/Robotiq_Hand_E/Joints/right_finger_joint>,
             ]
         }
+        "Newton" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_Hand_E/Robotiq_Hand_E/root_joint>,
+                </Robotiq_Hand_E/Robotiq_Hand_E/Joints/left_finger_joint>,
+                </Robotiq_Hand_E/Robotiq_Hand_E/Joints/right_finger_joint>,
+            ]
+        }
     }
 
     over "Robotiq_Hand_E"
