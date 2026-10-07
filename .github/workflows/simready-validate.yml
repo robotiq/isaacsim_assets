@@ -1,8 +1,8 @@
 # SimReady conformance check for ONE Robotiq gripper asset (default 2F-85).
 #
-# Reusable building block: dispatched by hand, called by hf-publish.yml (publish
-# gate) and called per gripper by simready-validate-pr.yml (the automatic PR gate,
-# which validates only the grippers whose folder a PR touches).
+# Reusable building block: dispatched by hand, and called per gripper by
+# simready-validate-pr.yml (the automatic PR gate, which validates only the
+# grippers whose folder a PR touches).
 #
 # Runs NVIDIA's official `simready-validate` against a SimReady profile using
 # ONLY public PyPI packages (Python 3.12) plus a pinned checkout of the public
@@ -37,9 +37,9 @@ on:
       simready_foundation_ref:
         description: NVIDIA/simready-foundation commit or tag (the spec source)
         default: v2026.08.0
-  # Callable from other workflows (e.g. hf-publish.yml) so publishing can gate on
-  # a passing validation without duplicating the logic below. Inputs mirror the
-  # workflow_dispatch inputs; workflow_call requires an explicit type.
+  # Callable from other workflows (e.g. simready-validate-pr.yml) so a PR can gate
+  # per gripper on a passing validation without duplicating the logic below. Inputs
+  # mirror the workflow_dispatch inputs; workflow_call requires an explicit type.
   workflow_call:
     inputs:
       asset:
