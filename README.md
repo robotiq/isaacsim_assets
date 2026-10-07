@@ -17,6 +17,7 @@ grippers/                         Gripper assets
   Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
   Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
   demo/                           Demos, incl. the UR5e teleop for either gripper
+tests/runtime/                    Manual Isaac Sim runtime tests (need a GPU, not run in CI)
 LICENSE                           Repository license + third-party attributions
 ```
 
