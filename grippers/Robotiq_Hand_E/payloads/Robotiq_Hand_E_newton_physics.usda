@@ -57,7 +57,7 @@ over "Robotiq_Hand_E"
             )
             {
                 float drive:linear:physics:damping = 100
-                float drive:linear:physics:maxForce = 130
+                float drive:linear:physics:maxForce = 100
                 float drive:linear:physics:stiffness = 5000
                 float drive:linear:physics:targetPosition = 0
                 uniform double mjc:armature = 0.001

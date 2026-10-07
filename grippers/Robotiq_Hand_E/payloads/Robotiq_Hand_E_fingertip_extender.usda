@@ -49,3 +49,18 @@ over "Meshes"
         }
     }
 }
+
+# Max finger force for this tip (spec-sheet curve, see CURVES in the generator).
+over "Robotiq_Hand_E"
+{
+    over "Robotiq_Hand_E"
+    {
+        over "Joints"
+        {
+            over "left_finger_joint"
+            {
+                float drive:linear:physics:maxForce = 100
+            }
+        }
+    }
+}

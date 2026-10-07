@@ -44,6 +44,12 @@ The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it ha
 `PhysX` and one `Newton` physics variant (one driven finger joint, the other finger follows it).
 The Newton coupling is a stiff MuJoCo joint equality baked into the asset, so no runtime tuning
 script is needed.
+
+The finger drive's `maxForce` follows the Hand-E spec sheet's *max payload / external force vs.
+fingertip Z offset* graph: each `Fingertip` variant sets the limit for its own tip from the
+curve of how that tip is mounted (`Std`, `Flat_Overmolded`: 2×M3 on the rack; `Support`,
+`Extender`: on a fingertip holder; `Bin_Picking`: 3×M3 on the rack). All shipped tips are on the
+graph's 100 N plateau, so each gets 100 N; the curves live in `devel_helpers/gen_hande_layers.py`.
 `*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
 coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
 fingers wrap around the object. The Newton variants model the linkage more
