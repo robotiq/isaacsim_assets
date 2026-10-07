@@ -23,12 +23,16 @@ started for the whole session (`conftest.py`); each test builds its own stage.
 ## Saved camera and lights for GUI runs
 
 Each test case can have a preset in `views/` (`<test>-<param>.json`, falling
-back to `<test>.json`) holding the viewport camera pose and the stage lights.
-With `--gui` the preset is applied automatically when the test calls `view()`;
-headless runs ignore it. To create or update one, run a single case with
-`--save-view`, frame the view and adjust/add lights in the Isaac UI during the
-hold, then close the window: the current camera and lights are written to that
-case's file.
+back to `<test>.json`) holding the viewport camera pose, the viewport lighting
+mode (the Lighting menu: Camera Light, Stage Lights, Lights Off, or a light
+rig) and any light prims in the stage. With `--gui` the preset is applied
+automatically when the test calls `view()`; headless runs ignore it. To create
+or update one, run a single case with `--save-view`, frame the view and set
+the lighting in the Isaac UI during the hold, then close the window: the
+current camera, lighting mode and lights are written to that case's file.
+
+The viewport always uses the `RTX - Minimal` render mode (set in
+`conftest.py`); the tests are about physics, not rendering.
 
 ```bash
 ~/isaacsim/python.sh -m pytest tests/runtime -v --gui --hold --save-view -k 2F_140

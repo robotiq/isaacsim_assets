@@ -31,7 +31,8 @@ def pytest_configure(config: pytest.Config) -> None:
     global _app
     from isaacsim import SimulationApp
 
-    _app = SimulationApp({"headless": not config.getoption("--gui")})
+    # "RTX - Minimal": the tests are about physics; keep the viewport cheap.
+    _app = SimulationApp({"headless": not config.getoption("--gui"), "renderer": "MinimalRendering"})
     config._isaac_app = _app
     config._isaac_last_nodeid = None
 

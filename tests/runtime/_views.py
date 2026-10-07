@@ -2,8 +2,9 @@
 
 A preset is a JSON file in ``views/`` named after the pytest id of the case
 (``test_gripper_closes-Robotiq_2F_85.json``), falling back to the function
-name (``test_gripper_closes.json``). It stores the viewport camera pose and
-every UsdLux light in the stage. ``save_view`` captures the current state at
+name (``test_gripper_closes.json``). It stores the viewport camera pose, the
+viewport lighting mode (Camera Light / Stage Lights / ...) and every UsdLux
+light in the stage. ``save_view`` captures the current state at
 the end of a ``--gui --hold --save-view`` run; ``apply_view`` restores it on
 later ``--gui`` runs. Headless runs never touch it.
 
@@ -113,13 +114,48 @@ def set_camera(cam: dict) -> None:
     cs.set_target_world(Gf.Vec3d(*cam["target"]), True)
 
 
+# --- viewport lighting mode (needs Kit) -------------------------------------
+# The viewport's Lighting menu ("Camera Light" / "Stage Lights" / "Lights Off"
+# / a light rig) is a per-stage carb setting, not USD, so it is stored apart
+# from the light prims. It is applied through the menu's registered actions.
+
+_LIGHTING_EXT = "omni.kit.viewport.menubar.lighting"
+
+
+def _lighting_mode_key(stage: Usd.Stage) -> str:
+    from pxr import UsdUtils
+
+    stage_id = UsdUtils.StageCache.Get().GetId(stage).ToLongInt()
+    return f"/exts/{_LIGHTING_EXT}/lightingMode/{stage_id}"
+
+
+def collect_lighting_mode(stage: Usd.Stage) -> str:
+    import carb.settings
+
+    return carb.settings.get_settings().get(_lighting_mode_key(stage)) or "stage"
+
+
+def set_lighting_mode(mode: str) -> None:
+    import omni.kit.actions.core
+
+    registry = omni.kit.actions.core.get_action_registry()
+    if mode in ("stage", "camera", "off"):
+        registry.get_action(_LIGHTING_EXT, f"set_lighting_mode_{mode}").execute()
+    else:  # a light-rig name
+        registry.get_action(_LIGHTING_EXT, "set_lighting_mode_rig").execute(mode)
+
+
 # --- save / apply -----------------------------------------------------------
 
 
 def save_view(nodeid: str, stage: Usd.Stage) -> Path:
     path = preset_paths(nodeid)[0]
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = {"camera": collect_camera(), "lights": collect_lights(stage)}
+    data = {
+        "camera": collect_camera(),
+        "lighting_mode": collect_lighting_mode(stage),
+        "lights": collect_lights(stage),
+    }
     path.write_text(json.dumps(data, indent=2) + "\n")
     return path
 
@@ -130,6 +166,8 @@ def apply_view(nodeid: str, stage: Usd.Stage) -> Path | None:
         return None
     data = json.loads(path.read_text())
     define_lights(stage, data.get("lights", []))
+    if "lighting_mode" in data:
+        set_lighting_mode(data["lighting_mode"])
     if "camera" in data:
         set_camera(data["camera"])
     return path

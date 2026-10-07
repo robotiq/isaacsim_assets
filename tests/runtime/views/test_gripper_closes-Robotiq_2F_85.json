@@ -11,5 +11,6 @@
       0.05890460252795769
     ]
   },
+  "lighting_mode": "camera",
   "lights": []
 }
