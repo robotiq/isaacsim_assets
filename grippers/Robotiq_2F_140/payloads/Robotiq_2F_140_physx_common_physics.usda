@@ -41,6 +41,17 @@ def Xform "Robotiq_2F_140" (
             quatf physics:localRot0 = (1, 0, 0, 0)
             quatf physics:localRot1 = (1, 0, 0, 0)
         }
+
+        # Finger joint velocity cap (deg/s): the one value shared by both PhysX grip
+        # variants, so they cannot drift apart. Armature and the other drive tuning stay
+        # in each variant payload.
+        over "Joints"
+        {
+            over "finger_joint"
+            {
+                float physxJoint:maxJointVelocity = 146.46
+            }
+        }
     }
 }
 

@@ -47,7 +47,6 @@ def Xform "Robotiq_2F_140" (
                 float drive:angular:physics:targetPosition = 0
                 float drive:angular:physics:targetVelocity = 0
                 float physxJoint:armature = 0.0001
-                float physxJoint:maxJointVelocity = 146.46
             }
 
             over "right_outer_knuckle_joint" (
