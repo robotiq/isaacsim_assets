@@ -31,8 +31,19 @@ or update one, run a single case with `--save-view`, frame the view and set
 the lighting in the Isaac UI during the hold, then close the window: the
 current camera, lighting mode and lights are written to that case's file.
 
-The viewport always uses the `RTX - Minimal` render mode (set in
-`conftest.py`); the tests are about physics, not rendering.
+The viewport uses the `RTX - Minimal` render mode by default (`--renderer`
+overrides it, `--minimal-mode` picks the Minimal shading mode); the tests are
+about physics, not rendering. Kit is started on its default renderer and
+switched to Minimal after startup: started directly in Minimal, its reference
+shading mode renders black.
+
+`--screenshot DIR` captures the viewport to `DIR/<test>.png` after each test,
+headless or not, with the saved view applied; `--no-view` skips the presets.
+Handy for checking a view without opening the window:
+
+```bash
+~/isaacsim/python.sh -m pytest tests/runtime -k 2F_85 --screenshot /tmp/shots
+```
 
 ```bash
 ~/isaacsim/python.sh -m pytest tests/runtime -v --gui --hold --save-view -k 2F_140

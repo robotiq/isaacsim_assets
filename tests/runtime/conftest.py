@@ -25,14 +25,38 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--save-view", action="store_true", default=False,
         help="with --gui --hold, save the viewport camera + lights of the last test to views/ on window close",
     )
+    parser.addoption(
+        "--renderer", default="MinimalRendering",
+        help="SimulationApp renderer: MinimalRendering (default, 'RTX - Minimal'), RaytracedLighting, "
+             "RealTimePathTracing, PathTracing",
+    )
+    parser.addoption(
+        "--minimal-mode", type=int, default=0,
+        help="MinimalRendering shading mode (/rtx/minimal/mode): 0 Real-Time 2.0 reference, 1 Diffuse/Glossy/Emission, "
+             "2 Textured Diffuse, 3 Constant Diffuse, 4 No Rendering",
+    )
+    parser.addoption(
+        "--screenshot", default=None, metavar="DIR",
+        help="capture the viewport to DIR/<test>.png at the end of each test (works headless too)",
+    )
+    parser.addoption("--no-view", action="store_true", default=False, help="do not apply the saved view presets")
 
 
 def pytest_configure(config: pytest.Config) -> None:
     global _app
     from isaacsim import SimulationApp
 
-    # "RTX - Minimal": the tests are about physics; keep the viewport cheap.
-    _app = SimulationApp({"headless": not config.getoption("--gui"), "renderer": "MinimalRendering"})
+    # Default "RTX - Minimal": the tests are about physics; keep the viewport cheap.
+    # Starting Kit directly in MinimalRendering leaves its reference shading mode
+    # (0) rendering black, so start on the default renderer and switch after
+    # startup, as the viewport's render-mode menu does.
+    renderer = config.getoption("--renderer")
+    minimal = renderer.lower() in ("minimal", "minimalrendering")
+    _app = SimulationApp({"headless": not config.getoption("--gui"), "renderer": "RealTimePathTracing" if minimal else renderer})
+    if minimal:
+        _app.set_setting("/rtx/minimal/mode", config.getoption("--minimal-mode"))
+        _app.set_setting("/rtx/rendermode", "MinimalRendering")
+        _app.update()
     config._isaac_app = _app
     config._isaac_last_nodeid = None
 
@@ -71,10 +95,14 @@ def simulation_app(request: pytest.FixtureRequest):
 
 @pytest.fixture
 def view(request: pytest.FixtureRequest):
-    """Call ``view()`` once the stage is populated: in --gui runs it applies the
-    test's saved camera + lights preset (if any); headless it is a no-op."""
+    """Call ``view()`` once the stage is populated: in --gui (or --screenshot)
+    runs it applies the test's saved camera + lights preset (if any); otherwise
+    it is a no-op. With --screenshot the viewport is captured after the test."""
+    config = request.config
+    visual = (config.getoption("--gui") or config.getoption("--screenshot")) and not config.getoption("--no-view")
+
     def _apply() -> None:
-        if not request.config.getoption("--gui"):
+        if not visual:
             return
         from isaacsim.core.experimental.utils import stage as stage_utils
 
@@ -84,4 +112,14 @@ def view(request: pytest.FixtureRequest):
         if path:
             print(f"view applied: {path.name}")
 
-    return _apply
+    yield _apply
+
+    shot_dir = config.getoption("--screenshot")
+    if shot_dir:
+        from pathlib import Path
+
+        from _views import preset_paths, capture_viewport
+
+        out = Path(shot_dir) / (preset_paths(request.node.nodeid)[0].stem + ".png")
+        capture_viewport(config._isaac_app, out)
+        print(f"screenshot: {out}")

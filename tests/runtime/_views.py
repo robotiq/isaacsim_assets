@@ -145,6 +145,22 @@ def set_lighting_mode(mode: str) -> None:
         registry.get_action(_LIGHTING_EXT, "set_lighting_mode_rig").execute(mode)
 
 
+# --- screenshot (needs Kit) -------------------------------------------------
+
+
+def capture_viewport(app, path: Path, settle_frames: int = 5, flush_frames: int = 8) -> Path:
+    """Render a few frames, then write the active viewport to ``path`` (PNG)."""
+    from omni.kit.viewport.utility import capture_viewport_to_file, get_active_viewport
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(settle_frames):
+        app.update()
+    capture_viewport_to_file(get_active_viewport(), str(path))
+    for _ in range(flush_frames):  # the capture completes on later frames
+        app.update()
+    return path
+
+
 # --- save / apply -----------------------------------------------------------
 
 
