@@ -63,6 +63,12 @@ ARTICULATION = "/World/ur5e/root_joint"
 ARM_JOINTS = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
               "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
 FINGER_JOINT = "finger_joint"
+# The Hand-E has no four-bar: its driven joint is the prismatic left_finger_joint (the right
+# finger follows it) and the stroke is metres, not radians. Everything gripper-specific is
+# set here from TELEOP_GRIPPER so the rest of the file stays gripper-agnostic.
+_HANDE = os.environ.get("TELEOP_GRIPPER", "") == "HandE"
+if _HANDE:
+    FINGER_JOINT = "left_finger_joint"
 
 # ur_description UR5e joint origins (xyz, rpy); every joint axis is local Z.
 ORIGINS = [((0, 0, 0.1625), (0, 0, 0)),
@@ -95,7 +101,7 @@ ORI_GAIN = 12.0
 # arm moves even with the sticks at rest, which is what makes "point tool down"
 # a command rather than a preference that only takes effect once you jog.
 ORI_TOL = math.radians(0.4)
-GRIP_OPEN, GRIP_CLOSED = 0.0, 0.80
+GRIP_OPEN, GRIP_CLOSED = (0.0, 0.025) if _HANDE else (0.0, 0.80)
 # rad/s, in SIM time. The target is ramped rather than stepped because a step
 # input destabilises the four-bar.
 #
@@ -104,7 +110,8 @@ GRIP_OPEN, GRIP_CLOSED = 0.0, 0.80
 # failure the ramp exists to prevent -- the speed was measured in free air,
 # where the four-bar is not loaded. The measurement was right and the change
 # was still wrong.
-GRIP_RATE = 0.8
+# Hand-E: 25 mm stroke per finger at 0.04 m/s (~0.6 s open to closed; published 20-150 mm/s).
+GRIP_RATE = 0.04 if _HANDE else 0.8
 
 AXIS_LX, AXIS_LY, AXIS_L2, AXIS_RX, AXIS_RY, AXIS_R2, AXIS_DX, AXIS_DY = range(8)
 BTN_X, BTN_O, BTN_TRI = 0, 1, 2
@@ -168,7 +175,7 @@ ZOOM_MIN_HEIGHT = 0.20   # m; never let the camera sink to bench level
 # The gripper's rendered bounds do reach the right place: projected onto the
 # tool axis they extend 0.1609 m. That is measured at startup, with this as the
 # fallback when the bounds cannot be read.
-TOOL_LENGTH = 0.155
+TOOL_LENGTH = 0.150 if _HANDE else 0.155
 TOOL_LENGTH_RANGE = (0.05, 0.30)     # reject a nonsense measurement
 GRIPPER_PRIM = "Robotiq_2F_85_edit"
 

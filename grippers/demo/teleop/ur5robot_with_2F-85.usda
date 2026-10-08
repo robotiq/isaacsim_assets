@@ -930,6 +930,14 @@ def Xform "World" (
                     )
                     {
                     }
+
+                    over "Robotiq_Hand_E_edit" (
+                        variants = {
+                            string Physics = "Newton"
+                        }
+                    )
+                    {
+                    }
                 }
             }
 
@@ -993,6 +1001,14 @@ def Xform "World" (
                     )
                     {
                     }
+
+                    over "Robotiq_Hand_E_edit" (
+                        variants = {
+                            string Physics = "Newton"
+                        }
+                    )
+                    {
+                    }
                 }
             }
 
@@ -1048,6 +1064,14 @@ def Xform "World" (
                         prepend inherits = </_TeleopPhysxGripperTuning_2F140>
                         variants = {
                             string Physics = "Physx_compliant"
+                        }
+                    )
+                    {
+                    }
+
+                    over "Robotiq_Hand_E_edit" (
+                        variants = {
+                            string Physics = "PhysX"
                         }
                     )
                     {
@@ -1111,6 +1135,14 @@ def Xform "World" (
                     )
                     {
                     }
+
+                    over "Robotiq_Hand_E_edit" (
+                        variants = {
+                            string Physics = "PhysX"
+                        }
+                    )
+                    {
+                    }
                 }
             }
 
@@ -1149,6 +1181,47 @@ def Xform "World" (
             {
                 rel physics:body0 = </World/ur5e/wrist_3_link>
                 rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_2F_140_edit/Robotiq_2F_140/base_link>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)
+                point3f physics:localPos1 = (-0.3129819, 0.27369457, 0.19359241)
+                quatf physics:localRot0 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+                quatf physics:localRot1 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+            }
+
+        }
+        "HandE" {
+            over "ur5e"
+            {
+                over "wrist_3_link"
+                {
+                    def "Robotiq_Hand_E_edit" (
+                        prepend payload = @../../Robotiq_Hand_E/Robotiq_Hand_E.usda@
+                    )
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                        over "Robotiq_Hand_E" (
+                            delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI", "NewtonArticulationRootAPI"]
+                        )
+                        {
+                            over "root_joint" (
+                                active = false
+                            )
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+
+            def PhysicsFixedJoint "FixedJoint"
+            {
+                rel physics:body0 = </World/ur5e/wrist_3_link>
+                rel physics:body1 = </World/ur5e/wrist_3_link/Robotiq_Hand_E_edit/Robotiq_Hand_E/base_link>
                 float physics:breakForce = 3.4028235e38
                 float physics:breakTorque = 3.4028235e38
                 point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)

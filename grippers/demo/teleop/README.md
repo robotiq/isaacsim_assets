@@ -102,6 +102,11 @@ physics without maintaining a second stage:
 | --------- | ------------- |
 | `2F85` *(default)* | `Robotiq_2F_85/Robotiq_2F_85.usda` |
 | `2F140` | `Robotiq_2F_140/Robotiq_2F_140.usda` |
+| `HandE` | `Robotiq_Hand_E/Robotiq_Hand_E.usda` |
+
+The Hand-E has one PhysX and one Newton variant, so the scene's `Physx_*` physics select its
+`PhysX` variant and `Newton_*` its `Newton` variant. R2 drives its `left_finger_joint` over the
+25 mm stroke (the right finger follows), instead of `finger_joint` over 0.78 rad.
 
 | `Physics` | Launch with | After every Stop→Play |
 | --------- | ----------- | --------------------- |
@@ -556,6 +561,7 @@ which needs neither Servo nor the gamepad node.
 ./run_demo.sh --no-isaac      # attach to an Isaac you already have running
 
 TELEOP_GRIPPER=2F140 ./run_demo.sh                  # the 2F-140 (default 2F85)
+TELEOP_GRIPPER=HandE ./run_demo.sh                  # the Hand-E
 TELEOP_PHYSICS=Newton_compliant ./run_demo.sh       # the Newton gripper
 TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 ```

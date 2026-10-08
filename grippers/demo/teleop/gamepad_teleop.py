@@ -75,8 +75,10 @@ SPEED_MIN      = 0.1
 SPEED_MAX      = 5.0
 # R2 analog trigger drives the gripper directly: released = fully open,
 # fully pressed = fully closed, proportional in between.
+_HANDE = os.environ.get("TELEOP_GRIPPER", "") == "HandE"
 GRIPPER_OPEN   = 0.0     # released
-GRIPPER_CLOSED = 0.78    # fully pressed
+# fully pressed: 0.78 rad on the 2F grippers, 25 mm of finger travel on the Hand-E
+GRIPPER_CLOSED = 0.025 if _HANDE else 0.78
 
 ARM_JOINTS = [
     "shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
@@ -84,9 +86,9 @@ ARM_JOINTS = [
 ]
 GRIPPER_JOINTS = [
     # Only the driven joint should be commanded — the rest follow from the
-    # 4-bar loop and coupling constraints built into the USD. Commanding
-    # more fought those constraints.
-    "finger_joint",
+    # 4-bar loop and coupling constraints built into the USD (the Hand-E's right
+    # finger follows left_finger_joint). Commanding more fought those constraints.
+    "left_finger_joint" if _HANDE else "finger_joint",
 ]
 READY_POSE = [0.0, -1.2, 1.2, -1.57, -1.57, 0.0]
 

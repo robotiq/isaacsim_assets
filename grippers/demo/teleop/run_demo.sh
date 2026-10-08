@@ -13,12 +13,14 @@
 #   ./run_demo.sh --no-isaac      # attach to an Isaac you already have running
 #
 #   TELEOP_GRIPPER=2F140 ./run_demo.sh                 # the 2F-140 (default 2F85)
+#   TELEOP_GRIPPER=HandE ./run_demo.sh                 # the Hand-E (PhysX / Newton)
 #   TELEOP_PHYSICS=Newton_compliant ./run_demo.sh      # the Newton gripper
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 #
-# TELEOP_GRIPPER picks the scene's Gripper variant (2F85 | 2F140) and
+# TELEOP_GRIPPER picks the scene's Gripper variant (2F85 | 2F140 | HandE) and
 # TELEOP_PHYSICS its Physics variant (Physx_compliant | Physx_parallel_grip |
-# Newton_compliant | Newton_parallel_grip, default Physx_compliant). The physics
+# Newton_compliant | Newton_parallel_grip, default Physx_compliant). The Hand-E has
+# one PhysX and one Newton variant, so any Physx_* / Newton_* maps onto those. The physics
 # picks the launcher, because the Newton_* physics only simulates under the
 # Newton solver and that is a separate Isaac experience rather than a flag. Set ISAACSIM_LAUNCHER to override -- e.g. a launcher of your own
 # that wraps Isaac differently -- and it wins over the derived default.
@@ -83,6 +85,9 @@ if [[ -n "${TELEOP_GRIPPER_VARIANT:-}" ]]; then
 fi
 TELEOP_GRIPPER="${TELEOP_GRIPPER:-2F85}"
 TELEOP_PHYSICS="${TELEOP_PHYSICS:-Physx_compliant}"
+# The ROS-side frontends (gamepad_teleop.py) read the gripper too: the Hand-E drives
+# left_finger_joint over a 25 mm stroke instead of finger_joint over 0.78 rad.
+export TELEOP_GRIPPER TELEOP_PHYSICS
 case "$TELEOP_PHYSICS" in
   Newton_*) VARIANT_LAUNCHER=isaac-sim.newton.sh ;;
   *)        VARIANT_LAUNCHER=isaac-sim.sh ;;
