@@ -44,6 +44,7 @@ The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it ha
 `PhysX` and one `Newton` physics variant (one driven finger joint, the other finger follows it).
 The Newton coupling is a stiff MuJoCo joint equality baked into the asset, so no runtime tuning
 script is needed.
+
 `*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
 coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
 fingers wrap around the object. The Newton variants model the linkage more

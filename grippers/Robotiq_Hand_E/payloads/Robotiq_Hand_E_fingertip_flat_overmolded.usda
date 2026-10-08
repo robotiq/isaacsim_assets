@@ -49,3 +49,19 @@ over "Meshes"
         }
     }
 }
+
+# Drive force cap for this tip: twice the spec-sheet force at the pad (the two fingers share the
+# left joint's drive force), see CURVES / DRIVE_TO_PAD in the generator.
+over "Robotiq_Hand_E"
+{
+    over "Robotiq_Hand_E"
+    {
+        over "Joints"
+        {
+            over "left_finger_joint"
+            {
+                float drive:linear:physics:maxForce = 200
+            }
+        }
+    }
+}

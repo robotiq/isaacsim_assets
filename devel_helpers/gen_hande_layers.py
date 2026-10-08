@@ -44,6 +44,65 @@ TIPS = [
 # Body links that carry a PhysX collider on their /Meshes/<name>/mesh_0.
 BODY_LINKS = ["base_link", "left_finger", "right_finger"]
 
+# ---- Max payload / external force vs fingertip Z offset (Hand-E spec sheet, Fig. 6-11) ----
+# Source: the Hand-E (Aubo) instruction manual, "6. Specifications" page, section "Moment and force
+# limits":
+#   https://assets.robotiq.com/website-assets/support_documents/document/online/Hand-E_Aubo_InstructionManual_HTML5_20190501.zip/Hand-E_Aubo_InstructionManual_HTML5/Content/6.%20Specifications.htm
+# A copy of the figure is kept in grippers/Robotiq_Hand_E/docs/Hand-E_max_payload_vs_z_offset.png
+# (see grippers/Robotiq_Hand_E/docs/README.md).
+# The recommended maximum force F applied at the fingertip (middle of the inner pad surface) falls
+# with the Z offset of that point (measured from the housing face), and depends on how the finger is
+# mounted: "blue" = 2 x M3 directly on the rack, "red" = on a fingertip holder (2 x M3), "yellow" =
+# 3 x M3 directly on the rack. Breakpoints (Z offset mm, N) were READ OFF the published figure
+# (+-5 mm / +-5 N); the 100 N plateau, which is where every shipped tip sits, is exact.
+FORCE_CAP = 100.0  # N, plateau of the spec-sheet graph
+CURVES = {
+    "blue": [(70, 100.0), (88, 69.0), (107, 46.0), (137, 22.0), (167, 8.0), (187, 0.0)],
+    "red": [(70, 100.0), (88, 69.0), (104, 0.0)],
+    "yellow": [(115, 100.0), (157, 57.0), (207, 45.0), (300, 20.0), (400, 0.0)],
+}
+# How each fingertip is mounted -> which curve limits it (confirmed by Robotiq).
+TIP_MOUNT = {"std": "blue", "flat_overmolded": "blue", "support": "red", "extender": "red", "binpick": "yellow"}
+HOUSING_FACE_Z = 0.0861  # m, housing face = CAD y = 0 (flange + 86.1 mm): the origin of the Z offset
+
+
+def tip_z_offset(key):
+    """Z offset (mm) of the fingertip's end from the housing face, from the baked CAD part."""
+    st = Usd.Stage.Open(os.path.join(ROOT, "parts", f"{N}_fingertip_{key}_left.usd"))
+    pts = UsdGeom.Mesh(st.GetPrimAtPath("/World/mesh_0")).GetPointsAttr().Get()
+    return (max(p[2] for p in pts) - HOUSING_FACE_Z) * 1000.0
+
+
+# ---- Finger drive ----
+# Only left_finger_joint is driven; right_finger_joint follows it through a rigid coupling (PhysX mimic /
+# Newton joint equality), so the left drive force is SHARED between the two fingers: each pad presses
+# on the object with half of it (measured live: a 130 N drive cap gave ~65 N per pad). The spec-sheet
+# force is a force at the pad, so the drive cap is twice the graph value.
+DRIVE_TO_PAD = 2.0
+# The drive is a position spring toward the closed target: force = stiffness x remaining stroke, clipped
+# at the cap. With the old 5000 N/m an object leaving ~10 mm of stroke only got ~50 N and the cap was
+# never reached. 50000 N/m saturates the cap for any object wider than a few mm, so a fully closed
+# command always applies the cap force. Damping 200 keeps it overdamped for a ~40 g finger + tip.
+DRIVE_STIFFNESS = 50000.0  # N/m
+DRIVE_DAMPING = 200.0      # N.s/m
+
+
+def tip_drive_force(key):
+    """Drive force cap (N) that gives the tip's spec-sheet force at each pad."""
+    return tip_max_force(key) * DRIVE_TO_PAD
+
+
+def tip_max_force(key):
+    """Max force (N) the spec-sheet curve of the tip's mounting allows at its Z offset."""
+    z, pts = tip_z_offset(key), CURVES[TIP_MOUNT[key]]
+    if z <= pts[0][0]:
+        return min(FORCE_CAP, pts[0][1])
+    for (z0, f0), (z1, f1) in zip(pts, pts[1:]):
+        if z <= z1:
+            return round(f0 + (f1 - f0) * (z - z0) / (z1 - z0), 1)
+    return 0.0
+
+
 INSIDE_OFFSET = 0.009  # m, Inside screw-hole row vs Outside (rows at 31 mm / 22 mm from the centre)
 STROKE = 0.025  # m, travel of each finger
 DENSITY = 2800.0  # kg/m^3 (aluminium); reproduces the published 0.864 kg body / 0.038 kg finger+tip
@@ -258,6 +317,22 @@ def gen_tip_payloads():
 over "Meshes"
 {{
 {t.rstrip()}
+}}
+
+# Drive force cap for this tip: twice the spec-sheet force at the pad (the two fingers share the
+# left joint's drive force), see CURVES / DRIVE_TO_PAD in the generator.
+over "{N}"
+{{
+    over "{N}"
+    {{
+        over "Joints"
+        {{
+            over "left_finger_joint"
+            {{
+                float drive:linear:physics:maxForce = {tip_drive_force(key):g}
+            }}
+        }}
+    }}
 }}
 ''')
     mm = INSIDE_OFFSET * 1000
@@ -538,8 +613,12 @@ def gen_physx():
     # frame -> both fingers close symmetrically). Shared neutral joint frames/limits live in
     # ./{N}_kinematics_physics.usda (sublayered below).
     #
-    # Drive: 130 N max force per finger (grip force is published as 20-185 N), 0.15 m/s max
-    # speed (20-150 mm/s published). Stiffness / damping are initial values to be tuned live.
+    # Drive: the force cap is twice the spec-sheet payload-vs-Z-offset force of the default tip
+    # ({tip_max_force(TIPS[0][0]):g} N at each pad -> {tip_drive_force(TIPS[0][0]):g} N on the driven joint, because the
+    # rigidly coupled right finger shares it; each Fingertip variant overrides the cap for its own tip),
+    # maxJointVelocity 0.15 m/s = 150 mm/s, the upper end of the datasheet's finger speed (20 to 150 mm/s,
+    # Hand-E Specifications table). Stiffness {DRIVE_STIFFNESS:g} N/m saturates the cap for
+    # any object, damping {DRIVE_DAMPING:g}; both were checked live on PhysX and on Newton.
     # GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand.
     defaultPrim = "{N}"
     metersPerUnit = 1
@@ -568,9 +647,9 @@ def Xform "{N}" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:linear"]
             )
             {{
-                float drive:linear:physics:damping = 100
-                float drive:linear:physics:maxForce = 130
-                float drive:linear:physics:stiffness = 5000
+                float drive:linear:physics:damping = {DRIVE_DAMPING:g}
+                float drive:linear:physics:maxForce = {tip_drive_force(TIPS[0][0]):g}
+                float drive:linear:physics:stiffness = {DRIVE_STIFFNESS:g}
                 float drive:linear:physics:targetPosition = 0
                 float drive:linear:physics:targetVelocity = 0
                 float physxJoint:armature = 0.001
@@ -784,9 +863,9 @@ over "{N}"
                 prepend apiSchemas = ["MjcJointAPI", "PhysicsDriveAPI:linear"]
             )
             {{
-                float drive:linear:physics:damping = 100
-                float drive:linear:physics:maxForce = 130
-                float drive:linear:physics:stiffness = 5000
+                float drive:linear:physics:damping = {DRIVE_DAMPING:g}
+                float drive:linear:physics:maxForce = {tip_drive_force(TIPS[0][0]):g}
+                float drive:linear:physics:stiffness = {DRIVE_STIFFNESS:g}
                 float drive:linear:physics:targetPosition = 0
                 uniform double mjc:armature = 0.001
                 uniform double mjc:damping = 1
