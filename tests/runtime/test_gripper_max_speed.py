@@ -1,6 +1,6 @@
 """The 2F finger joint speed is capped at the same value on every variant.
 
-The finger joint velocity cap (146.46 deg/s) is authored once per gripper
+The finger joint velocity cap (86 deg/s, the datasheet 150 mm/s) is authored once per gripper
 (PhysX, ``physxJoint:maxJointVelocity``) and shared by the parallel-grip and
 compliant variants. Command a full close in one step so the drive saturates,
 sample the finger joint velocity every frame, and check the peak sits at the
@@ -28,12 +28,12 @@ NEWTON_NO_CAP = pytest.mark.xfail(
     strict=True,
 )
 
-MAX_SPEED = math.radians(146.46)  # rad/s, the cap authored in the physx_common layers
+MAX_SPEED = math.radians(86)  # rad/s, the cap authored in the physx_common layers (datasheet 150 mm/s, guide 4.5)
 UPPER_TOL = 1.05  # peak may exceed the cap by at most 5 %
 LOWER_TOL = 0.90  # and must reach at least 90 % of it
 
 SETTLE_FRAMES = 30
-MOVE_FRAMES = 60  # 1 s at 60 Hz; the full close takes ~0.3 s at the cap
+MOVE_FRAMES = 60  # 1 s at 60 Hz; the full close takes ~0.55 s at the cap
 CLOSE_TARGET = 0.8  # rad, ~46 deg
 
 
