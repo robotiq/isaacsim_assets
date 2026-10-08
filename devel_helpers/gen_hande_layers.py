@@ -103,6 +103,12 @@ def tip_max_force(key):
     return 0.0
 
 
+def tip_hulls(key, side):
+    """Number of collision pieces baked for a fingertip part (see gen_hande_fingertip_colliders.py)."""
+    st = Usd.Stage.Open(os.path.join(ROOT, "parts", f"{N}_fingertip_{key}_{side}_collision.usd"))
+    return len(st.GetPrimAtPath("/World").GetChildren())
+
+
 INSIDE_OFFSET = 0.009  # m, Inside screw-hole row vs Outside (rows at 31 mm / 22 mm from the centre)
 STROKE = 0.025  # m, travel of each finger
 DENSITY = 2800.0  # kg/m^3 (aluminium); reproduces the published 0.864 kg body / 0.038 kg finger+tip
@@ -175,6 +181,12 @@ def gen_base():
             prepend references = @../parts/{N}_fingertip_{default}_{side}.usd@
         )
         {{
+            # Collision pieces (convex, purpose=guide): the tip's colliders; see gen_hande_fingertip_colliders.py.
+            def Xform "collision" (
+                prepend references = @../parts/{N}_fingertip_{default}_{side}_collision.usd@
+            )
+            {{
+            }}
         }}
     }}
 '''
@@ -296,6 +308,11 @@ def gen_tip_payloads():
             prepend references = @../parts/{N}_fingertip_{key}_{side}.usd@
         )
         {{
+            def Xform "collision" (
+                prepend references = @../parts/{N}_fingertip_{key}_{side}_collision.usd@
+            )
+            {{
+            }}
         }}
     }}
 
@@ -517,6 +534,17 @@ def Xform "{N}"
 COLLIDER_APIS = '["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]'
 
 
+def _px_block(i, name):
+    return f'''{i}over "{name}" (
+{i}    prepend apiSchemas = {COLLIDER_APIS}
+{i})
+{i}{{
+{i}    uniform token physics:approximation = "convexHull"
+{i}    bool physics:collisionEnabled = 1
+{i}}}
+'''
+
+
 def _collider(name, depth=1):
     """`over` block putting the convex-hull collider on <name>/mesh_0 (name may be a nested path)."""
     ind = "    "
@@ -524,17 +552,27 @@ def _collider(name, depth=1):
     out = ""
     for i, p in enumerate(parts):
         out += f'{ind * (depth + i)}over "{p}"\n{ind * (depth + i)}{{\n'
-    d = depth + len(parts)
-    out += f'''{ind * d}over "mesh_0" (
-{ind * d}    prepend apiSchemas = {COLLIDER_APIS}
-{ind * d})
-{ind * d}{{
-{ind * d}    uniform token physics:approximation = "convexHull"
-{ind * d}    bool physics:collisionEnabled = 1
-{ind * d}}}
-'''
+    out += _px_block(ind * (depth + len(parts)), "mesh_0")
     for i in reversed(range(len(parts))):
         out += f"{ind * (depth + i)}}}\n"
+    return out
+
+
+def _tip_hull_blocks(block, depth=1):
+    """For every side / tip: `over fingertip_<side>/tip_<key>/collision` with one `block(indent, "hull_<i>")` per
+    baked collision piece (each wrapper prim written once)."""
+    ind = "    "
+    out = ""
+    for s in ("left", "right"):
+        out += f'{ind * depth}over "fingertip_{s}"\n{ind * depth}{{\n'
+        tips = []
+        for k, _, _ in TIPS:
+            d = depth + 1
+            blk = f'{ind * d}over "tip_{k}"\n{ind * d}{{\n{ind * (d + 1)}over "collision"\n{ind * (d + 1)}{{\n'
+            blk += "\n".join(block(ind * (d + 2), f"hull_{h}") for h in range(tip_hulls(k, s)))
+            blk += f'{ind * (d + 1)}}}\n{ind * d}}}\n'
+            tips.append(blk)
+        out += "\n".join(tips) + f'{ind * depth}}}\n\n'
     return out
 
 
@@ -542,10 +580,7 @@ def gen_physx_common():
     colliders = "".join(_collider(l) + "\n" for l in BODY_LINKS)
     colliders += "    # Tip colliders for every Fingertip variant (derived from TIPS; authored here, not in the\n"
     colliders += '    # variant payloads, so no tip collider ever composes under Physics = "None").\n'
-    for side in ("left", "right"):
-        colliders += f'    over "fingertip_{side}"\n    {{\n'
-        colliders += "\n".join(_collider(f"tip_{k}", depth=2) for k, _, _ in TIPS)
-        colliders += "    }\n\n"
+    colliders += _tip_hull_blocks(_px_block)
     w(f"payloads/{N}_physx_common_physics.usda", HDR + f'''(
     # PhysX-only physics for the Hand-E: the articulation root + root_joint (fixed base), the
     # collision-group plumbing, and every PhysX convex-hull collider -- the body-link
@@ -687,24 +722,14 @@ def _newton_over(path, body, depth=1):
     for i, p in enumerate(parts):
         out += f'{ind * (depth + i)}over "{p}"\n{ind * (depth + i)}{{\n'
     d = depth + len(parts)
-    out += body(ind * d)
+    out += body(ind * d, "mesh_0")
     for i in reversed(range(len(parts))):
         out += f"{ind * (depth + i)}}}\n"
     return out
 
 
-def _tip_blocks(body):
-    """Per-side `over "fingertip_<side>"` wrapper holding one tip `over` each (wrapper written once)."""
-    out = ""
-    for s in ("left", "right"):
-        out += f'    over "fingertip_{s}"\n    {{\n'
-        out += "\n".join(_newton_over(f"tip_{k}", body, depth=2) for k, _, _ in TIPS)
-        out += "    }\n\n"
-    return out
-
-
 def gen_newton_common():
-    link = lambda i: f'''{i}over "mesh_0" (
+    link = lambda i, name: f'''{i}over "{name}" (
 {i}    prepend apiSchemas = {NEWTON_COLLIDER_APIS}
 {i})
 {i}{{
@@ -713,11 +738,11 @@ def gen_newton_common():
 {i}    float newton:contactGap = 0
 {i}}}
 '''
-    tip = lambda i: f'''{i}over "mesh_0" (
+    tip = lambda i, name: f'''{i}over "{name}" (
 {i}    prepend apiSchemas = {NEWTON_COLLIDER_APIS[:-1]}, "MaterialBindingAPI"]
 {i})
 {i}{{
-{i}    uniform token physics:approximation = "convexDecomposition"
+{i}    uniform token physics:approximation = "convexHull"
 {i}    bool physics:collisionEnabled = 1
 {i}    rel material:binding:physics = <{GRIP_MATERIAL}>
 {i}    float newton:contactGap = 0
@@ -726,7 +751,7 @@ def gen_newton_common():
     cols = "\n".join(_newton_over(l, link) for l in BODY_LINKS) + "\n"
     cols += "    # Tip colliders for every Fingertip variant (derived from TIPS); only the one the\n"
     cols += "    # Fingertip variant activates composes. Fingertips carry the grip-pad friction material.\n"
-    cols += _tip_blocks(tip)
+    cols += _tip_hull_blocks(tip)
     w(f"payloads/{N}_newton_common_physics.usda", HDR + f'''(
     defaultPrim = "{N}"
     doc = """Shared Newton-pure physics for the Robotiq Hand-E: the grip-pad friction material
@@ -772,14 +797,14 @@ over "Meshes"
 
 
 def gen_newton():
-    link_mjc = lambda i: f'''{i}over "mesh_0" (
+    link_mjc = lambda i, name: f'''{i}over "{name}" (
 {i}    prepend apiSchemas = ["MjcCollisionAPI"]
 {i})
 {i}{{
 {i}    uniform int mjc:group = 2
 {i}}}
 '''
-    base_mjc = lambda i: f'''{i}over "mesh_0" (
+    base_mjc = lambda i, name: f'''{i}over "{name}" (
 {i}    prepend apiSchemas = ["MjcCollisionAPI"]
 {i})
 {i}{{
@@ -793,7 +818,7 @@ def gen_newton():
 {i}    uniform double[] mjc:solref = [0.004, 2]
 {i}}}
 '''
-    tip_mjc = lambda i: f'''{i}over "mesh_0" (
+    tip_mjc = lambda i, name: f'''{i}over "{name}" (
 {i}    prepend apiSchemas = ["MjcCollisionAPI"]
 {i})
 {i}{{
@@ -805,7 +830,7 @@ def gen_newton():
 '''
     cols = _newton_over("base_link", base_mjc) + "\n"
     cols += "\n".join(_newton_over(l, link_mjc) for l in BODY_LINKS[1:]) + "\n"
-    cols += _tip_blocks(tip_mjc)
+    cols += _tip_hull_blocks(tip_mjc)
     w(f"payloads/{N}_newton_physics.usda", HDR + f'''(
     defaultPrim = "{N}"
     doc = """Newton (MuJoCo-Warp) variant of the Robotiq Hand-E.

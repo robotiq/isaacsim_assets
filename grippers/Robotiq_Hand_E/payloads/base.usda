@@ -147,6 +147,12 @@ def Scope "Meshes"
             prepend references = @../parts/Robotiq_Hand_E_fingertip_std_left.usd@
         )
         {
+            # Collision pieces (convex, purpose=guide): the tip's colliders; see gen_hande_fingertip_colliders.py.
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_fingertip_std_left_collision.usd@
+            )
+            {
+            }
         }
     }
 
@@ -161,6 +167,12 @@ def Scope "Meshes"
             prepend references = @../parts/Robotiq_Hand_E_fingertip_std_right.usd@
         )
         {
+            # Collision pieces (convex, purpose=guide): the tip's colliders; see gen_hande_fingertip_colliders.py.
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_fingertip_std_right_collision.usd@
+            )
+            {
+            }
         }
     }
 }

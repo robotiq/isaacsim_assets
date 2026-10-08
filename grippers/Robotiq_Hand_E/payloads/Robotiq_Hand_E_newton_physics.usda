@@ -143,66 +143,211 @@ over "Meshes"
     {
         over "tip_std"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_flat_overmolded"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_support"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_extender"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_binpick"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_4" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_5" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
     }
@@ -211,66 +356,211 @@ over "Meshes"
     {
         over "tip_std"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_flat_overmolded"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_support"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_extender"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
 
         over "tip_binpick"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["MjcCollisionAPI"]
-            )
+            over "collision"
             {
-                uniform int mjc:group = 3
-                uniform int mjc:priority = 1
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.004, 2]
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_4" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
+
+                over "hull_5" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.004, 2]
+                }
             }
         }
     }
