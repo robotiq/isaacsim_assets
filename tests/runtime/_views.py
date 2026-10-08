@@ -2,7 +2,8 @@
 
 A preset is a JSON file in ``views/`` named after the pytest id of the case
 (``test_gripper_closes-Robotiq_2F_85.json``), falling back to the function
-name (``test_gripper_closes.json``). It stores the viewport camera pose, the
+name (``test_gripper_closes.json``) and then to ``default.json``, which every
+test without its own file uses. It stores the viewport camera pose, the
 viewport lighting mode (Camera Light / Stage Lights / ...) and every UsdLux
 light in the stage. ``save_view`` captures the current state at
 the end of a ``--gui --hold --save-view`` run; ``apply_view`` restores it on
@@ -34,6 +35,7 @@ def preset_paths(nodeid: str) -> list[Path]:
         case = re.sub(r"[^A-Za-z0-9_.-]+", "_", name.replace("[", "-").rstrip("]"))
         out.append(VIEWS_DIR / f"{case}.json")
     out.append(VIEWS_DIR / f"{func}.json")
+    out.append(VIEWS_DIR / "default.json")
     return out
 
 
