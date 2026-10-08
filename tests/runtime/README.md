@@ -11,10 +11,36 @@ by hand before merging an asset change.
 ```
 
 To watch the simulation, open the Isaac Sim window instead; `--hold` keeps it
-open after the last test until you close it:
+open after the last test until you close it (press **R** in the window to
+replay the last test in the same session), and `--slow FACTOR` plays FACTOR
+times slower than real time (the physics is unchanged, each frame is just
+held on screen longer):
+
+## Reusing one Isaac session
+
+Isaac takes a while to start, so a held session also accepts test runs from
+another terminal. Start it once (the `-k` just picks what runs at startup;
+`-k nothing_yet` runs nothing), then send it selections with
+`isaac_run.py`, which prints the tests' output:
+
+```bash
+~/isaacsim/python.sh -m pytest tests/runtime --gui --hold -k nothing_yet   # terminal 1, once
+tests/runtime/isaac_run.py "2F_85 and Newton_compliant"                     # terminal 2, repeatedly
+tests/runtime/isaac_run.py "parallel and 2F_140" --slow 5
+```
+
+`--joints on|off` draws or hides the physics joints in the viewport for the
+session (`--show-joints` does the same at startup). The selection is a
+simplified `-k`: words joined by ` and ` must all appear in the test id,
+`not <word>` excludes. The gripper USD layers are re-read
+from disk before every run, so **asset edits are picked up without a
+restart**; edits to the test code still need one (the collected tests are
+the ones loaded at startup). The session listens on `127.0.0.1:8777`
+(`--port` to change).
 
 ```bash
 ~/isaacsim/python.sh -m pytest tests/runtime -v --gui --hold
+~/isaacsim/python.sh -m pytest tests/runtime -v --gui --hold --slow 5 -k "2F_85 and Newton_compliant"
 ```
 
 Adjust `~/isaacsim` to your Isaac Sim install. One headless `SimulationApp` is
