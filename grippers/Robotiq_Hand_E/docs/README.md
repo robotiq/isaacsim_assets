@@ -30,7 +30,7 @@ manual, "6. Specifications" page:
 
 ## Finger force per fingertip
 
-![Maximum payload / external force vs. custom finger Z offset](docs/Hand-E_max_payload_vs_z_offset.png)
+![Maximum payload / external force vs. custom finger Z offset](Hand-E_max_payload_vs_z_offset.png)
 
 *Hand-E: maximum payload / external force vs. custom finger design (Z offset), copied from the page
 above. The force is applied at the tip of the finger, in the middle of the inner surface; the Z offset
