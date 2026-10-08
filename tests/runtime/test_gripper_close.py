@@ -56,10 +56,14 @@ _PRISMATIC_HAND_E = Spec(
 # (gripper, Physics variant) -> spec; the engine follows the variant name.
 CASES = {
     ("Robotiq_2F_85", "Physx_parallel_grip"): _REVOLUTE_2F,
+    ("Robotiq_2F_85", "Physx_compliant"): _REVOLUTE_2F,
     ("Robotiq_2F_140", "Physx_parallel_grip"): _REVOLUTE_2F,
+    ("Robotiq_2F_140", "Physx_compliant"): _REVOLUTE_2F,
     ("Robotiq_Hand_E", "PhysX"): _PRISMATIC_HAND_E,
     ("Robotiq_2F_85", "Newton_parallel_grip"): _REVOLUTE_2F,
+    ("Robotiq_2F_85", "Newton_compliant"): _REVOLUTE_2F,
     ("Robotiq_2F_140", "Newton_parallel_grip"): _REVOLUTE_2F,
+    ("Robotiq_2F_140", "Newton_compliant"): _REVOLUTE_2F,
     ("Robotiq_Hand_E", "Newton"): _PRISMATIC_HAND_E,
 }
 
@@ -84,6 +88,10 @@ def test_gripper_closes(simulation_app, view, gripper: str, physics: str) -> Non
     q = robot.get_dof_positions().numpy()[0]
     omni.timeline.get_timeline_interface().stop()
 
+    print(
+        f"{gripper} {physics}: {spec.driven}={_fmt(q[driven], spec.unit)} (target {_fmt(spec.target, spec.unit)}), "
+        f"{spec.follower}={_fmt(q[follower], spec.unit)}"
+    )
     assert np.all(np.isfinite(q)), f"non-finite DOF positions after close: {q}"
     assert abs(q[driven] - spec.target) < spec.close_tol, (
         f"{spec.driven}={_fmt(q[driven], spec.unit)}, target {_fmt(spec.target, spec.unit)}"
