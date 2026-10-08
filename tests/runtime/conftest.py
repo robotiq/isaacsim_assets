@@ -46,6 +46,15 @@ def pytest_configure(config: pytest.Config) -> None:
         "renderer": "MinimalRendering",
         "minimal_shading_mode": 2,
     })
+    # Newton is not loaded by the Python experience: enable the engine and its
+    # native tensor backend (what Articulation reads DOFs through). Tests pick
+    # the engine per case with SimulationManager.switch_physics_engine.
+    import omni.kit.app
+
+    ext_manager = omni.kit.app.get_app().get_extension_manager()
+    for ext in ("isaacsim.physics.newton", "isaacsim.physics.newton.tensors"):
+        ext_manager.set_extension_enabled_immediate(ext, True)
+    _app.update()
     config._isaac_app = _app
     config._isaac_last_nodeid = None
 
