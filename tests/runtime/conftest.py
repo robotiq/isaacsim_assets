@@ -37,13 +37,15 @@ def pytest_configure(config: pytest.Config) -> None:
     from isaacsim import SimulationApp
 
     # Always "RTX - Minimal": the tests are about physics; keep the viewport cheap.
-    # Starting Kit directly in MinimalRendering leaves its reference shading mode
-    # (0) rendering black, so start on the default renderer and switch after
-    # startup, as the viewport's render-mode menu does.
-    _app = SimulationApp({"headless": not config.getoption("--gui"), "renderer": "RealTimePathTracing"})
-    _app.set_setting("/rtx/minimal/mode", 0)
-    _app.set_setting("/rtx/rendermode", "MinimalRendering")
-    _app.update()
+    # minimal_shading_mode 2 (Textured Diffuse) is Kit's own default for
+    # /rtx/minimal/mode, i.e. what the viewport menu's "RTX - Minimal" shows in
+    # the interactive app. SimulationApp would otherwise force mode 0 ("Real-Time
+    # 2.0 reference"), which renders a black viewport here.
+    _app = SimulationApp({
+        "headless": not config.getoption("--gui"),
+        "renderer": "MinimalRendering",
+        "minimal_shading_mode": 2,
+    })
     config._isaac_app = _app
     config._isaac_last_nodeid = None
 

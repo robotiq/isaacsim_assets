@@ -31,10 +31,11 @@ or update one, run a single case with `--save-view`, frame the view and set
 the lighting in the Isaac UI during the hold, then close the window: the
 current camera, lighting mode and lights are written to that case's file.
 
-The viewport always uses the `RTX - Minimal` render mode (`conftest.py`); the
-tests are about physics, not rendering. Kit is started on its default renderer
-and switched to Minimal after startup: started directly in Minimal, its
-reference shading mode renders black.
+The viewport always uses the `RTX - Minimal` render mode (`conftest.py`) in
+Kit's default Minimal shading mode (Textured Diffuse, the look the viewport
+menu's "RTX - Minimal" gives in the interactive app); the tests are about
+physics, not rendering. `SimulationApp` would otherwise force the "Real-Time
+2.0 reference" shading mode, which renders a black viewport.
 
 `--screenshot DIR` captures the viewport to `DIR/<test>.png` after each test,
 headless or not, with the saved view applied; `--no-view` skips the presets.
