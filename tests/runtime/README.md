@@ -22,14 +22,16 @@ started for the whole session (`conftest.py`); each test builds its own stage.
 
 ## Saved camera and lights for GUI runs
 
-Each test case can have a preset in `views/` (`<test>-<param>.json`, falling
-back to `<test>.json`) holding the viewport camera pose, the viewport lighting
+`views/default.json` holds the viewport camera pose, the viewport lighting
 mode (the Lighting menu: Camera Light, Stage Lights, Lights Off, or a light
-rig) and any light prims in the stage. With `--gui` the preset is applied
-automatically when the test calls `view()`; headless runs ignore it. To create
-or update one, run a single case with `--save-view`, frame the view and set
-the lighting in the Isaac UI during the hold, then close the window: the
-current camera, lighting mode and lights are written to that case's file.
+rig) and any light prims in the stage, and applies to every test. A test can
+override it with its own file (`<test>-<param>.json`, or `<test>.json` for
+all its parametrizations). With `--gui` the preset is applied automatically
+when the test calls `view()`; headless runs ignore it. To create or update a
+per-case file, run that case with `--save-view`, frame the view and set the
+lighting in the Isaac UI during the hold, then close the window: the current
+camera, lighting mode and lights are written to that case's file (copy it over
+`default.json` to make it the default).
 
 The viewport always uses the `RTX - Minimal` render mode (`conftest.py`) in
 Kit's default Minimal shading mode (Textured Diffuse, the look the viewport
