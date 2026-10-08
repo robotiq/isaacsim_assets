@@ -207,21 +207,21 @@ def Xform "World"
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                color3f inputs:diffuse_color_constant = (0.8, 0.80784315, 0.8)
+                color3f inputs:diffuse_color_constant = (0.86, 0.87, 0.87)
                 color3f inputs:emissive_color = (0, 0, 0)
                 float inputs:emissive_intensity = 0
                 bool inputs:enable_emission = 0
-                float inputs:metallic_constant = 0
-                float inputs:reflection_roughness_constant = 0.5
+                float inputs:metallic_constant = 1
+                float inputs:reflection_roughness_constant = 0.42
                 token outputs:out
             }
 
             def Shader "PreviewSurface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.8, 0.80784315, 0.8)
-                float inputs:metallic = 0
-                float inputs:roughness = 0.5
+                color3f inputs:diffuseColor = (0.86, 0.87, 0.87)
+                float inputs:metallic = 1
+                float inputs:roughness = 0.42
                 token outputs:surface
             }
         }
@@ -300,21 +300,21 @@ def Xform "World"
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                color3f inputs:diffuse_color_constant = (0.7764706, 0.75686276, 0.7372549)
+                color3f inputs:diffuse_color_constant = (0.8, 0.81, 0.82)
                 color3f inputs:emissive_color = (0, 0, 0)
                 float inputs:emissive_intensity = 0
                 bool inputs:enable_emission = 0
-                float inputs:metallic_constant = 0
-                float inputs:reflection_roughness_constant = 0.5
+                float inputs:metallic_constant = 1
+                float inputs:reflection_roughness_constant = 0.3
                 token outputs:out
             }
 
             def Shader "PreviewSurface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.7764706, 0.75686276, 0.7372549)
-                float inputs:metallic = 0
-                float inputs:roughness = 0.5
+                color3f inputs:diffuseColor = (0.8, 0.81, 0.82)
+                float inputs:metallic = 1
+                float inputs:roughness = 0.3
                 token outputs:surface
             }
         }
@@ -331,21 +331,21 @@ def Xform "World"
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                color3f inputs:diffuse_color_constant = (0.9372549, 0.9372549, 0.9372549)
+                color3f inputs:diffuse_color_constant = (0.91, 0.92, 0.92)
                 color3f inputs:emissive_color = (0, 0, 0)
                 float inputs:emissive_intensity = 0
                 bool inputs:enable_emission = 0
-                float inputs:metallic_constant = 0
-                float inputs:reflection_roughness_constant = 0.5
+                float inputs:metallic_constant = 1
+                float inputs:reflection_roughness_constant = 0.38
                 token outputs:out
             }
 
             def Shader "PreviewSurface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.9372549, 0.9372549, 0.9372549)
-                float inputs:metallic = 0
-                float inputs:roughness = 0.5
+                color3f inputs:diffuseColor = (0.91, 0.92, 0.92)
+                float inputs:metallic = 1
+                float inputs:roughness = 0.38
                 token outputs:surface
             }
         }
@@ -487,21 +487,52 @@ def Xform "World"
                 uniform token info:implementationSource = "sourceAsset"
                 uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
                 uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
-                color3f inputs:diffuse_color_constant = (0.8980392, 0.91764706, 0.92941177)
+                color3f inputs:diffuse_color_constant = (0.9, 0.91, 0.92)
                 color3f inputs:emissive_color = (0, 0, 0)
                 float inputs:emissive_intensity = 0
                 bool inputs:enable_emission = 0
-                float inputs:metallic_constant = 0
-                float inputs:reflection_roughness_constant = 0.5
+                float inputs:metallic_constant = 1
+                float inputs:reflection_roughness_constant = 0.35
                 token outputs:out
             }
 
             def Shader "PreviewSurface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.8980392, 0.91764706, 0.92941177)
+                color3f inputs:diffuseColor = (0.9, 0.91, 0.92)
+                float inputs:metallic = 1
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "Rubber_Black"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Rubber_Black/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Rubber_Black/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Rubber_Black/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Rubber_Black/PreviewSurface.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.025, 0.025, 0.025)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.75
+                token outputs:out
+            }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.025, 0.025, 0.025)
                 float inputs:metallic = 0
-                float inputs:roughness = 0.5
+                float inputs:roughness = 0.75
                 token outputs:surface
             }
         }
