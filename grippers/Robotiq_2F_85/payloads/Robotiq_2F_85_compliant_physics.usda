@@ -139,7 +139,7 @@ def Xform "Robotiq_2F_85" (
                 float drive:angular:physics:damping = 5000
                 float drive:angular:physics:maxForce = 5
                 float drive:angular:physics:stiffness = 0
-                float physxJoint:maxJointVelocity = 146.46
+                float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotZ:dampingRatio = 0.01
                 float physxMimicJoint:rotZ:gearing = -1
                 float physxMimicJoint:rotZ:naturalFrequency = 5000
