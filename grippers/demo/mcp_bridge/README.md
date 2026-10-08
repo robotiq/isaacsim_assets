@@ -49,6 +49,7 @@ mcp_bridge/
 ├── mcp.json.example              ← template for the client-side .mcp.json config
 ├── make_contact_plot.py          ← host-side tool: overlay a live gripper pad contact-force plot
 └── remove_contact_plot.py        ← host-side tool: tear that plot back down
+    show_newton_colliders.py      ← in-Isaac: wireframe overlay of the Newton collision shapes (PhysX has a built-in one, Newton does not)
 ```
 
 `make_contact_plot.py` / `remove_contact_plot.py` are standalone diagnostic
