@@ -22,8 +22,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--gui", action="store_true", default=False, help="run with the Isaac Sim window (default: headless)")
     parser.addoption("--hold", action="store_true", default=False, help="with --gui, keep the window open after the tests")
     parser.addoption(
-        "--save-view", action="store_true", default=False,
-        help="with --gui --hold, save the viewport camera + lights of the last test to views/ on window close",
+        "--save-view", nargs="?", const="case", default=None, choices=["case", "test", "gripper", "default"],
+        metavar="SCOPE",
+        help="with --gui --hold, save the viewport camera + lights of the last test to views/ on window close. "
+             "SCOPE picks the file: case (default: this parametrized case), test (every case of the test "
+             "function), gripper (every test of that gripper), default (every test)",
     )
     parser.addoption(
         "--screenshot", default=None, metavar="DIR",
@@ -80,8 +83,9 @@ def pytest_unconfigure(config: pytest.Config) -> None:
 
             from _views import save_view
 
-            path = save_view(config._isaac_last_nodeid, stage_utils.get_current_stage())
-            print(f"view saved: {path}")
+            scope = config.getoption("--save-view")
+            path = save_view(config._isaac_last_nodeid, stage_utils.get_current_stage(), scope)
+            print(f"view saved ({scope}): {path}")
     _app.close()
     _app = None
 

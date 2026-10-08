@@ -22,16 +22,26 @@ started for the whole session (`conftest.py`); each test builds its own stage.
 
 ## Saved camera and lights for GUI runs
 
-`views/default.json` holds the viewport camera pose, the viewport lighting
+A preset in `views/` holds the viewport camera pose, the viewport lighting
 mode (the Lighting menu: Camera Light, Stage Lights, Lights Off, or a light
-rig) and any light prims in the stage, and applies to every test. A test can
-override it with its own file (`<test>-<param>.json`, or `<test>.json` for
-all its parametrizations). With `--gui` the preset is applied automatically
-when the test calls `view()`; headless runs ignore it. To create or update a
-per-case file, run that case with `--save-view`, frame the view and set the
-lighting in the Isaac UI during the hold, then close the window: the current
-camera, lighting mode and lights are written to that case's file (copy it over
-`default.json` to make it the default).
+rig) and any light prims in the stage. The most specific file wins:
+
+| Scope | File | Applies to |
+|---|---|---|
+| `case` | `<test>-<params>.json` | one parametrized case |
+| `test` | `<test>.json` | every case of that test function |
+| `gripper` | `<gripper folder>.json`, e.g. `Robotiq_2F_140.json` | every test of that gripper |
+| `default` | `default.json` | everything else |
+
+With `--gui` the preset is applied automatically when the test calls
+`view()`; headless runs ignore it. To create or update one, run a single case
+with `--save-view [SCOPE]`, frame the view and set the lighting in the Isaac UI
+during the hold, then close the window: the current camera, lighting mode and
+lights are written to the file of that scope (`case` when omitted).
+
+```bash
+~/isaacsim/python.sh -m pytest tests/runtime -v --gui --hold --save-view gripper -k 2F_140
+```
 
 The viewport always uses the `RTX - Minimal` render mode (`conftest.py`) in
 Kit's default Minimal shading mode (Textured Diffuse, the look the viewport

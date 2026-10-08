@@ -26,17 +26,39 @@ VIEWS_DIR = Path(__file__).resolve().parent / "views"
 _LIGHT_ATTRS = ("inputs:intensity", "inputs:exposure", "inputs:color", "inputs:texture:file", "inputs:radius", "inputs:angle")
 
 
+GRIPPERS_DIR = Path(__file__).resolve().parents[2] / "grippers"
+
+SCOPES = ("case", "test", "gripper", "default")
+
+
+def _gripper_in(nodeid: str) -> str | None:
+    """The gripper folder name a parametrized id refers to, if any."""
+    params = nodeid.split("[", 1)[1] if "[" in nodeid else ""
+    for d in sorted(GRIPPERS_DIR.iterdir(), key=lambda p: -len(p.name)):
+        if d.is_dir() and d.name in params:
+            return d.name
+    return None
+
+
 def preset_paths(nodeid: str) -> list[Path]:
-    """Candidate preset files for a pytest node id, most specific first."""
-    name = nodeid.split("::")[-1]  # test_gripper_closes[Robotiq_2F_85]
+    """Candidate preset files for a pytest node id, most specific first:
+    the case, the test function, the gripper, then default.json."""
+    return [p for p in preset_paths_by_scope(nodeid).values() if p is not None]
+
+
+def preset_paths_by_scope(nodeid: str) -> dict[str, Path | None]:
+    name = nodeid.split("::")[-1]  # test_gripper_closes[Robotiq_2F_85-PhysX]
     func = name.split("[")[0]
-    out = []
+    case = None
     if "[" in name:
-        case = re.sub(r"[^A-Za-z0-9_.-]+", "_", name.replace("[", "-").rstrip("]"))
-        out.append(VIEWS_DIR / f"{case}.json")
-    out.append(VIEWS_DIR / f"{func}.json")
-    out.append(VIEWS_DIR / "default.json")
-    return out
+        case = VIEWS_DIR / (re.sub(r"[^A-Za-z0-9_.-]+", "_", name.replace("[", "-").rstrip("]")) + ".json")
+    gripper = _gripper_in(name)
+    return {
+        "case": case,
+        "test": VIEWS_DIR / f"{func}.json",
+        "gripper": VIEWS_DIR / f"{gripper}.json" if gripper else None,
+        "default": VIEWS_DIR / "default.json",
+    }
 
 
 def find_preset(nodeid: str) -> Path | None:
@@ -166,8 +188,10 @@ def capture_viewport(app, path: Path, settle_frames: int = 5, flush_frames: int 
 # --- save / apply -----------------------------------------------------------
 
 
-def save_view(nodeid: str, stage: Usd.Stage) -> Path:
-    path = preset_paths(nodeid)[0]
+def save_view(nodeid: str, stage: Usd.Stage, scope: str = "case") -> Path:
+    path = preset_paths_by_scope(nodeid)[scope]
+    if path is None:
+        raise ValueError(f"no '{scope}' preset applies to {nodeid}")
     path.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "camera": collect_camera(),
