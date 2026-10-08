@@ -12,7 +12,7 @@ Generated (all under grippers/Robotiq_Hand_E/):
   Robotiq_Hand_E.usda                       root asset (SimReady metadata is COMPUTED here)
   configuration/Robotiq_Hand_E_robot.usda   Isaac robot schema
   configuration/Robotiq_Hand_E_config_physics_physx.usda
-  payloads/{base,geometries,instances,materials}.usda/.usd
+  payloads/{base,geometries,instances,materials}.usda
   payloads/Robotiq_Hand_E_fingertip_<key>.usda          one per non-default tip
   payloads/Robotiq_Hand_E_fingertip_mount_inside.usda
   payloads/Robotiq_Hand_E_{body_mass,fingertip,kinematics,physx_common,physx}_physics.usda
@@ -204,7 +204,7 @@ def gen_base():
     defaultPrim = "{N}"
     metersPerUnit = 1
     subLayers = [
-        @./geometries.usd@,
+        @./geometries.usda@,
         @./instances.usda@
     ]
     upAxis = "Z"
@@ -260,7 +260,7 @@ def Scope "Meshes"
 {tipgrp("left")}
 {tipgrp("right")}}}
 ''')
-    w("payloads/geometries.usd", HDR + '''# Canonical SimReady "geometries" layer (ISA.001 layout slot). The render/collision
+    w("payloads/geometries.usda", HDR + '''# Canonical SimReady "geometries" layer (ISA.001 layout slot). The render/collision
 # geometry is authored as the invisible `/Meshes` scope inside ./base.usda; this layer
 # is intentionally empty so it does not alter that authoring.
 (
@@ -281,7 +281,7 @@ def Scope "Meshes"
     defaultPrim = "World"
     metersPerUnit = 1
     subLayers = [
-        @../materials/materials.usd@
+        @../materials/materials.usda@
     ]
     upAxis = "Z"
 )

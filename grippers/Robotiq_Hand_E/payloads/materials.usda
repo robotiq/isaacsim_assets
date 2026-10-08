@@ -4,7 +4,7 @@
     defaultPrim = "World"
     metersPerUnit = 1
     subLayers = [
-        @../materials/materials.usd@
+        @../materials/materials.usda@
     ]
     upAxis = "Z"
 )
