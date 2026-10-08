@@ -55,4 +55,4 @@ Commit the JSON so the view travels with the test.
 
 | Test | What it checks |
 |---|---|
-| `test_gripper_close.py` | Each gripper (default PhysX variant) is open by default, its driven joint closes to a target, and the mimic-coupled follower joint tracks it: `finger_joint` / right outer knuckle on the 2F-85 and 2F-140, `left_finger_joint` / `right_finger_joint` on the Hand-E. |
+| `test_gripper_close.py` | Each gripper, on PhysX and on Newton (`Physx_parallel_grip` / `Newton_parallel_grip` for the 2F-85 and 2F-140, `PhysX` / `Newton` for the Hand-E), is open by default, its driven joint closes to a target, and the coupled follower joint tracks it: `finger_joint` / right outer knuckle on the 2F, `left_finger_joint` / `right_finger_joint` on the Hand-E. The engine is switched per case with `SimulationManager.switch_physics_engine`; the Newton 2F cases run the gripper's `newton/apply_gripper_tuning.py` once the sim plays. |
