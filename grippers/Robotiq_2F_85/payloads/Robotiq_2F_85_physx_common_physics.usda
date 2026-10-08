@@ -54,7 +54,7 @@ def Xform "Robotiq_2F_85" (
         {
             over "finger_joint"
             {
-                float physxJoint:maxJointVelocity = 146.46
+                float physxJoint:maxJointVelocity = 86
             }
         }
     }
