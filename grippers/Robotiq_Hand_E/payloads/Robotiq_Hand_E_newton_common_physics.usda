@@ -80,66 +80,211 @@ over "Meshes"
     {
         over "tip_std"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_flat_overmolded"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_support"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_extender"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_binpick"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_4" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_5" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
     }
@@ -148,66 +293,211 @@ over "Meshes"
     {
         over "tip_std"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_flat_overmolded"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_support"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_extender"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
 
         over "tip_binpick"
         {
-            over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
-            )
+            over "collision"
             {
-                uniform token physics:approximation = "convexDecomposition"
-                bool physics:collisionEnabled = 1
-                rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
-                float newton:contactGap = 0
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_1" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_2" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_3" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_4" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
+
+                over "hull_5" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E/Robotiq_Hand_E/Physics/GripMaterial>
+                    float newton:contactGap = 0
+                }
             }
         }
     }

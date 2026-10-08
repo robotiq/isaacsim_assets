@@ -29,6 +29,11 @@ over "Meshes"
             prepend references = @../parts/Robotiq_Hand_E_fingertip_extender_left.usd@
         )
         {
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_fingertip_extender_left_collision.usd@
+            )
+            {
+            }
         }
     }
 
@@ -46,6 +51,11 @@ over "Meshes"
             prepend references = @../parts/Robotiq_Hand_E_fingertip_extender_right.usd@
         )
         {
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_fingertip_extender_right_collision.usd@
+            )
+            {
+            }
         }
     }
 }
