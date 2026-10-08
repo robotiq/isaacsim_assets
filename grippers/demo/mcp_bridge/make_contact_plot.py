@@ -185,7 +185,7 @@ try:
             if names:
                 for bid,nm in names.items():
                     low=nm.lower()
-                    if "robotiq_2f_" not in low: continue     # gripper bodies only (2F-85, 2F-140, ...)
+                    if "robotiq_2f_" not in low and "robotiq_hand_e" not in low: continue   # gripper bodies only (2F-85, 2F-140, Hand-E)
                     if "left_" in low:    lseed.add(bid)
                     elif "right_" in low: rseed.add(bid)
             if not lseed or not rseed:                         # fallback: positional
