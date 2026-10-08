@@ -26,16 +26,6 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="with --gui --hold, save the viewport camera + lights of the last test to views/ on window close",
     )
     parser.addoption(
-        "--renderer", default="MinimalRendering",
-        help="SimulationApp renderer: MinimalRendering (default, 'RTX - Minimal'), RaytracedLighting, "
-             "RealTimePathTracing, PathTracing",
-    )
-    parser.addoption(
-        "--minimal-mode", type=int, default=0,
-        help="MinimalRendering shading mode (/rtx/minimal/mode): 0 Real-Time 2.0 reference, 1 Diffuse/Glossy/Emission, "
-             "2 Textured Diffuse, 3 Constant Diffuse, 4 No Rendering",
-    )
-    parser.addoption(
         "--screenshot", default=None, metavar="DIR",
         help="capture the viewport to DIR/<test>.png at the end of each test (works headless too)",
     )
@@ -46,17 +36,14 @@ def pytest_configure(config: pytest.Config) -> None:
     global _app
     from isaacsim import SimulationApp
 
-    # Default "RTX - Minimal": the tests are about physics; keep the viewport cheap.
+    # Always "RTX - Minimal": the tests are about physics; keep the viewport cheap.
     # Starting Kit directly in MinimalRendering leaves its reference shading mode
     # (0) rendering black, so start on the default renderer and switch after
     # startup, as the viewport's render-mode menu does.
-    renderer = config.getoption("--renderer")
-    minimal = renderer.lower() in ("minimal", "minimalrendering")
-    _app = SimulationApp({"headless": not config.getoption("--gui"), "renderer": "RealTimePathTracing" if minimal else renderer})
-    if minimal:
-        _app.set_setting("/rtx/minimal/mode", config.getoption("--minimal-mode"))
-        _app.set_setting("/rtx/rendermode", "MinimalRendering")
-        _app.update()
+    _app = SimulationApp({"headless": not config.getoption("--gui"), "renderer": "RealTimePathTracing"})
+    _app.set_setting("/rtx/minimal/mode", 0)
+    _app.set_setting("/rtx/rendermode", "MinimalRendering")
+    _app.update()
     config._isaac_app = _app
     config._isaac_last_nodeid = None
 
