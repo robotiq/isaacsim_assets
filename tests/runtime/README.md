@@ -55,4 +55,4 @@ Commit the JSON so the view travels with the test.
 
 | Test | What it checks |
 |---|---|
-| `test_gripper_close.py` | Each gripper (default `Physx_parallel_grip` variant) is open by default, closes to a `finger_joint` target, and the mimic-coupled right knuckle follows. |
+| `test_gripper_close.py` | Each gripper (default PhysX variant) is open by default, its driven joint closes to a target, and the mimic-coupled follower joint tracks it: `finger_joint` / right outer knuckle on the 2F-85 and 2F-140, `left_finger_joint` / `right_finger_joint` on the Hand-E. |
