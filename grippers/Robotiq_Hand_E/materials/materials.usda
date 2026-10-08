@@ -505,6 +505,37 @@ def Xform "World"
                 token outputs:surface
             }
         }
+
+        def Material "Rubber_Black"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/Rubber_Black/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/Rubber_Black/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/Rubber_Black/Shader.outputs:out>
+            token outputs:surface.connect = </World/Looks/Rubber_Black/PreviewSurface.outputs:surface>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (0.025, 0.025, 0.025)
+                color3f inputs:emissive_color = (0, 0, 0)
+                float inputs:emissive_intensity = 0
+                bool inputs:enable_emission = 0
+                float inputs:metallic_constant = 0
+                float inputs:reflection_roughness_constant = 0.75
+                token outputs:out
+            }
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.025, 0.025, 0.025)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
     }
 }
 
