@@ -62,5 +62,5 @@ offset is beyond the plateau, check the value against the figure.
   target, so its force is stiffness × the remaining stroke up to the cap. With 5000 N/m an object that
   left ~10 mm of stroke only got ~50 N and the cap was never reached; with 50000 N/m a fully closed
   command applies the cap whatever the object's width.
-- Same `drive:linear:physics:*` attributes for PhysX and Newton. The Newton values are not tuned yet
-  (only the PhysX values were measured).
+- Same `drive:linear:physics:*` attributes for PhysX and Newton. Checked live in the UR5e teleop demo
+  on both: gripping an object with the trigger fully pressed reads about 100 N at each pad.
