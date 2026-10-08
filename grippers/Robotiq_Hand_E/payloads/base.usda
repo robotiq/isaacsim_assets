@@ -13,7 +13,7 @@
     defaultPrim = "Robotiq_Hand_E"
     metersPerUnit = 1
     subLayers = [
-        @./geometries.usd@,
+        @./geometries.usda@,
         @./instances.usda@
     ]
     upAxis = "Z"
