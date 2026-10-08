@@ -43,7 +43,7 @@ def Xform "Robotiq_2F_140" (
                 float drive:angular:physics:stiffness = 0.17
                 float drive:angular:physics:targetPosition = 0
                 float drive:angular:physics:targetVelocity = 0
-                float physxJoint:maxJointVelocity = 130
+                float physxJoint:maxJointVelocity = 146.46
             }
 
             over "right_outer_knuckle_joint" (
@@ -54,7 +54,7 @@ def Xform "Robotiq_2F_140" (
                 float drive:angular:physics:damping = 5000
                 float drive:angular:physics:maxForce = 5
                 float drive:angular:physics:stiffness = 0
-                float physxJoint:maxJointVelocity = 130
+                float physxJoint:maxJointVelocity = 146.46
                 float physxMimicJoint:rotZ:dampingRatio = 0.01
                 float physxMimicJoint:rotZ:gearing = -1
                 float physxMimicJoint:rotZ:naturalFrequency = 5000
