@@ -20,25 +20,6 @@ LICENSE                           Repository license + third-party attributions
 New asset categories should be added as sibling top-level directories (e.g.
 `robots/`, `scenes/`), each self-contained with its own assets and docs.
 
-## Contents
-
-### Robotiq 2F-85 gripper
-
-A 2F-85 adaptive gripper authored for Isaac Sim 6, as a single asset
-([`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/)) whose `Physics` variant
-selects the solver — same body tree, geometry, and collision for both:
-
-- **PhysX** — `Physx_parallel_grip` (mimic-joint) and `Physx_compliant`
-  (closed five-bar loop) variants.
-- **Newton / MuJoCo-Warp** — `Newton_compliant`, which models the compliant
-  five-bar linkage more robustly. It needs a one-shot runtime tuning after each
-  Stop→Play; see [`Robotiq_2F_85/newton/`](grippers/Robotiq_2F_85/newton/).
-
-Start with the
-**[Gripper Simulation Guide](grippers/GRIPPER_SIMULATION_GUIDE.md)** — it covers
-choosing a variant, mounting the gripper on a robot, tuning it for reliable
-grasping, the physics of the mechanism, and the Newton backend.
-
 ## Getting the assets
 
 The heavy asset files (`.usd`, `.png`) are stored with
