@@ -42,10 +42,12 @@ class GripperScene:
         return self.robot.dof_names.index(name)
 
 
-def load_gripper(simulation_app, gripper: str, physics: str, view=None) -> GripperScene:
+def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=None) -> GripperScene:
     """Fresh stage with the gripper at /World/Gripper on the engine matching
     ``physics``, timeline playing (and Newton tuning applied). Call ``view``
-    (the conftest fixture) once the stage is populated, if given."""
+    (the conftest fixture) once the stage is populated, if given. ``setup(stage)``
+    runs after the engine switch and before play, to add scene content (e.g. an
+    object to grasp) that the engine must see when it builds its model."""
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     stage = stage_utils.create_new_stage()
@@ -64,6 +66,9 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None) -> Gripp
     engine = engine_for(physics)
     assert SimulationManager.switch_physics_engine(engine), f"could not switch to {engine}"
     simulation_app.update()
+    if setup:
+        setup(stage_utils.get_current_stage())
+        simulation_app.update()
 
     # The articulation root sits on the inner <gripper> prim, not the asset root.
     root = f"/World/Gripper/{gripper}"
