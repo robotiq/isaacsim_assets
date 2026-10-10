@@ -5,10 +5,9 @@
 grip formulation (newton_compliant, newton_parallel_grip, ...).
 
 Single source of truth for the Newton-tuned values that are identical across those
-variants: rigid-body mass / CoM / isotropic diagonal inertia / principalAxes for the
-non-shared-mass bodies (outer_finger, inner_finger, inner_knuckle + the outer_knuckle
-inertia override), the GripMaterial
-pad friction, and the per-mesh convex-hull colliders (+ pad material binding).
+variants: the isotropic diagonal inertia / principalAxes override for the moving
+finger-chain links (outer_knuckle, outer_finger, inner_knuckle, inner_finger), the
+GripMaterial pad friction, and the per-mesh convex-hull colliders (+ pad material binding).
 Sublayered by each Newton variant payload, which then overlays only its variant- and
 engine-specific bits on top:
   * newton_parallel_grip: FixedJoint weld on outer_finger (rigid coupler), from the
@@ -17,7 +16,8 @@ engine-specific bits on top:
     groups, and the MuJoCo tuning -- MjcMaterialAPI on GripMaterial,
     MjcCollisionAPI + mjc:* solver params on the mesh colliders.
 
-base_link + left/right_outer_knuckle MASS stay in ./Robotiq_2F_85_body_mass_physics.usda, and the
+Every link's MASS + CoM (and its RigidBody/Mass APIs) comes from
+./Robotiq_2F_85_body_mass_physics.usda, and the
 fingertip bodies + their inner_finger welds come from ./Robotiq_2F_85_fingertip_physics.usda (both
 shared with the PhysX variants too; the Newton variant payloads sublayer them). This layer is Newton-pure: only UsdPhysics +
 Newton* schemas, no Physx*/Mjc* (RV.011); the Mjc tuning lives in the fourbar overlay.
@@ -42,64 +42,44 @@ over "Robotiq_2F_85"
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
         }
 
-        # outer_finger mass only; the attachment (parallel weld vs live compliant revolute)
-        # is added per-variant.
-        over "left_outer_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        # outer_finger / inner_knuckle / inner_finger: mass, CoM and the RigidBody/Mass APIs
+        # are inherited from ./Robotiq_2F_85_body_mass_physics.usda (the 2F-85's CAD values,
+        # shared with PhysX); Newton overrides only the inertia with the isotropic (0.001)^3
+        # solver-stability value (identity principalAxes, overridden together for
+        # RB.COL.004). The attachment (parallel weld vs live compliant revolute) is added
+        # per-variant.
+        over "left_outer_finger"
         {
-            float physics:mass = 0.02
-            point3f physics:centerOfMass = (0, -0.065113, 0.074061)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        over "right_outer_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        over "left_inner_knuckle"
         {
-            float physics:mass = 0.02
-            point3f physics:centerOfMass = (0, 0.065113, 0.074061)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        over "left_inner_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        over "left_inner_finger"
         {
-            float physics:mass = 0.02216
-            point3f physics:centerOfMass = (0, -0.031362, 0.082206)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        over "right_inner_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        over "right_outer_finger"
         {
-            float physics:mass = 0.02216
-            point3f physics:centerOfMass = (0, 0.031362, 0.082206)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        over "left_inner_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        over "right_inner_knuckle"
         {
-            float physics:mass = 0.02
-            point3f physics:centerOfMass = (0, -0.057154, 0.110919)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        over "right_inner_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
+        over "right_inner_finger"
         {
-            float physics:mass = 0.02
-            point3f physics:centerOfMass = (0, 0.057154, 0.110919)
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
