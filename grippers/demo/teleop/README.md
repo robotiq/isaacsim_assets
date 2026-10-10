@@ -148,12 +148,12 @@ The Hand-E has one PhysX and one Newton variant, so the scene's `Physx_*` physic
 `PhysX` variant and `Newton_*` its `Newton` variant. R2 drives its `left_finger_joint` over the
 25 mm stroke (the right finger follows), instead of `finger_joint` over 0.78 rad.
 
-| `Physics` | Launch with | After every Stop→Play |
+| `Physics` | Launch with | After every Stop→Play (Isaac Sim 6.0.1 only) |
 | --------- | ----------- | --------------------- |
 | `Physx_compliant` *(default)* | normal Isaac Sim / `mcp_bridge/launch_isaac_with_mcp.sh` | nothing |
 | `Physx_parallel_grip` | normal Isaac Sim | nothing |
-| `Newton_compliant` | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | run the gripper's `newton/apply_gripper_tuning.py` once |
-| `Newton_parallel_grip` | **Newton experience** | run the gripper's `newton/apply_gripper_tuning.py` once |
+| `Newton_compliant` | **Newton experience** — `mcp_bridge/launch_isaac_newton_with_mcp.sh` (`isaac-sim.newton.sh`) | nothing on 6.1+; on 6.0.1 run the gripper's `newton/apply_gripper_tuning.py` once |
+| `Newton_parallel_grip` | **Newton experience** | nothing on 6.1+; on 6.0.1 run the gripper's `newton/apply_gripper_tuning.py` once |
 
 `Gripper` payloads the gripper's unified asset under `wrist_3_link`, deletes
 its own `PhysicsArticulationRootAPI` so it merges into the arm articulation
@@ -176,11 +176,12 @@ not live in a running scene: grippers and grips have different DOF counts
 (e.g. compliant 8 vs parallel 6), and the tick teleop crashes (CUDA
 device-side assert) if the articulation changes under it.
 
-**The Newton runtime step is not optional.** Two Newton/MuJoCo settings
-cannot be persisted in USD (`opt.impratio` and the finger loop-closure
-equality `solref`); run `apply_gripper_tuning.py` from the Script Editor
-or MCP bridge once after each Stop→Play, or the fingers go floppy. See
-[the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
+**Newton on Isaac Sim 6.1+ needs no runtime step.** The scene's `/PhysicsScene`
+authors `mjc:option:impratio = 10` (anti-slip) and the gripper asset authors the
+finger-coupling equality, both read from USD by Newton 1.5.0. On **Isaac Sim
+6.0.1 (Newton 1.2.1)** neither loads, so run `apply_gripper_tuning.py` from the
+Script Editor or MCP bridge once after each Stop→Play, or the fingers go floppy.
+See [the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
 Newton tuning details.
 
 The articulation we drive contains the UR5e arm and the Robotiq 2F-85

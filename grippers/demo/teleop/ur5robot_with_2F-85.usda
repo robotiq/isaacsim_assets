@@ -1392,6 +1392,7 @@ def PhysicsScene "PhysicsScene" (
     uniform bool mjc:compiler:balanceInertia = 1
     uniform double mjc:compiler:boundInertia = 0.0001
     uniform double mjc:compiler:boundMass = 0.001
+    uniform double mjc:option:impratio = 10
     int newton:timeStepsPerSecond = 1000
     uniform token physxScene:broadphaseType = "MBP"
     bool physxScene:enableGPUDynamics = 0

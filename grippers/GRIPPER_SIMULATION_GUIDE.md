@@ -632,16 +632,15 @@ with a `PhysicsScene`, and play. The 2F-140 has the same two Newton variants
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
 
-**One runtime step after every stop → play:** run
+**One scene setting, authored once:** set `mjc:option:impratio = 10` on your
+`PhysicsScene` (with `MjcSceneAPI` applied). Raising the friction *impedance
+ratio* is what actually stopped the grasp slipping — not the friction
+coefficient. The gripper has no `PhysicsScene`, so this cannot live in the asset.
+The near-rigid finger-coupling equality (`solref = [0.002, 1]`) is authored on
+`right_outer_knuckle_joint` via `MjcEqualityJointAPI`. Both need **Isaac Sim
+6.1 / Newton 1.5.0**; on **6.0.1 (Newton 1.2.1)** run
 [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py)
-once (Script Editor or MCP bridge). It re-applies the only two settings that
-cannot be persisted in USD:
-
-1. `opt.impratio = 10` — the anti-slip setting (raising the friction *impedance
-   ratio* is what actually stopped the grasp slipping — not the friction
-   coefficient);
-2. the near-rigid finger-coupling equality `solref` — the equality has no USD
-   prim (it is synthesized at model build).
+after every stop → play instead.
 
 Everything else (drive gains, armature, `mjc:damping`, spring stiffness,
 `solreflimit`, loop-closure equalities, contact tuning) is baked into the
@@ -711,7 +710,7 @@ The loop (five-bar) variant is where Newton earns its place:
   five-bar loop closure) and `payloads/Robotiq_2F_85_newton_common_physics.usda`
   (bodies and collision cooked from the shared visual CADs), with the thin
   `..._newton_compliant_physics.usda` / `..._newton_parallel_grip_physics.usda`
-  on top, plus the runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
+  on top, plus the Isaac Sim 6.0.1-only runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
 
 **Provenance:** both the visual meshes (`Defeatured_2F_85_*`, shared with the
 PhysX asset) and the Newton physics parameters (masses/inertias, joints, the

@@ -13,17 +13,24 @@ Everything the solver needs is baked into the variant payloads
 plus the shared Newton layers they sublayer (including the engine-neutral
 `Robotiq_2F_85_fingertip_physics.usda`), and rebuilds natively on load — **except** the items below.
 
-## Runtime tuning — `apply_gripper_tuning.py` (each stop → play)
+## Anti-slip `impratio` — set once on your physics scene
 
-Two settings cannot be authored in USD and must be re-applied to the live
-`mujoco_warp` model after every stop → play (run from the Script Editor or the
-MCP bridge — idempotent):
+The finger-coupling equality (`solref = [0.002, 1]`, near-rigid) is authored on
+`right_outer_knuckle_joint` (`MjcEqualityJointAPI`) and rebuilds natively. The one
+setting the asset cannot carry is the solver's anti-slip option, because the
+gripper has no `PhysicsScene`. Author it **once** on yours (it needs
+`MjcSceneAPI` applied):
 
-1. `opt.impratio = 10` — anti-slip; the build ignores the authored `MjcSceneAPI`
-   option.
-2. near-rigid finger-coupling equality `solref = [0.002, 1]` — the coupling
-   joint-equality has no USD prim (it is synthesized at model build), so it is
-   located at runtime by `eq_type == mjEQ_JOINT`.
+```usda
+uniform double mjc:option:impratio = 10
+```
+
+Needs **Isaac Sim 6.1 / Newton 1.5.0** or later, which reads scene `mjc:option:*`
+from USD. No script is needed after Stop → Play.
+
+**Isaac Sim 6.0.1 (Newton 1.2.1):** the build ignores `mjc:option:impratio`, so
+still run [`apply_gripper_tuning.py`](apply_gripper_tuning.py) after every
+Stop → Play (Script Editor or MCP bridge — idempotent).
 
 ## Intentional `diagonalInertia = (0.001, 0.001, 0.001)`
 
