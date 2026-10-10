@@ -17,7 +17,8 @@ physics:excludeFromArticulation (the articulation-tree/loop-closure choice is
 per-engine and lives in the variant overlays). The union is the full 10-revolute
 compliant set, in the PhysX body order. Newton uses the same order: it keeps
 inner_finger_joint live and suppresses inner_finger_knuckle_joint, closing the loop
-there with a spherical equality instead. root_joint and the
+there with a spherical equality instead. The articulation root and the fixed-base
+root_joint (both plain UsdPhysics) live here too, as every variant uses them; the
 fingertip/mass welds remain in their existing layers.
 """
     metersPerUnit = 1
@@ -26,7 +27,9 @@ fingertip/mass welds remain in their existing layers.
 
 def Xform "Robotiq_2F_85"
 {
-    def Xform "Robotiq_2F_85"
+    def Xform "Robotiq_2F_85" (
+        prepend apiSchemas = ["PhysicsArticulationRootAPI"]
+    )
     {
         def Scope "Joints"
         {
@@ -199,6 +202,22 @@ def Xform "Robotiq_2F_85"
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
+        }
+
+        # World-pinned root joint (RC.009 fixed-base root), shared by every Physics
+        # variant: it makes this a fixed-base articulation, as expected for an End
+        # Effector interface asset. When mounting on an arm, retarget or deactivate it
+        # (the teleop demo's mounted gripper authors `over "root_joint" (active = false)`
+        # inside each of its Gripper variants). The Isaac robot schema (IsaacRobotAPI +
+        # per-variant robotJoints + shared robotLinks) is on the DEFAULT prim, authored
+        # in ../configuration/Robotiq_2F_85_robot.usda.
+        def PhysicsFixedJoint "root_joint"
+        {
+            rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/base_link>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
         }
     }
 }

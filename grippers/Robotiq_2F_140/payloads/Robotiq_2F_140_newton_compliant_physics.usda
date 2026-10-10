@@ -5,7 +5,7 @@
 
 Thin overlay on the shared Newton four-bar (./Robotiq_2F_140_newton_fourbar_physics.usda:
 loop_closure spherical equalities, inner_finger pad springs, right_outer_knuckle NewtonMimic,
-finger_joint drive, root_joint + articulation root, Mjc tuning) over the shared Newton-pure
+finger_joint drive, Mjc tuning) over the shared Newton-pure
 bodies/colliders (./Robotiq_2F_140_newton_common_physics.usda) and the neutral joint frames
 (./Robotiq_2F_140_kinematics_physics.usda).
 
