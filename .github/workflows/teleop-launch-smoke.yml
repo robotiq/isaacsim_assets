@@ -11,17 +11,15 @@
 name: teleop-launch-smoke
 
 on:
-  # Post-merge run on main; PR branches run via pull_request below (scoping
-  # push to main avoids a duplicate run on every PR-branch push).
+  # Post-merge run on main; PRs are checked once, in the merge queue, instead
+  # of on every push. (paths filters don't apply to merge_group, so it always
+  # runs there.)
   push:
     branches: [main]
     paths:
       - 'grippers/demo/teleop/**'
       - '.github/workflows/teleop-launch-smoke.yml'
-  pull_request:
-    paths:
-      - 'grippers/demo/teleop/**'
-      - '.github/workflows/teleop-launch-smoke.yml'
+  merge_group:
 
 jobs:
   smoke:
