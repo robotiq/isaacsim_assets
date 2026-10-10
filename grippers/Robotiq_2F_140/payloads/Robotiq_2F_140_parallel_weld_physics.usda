@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    # Engine-neutral parallel-grip weld for the 2F-140 (UsdPhysics only): outer_finger is
+    # rigidly welded to outer_knuckle (a PhysicsFixedJoint, unbreakable like the
+    # fingertip welds), which removes the four-bar's distal DOF. Sublayered by both
+    # *_parallel_grip Physics variants -- ./Robotiq_2F_140_parallel_grip_physics.usda and
+    # ./Robotiq_2F_140_newton_parallel_grip_physics.usda -- and by nothing else, so it composes
+    # only inside those variants. Each engine's payload keeps its own way of making
+    # the rest of the linkage parallel (PhysX: mimic joints on an open tree; Newton:
+    # the four-bar loop closure). All link frames are identity/world, so the weld
+    # frames are identity. The prim path matches the robotJoints entries in
+    # ../configuration/Robotiq_2F_140_robot.usda.
+    defaultPrim = "Robotiq_2F_140"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "Robotiq_2F_140"
+{
+    over "Robotiq_2F_140"
+    {
+        over "left_outer_finger"
+        {
+            def PhysicsFixedJoint "FixedJoint"
+            {
+                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/left_outer_knuckle>
+                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/left_outer_finger>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+
+        over "right_outer_finger"
+        {
+            def PhysicsFixedJoint "FixedJoint"
+            {
+                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/right_outer_knuckle>
+                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/right_outer_finger>
+                float physics:breakForce = 3.4028235e38
+                float physics:breakTorque = 3.4028235e38
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }
+        }
+    }
+}

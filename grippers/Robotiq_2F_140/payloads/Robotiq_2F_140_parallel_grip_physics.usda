@@ -15,6 +15,7 @@
     subLayers = [
         @./Robotiq_2F_140_physx_common_physics.usda@,
         @./Robotiq_2F_140_collision_physics.usda@,
+        @./Robotiq_2F_140_parallel_weld_physics.usda@,
         @./Robotiq_2F_140_kinematics_physics.usda@,
         @./Robotiq_2F_140_body_mass_physics.usda@,
         @./Robotiq_2F_140_fingertip_physics.usda@
@@ -35,7 +36,8 @@ def Xform "Robotiq_2F_140" (
         # driven DOF; the rest of the four-bar is reproduced with mimic joints (no
         # closed loop). The compliant four-bar's outer_finger / inner_knuckle
         # revolutes are not used here -> suppressed (active=false); the
-        # outer_knuckle<->outer_finger link is a rigid FixedJoint weld (below).
+        # outer_knuckle<->outer_finger link is a rigid FixedJoint weld
+        # (./Robotiq_2F_140_parallel_weld_physics.usda).
         # (The finger_joint drive API + zero targets and the right_outer_knuckle mimic
         # wiring, identical in both PhysX variants, are in the physx_common layer; the
         # gains and mimic stiffness below are this variant's.)
@@ -113,41 +115,19 @@ def Xform "Robotiq_2F_140" (
             over "right_inner_knuckle_joint" (active = false) {}
         }
 
-        # Outer knuckle -> outer finger is rigid (URDF outer_finger_joint is fixed).
-        # Both link frames are identity/world, so the weld uses identity local frames.
+        # Outer knuckle -> outer finger is rigid (URDF outer_finger_joint is fixed): the
+        # weld is in ./Robotiq_2F_140_parallel_weld_physics.usda.
         # Masses are shared from ./Robotiq_2F_140_body_mass_physics.usda (a subLayer).
         over "left_outer_finger" (
             kind = "group"
         )
         {
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/left_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/left_outer_finger>
-                float physics:breakForce = 3.4028235e38
-                float physics:breakTorque = 3.4028235e38
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
 
         over "right_outer_finger" (
             kind = "group"
         )
         {
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/right_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/right_outer_finger>
-                float physics:breakForce = 3.4028235e38
-                float physics:breakTorque = 3.4028235e38
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
     }
 }

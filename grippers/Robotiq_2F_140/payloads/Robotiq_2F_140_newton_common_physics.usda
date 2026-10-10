@@ -12,8 +12,9 @@ Sublayered by each Newton variant payload, together with the fourbar layer:
   * newton_fourbar (both variants): the four-bar loop closures, the
     inner_knuckle / inner_finger collision groups, and all MuJoCo tuning -- MjcMaterialAPI on GripMaterial, MjcCollisionAPI + mjc:*
     solver params on the mesh colliders.
-  * newton_parallel_grip only: the FixedJoint weld on outer_finger (rigid
-    coupler), with the outer_finger joints deactivated.
+  * newton_parallel_grip only: the outer_finger joints deactivated, plus the
+    FixedJoint weld on outer_finger (rigid coupler) from the shared
+    ./Robotiq_2F_140_parallel_weld_physics.usda.
   * newton_compliant only: the outer_finger joint tuning.
 
 Every link's MASS + CoM (and its RigidBody/Mass APIs) comes from
