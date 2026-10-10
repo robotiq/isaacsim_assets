@@ -123,6 +123,7 @@ def Xform "Robotiq_2F_85" (
             }
         }
 
+        # Rigid-body mass for every link comes from ./Robotiq_2F_85_body_mass_physics.usda.
         over "base_link" (
             prepend apiSchemas = ["PhysicsRigidBodyAPI"]
             kind = "group"
