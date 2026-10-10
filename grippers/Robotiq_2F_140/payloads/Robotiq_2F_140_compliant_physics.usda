@@ -33,32 +33,27 @@ def Xform "Robotiq_2F_140" (
         # formed by the excludeFromArticulation inner_finger_joint (weak compliance
         # spring, target +-92) plus the right_outer_knuckle mimic; the other passive
         # joints carry zero-gain drives so the loop is free to articulate.
+        # (The finger_joint drive API + zero targets and the right_outer_knuckle mimic
+        # wiring, identical in both PhysX variants, are in the physx_common layer; the
+        # gains and mimic stiffness below are this variant's.)
         over "Joints"
         {
-            over "finger_joint" (
-                prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:angular"]
-            )
+            over "finger_joint"
             {
                 float drive:angular:physics:damping = 0.0002
                 float drive:angular:physics:maxForce = 16.5
                 float drive:angular:physics:stiffness = 0.17
-                float drive:angular:physics:targetPosition = 0
-                float drive:angular:physics:targetVelocity = 0
             }
 
             over "right_outer_knuckle_joint" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
-                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotZ"]
             )
             {
                 float drive:angular:physics:damping = 5000
                 float drive:angular:physics:maxForce = 5
                 float drive:angular:physics:stiffness = 0
-                float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotZ:dampingRatio = 0.01
-                float physxMimicJoint:rotZ:gearing = -1
                 float physxMimicJoint:rotZ:naturalFrequency = 5000
-                rel physxMimicJoint:rotZ:referenceJoint = </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>
             }
 
             over "right_outer_finger_joint" (
