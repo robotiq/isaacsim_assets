@@ -12,7 +12,8 @@ bodies/colliders (./Robotiq_2F_140_newton_common_physics.usda) and the neutral j
 This variant's ONLY delta is removing the four-bar's distal coupler DOF so the linkage is
 forced PARALLEL instead of encompassing:
   * left/right_outer_finger_joint are SUPPRESSED (active=false), and
-  * outer_finger is rigidly WELDED to outer_knuckle (FixedJoint).
+  * outer_finger is rigidly WELDED to outer_knuckle (FixedJoint, shared with the PhysX
+    parallel grip in ./Robotiq_2F_140_parallel_weld_physics.usda).
 
 outer_finger stays in the articulation (the inner_finger pad joint hangs off it); locking its DOF constrains the four-bar to parallel motion. This closed-loop
 formulation is rigid (no oscillation), unlike an open tree coupled by independent mimic
@@ -26,6 +27,7 @@ the mjc:* params tune the MuJoCo-Warp (Newton) solver; no Physx* runtime data he
         @./Robotiq_2F_140_newton_fourbar_physics.usda@,
         @./Robotiq_2F_140_newton_common_physics.usda@,
         @./Robotiq_2F_140_collision_physics.usda@,
+        @./Robotiq_2F_140_parallel_weld_physics.usda@,
         @./Robotiq_2F_140_body_mass_physics.usda@,
         # fingertip_physics only authors values nothing else overrides, so its slot is arbitrary.
         @./Robotiq_2F_140_fingertip_physics.usda@,
@@ -41,40 +43,12 @@ over "Robotiq_2F_140"
     {
         over "Joints"
         {
-            # Parallel: distal coupler DOF removed (outer_finger welded rigid below). The
+            # Parallel: distal coupler DOF removed (outer_finger welded rigid in
+            # ./Robotiq_2F_140_parallel_weld_physics.usda). The
             # live four-bar revolutes live in the compliant variant; the shared fourbar
             # layer leaves outer_finger_joint untouched so each variant decides its fate.
             over "left_outer_finger_joint" (active = false) {}
             over "right_outer_finger_joint" (active = false) {}
-        }
-
-        # Rigidly weld outer_finger to outer_knuckle (removes the four-bar's distal DOF
-        # -> forces parallel). Same prim name, bodies and identity frames as the PhysX
-        # parallel_grip weld (all link frames are identity/world), so robot.usda covers both.
-        over "left_outer_finger"
-        {
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/left_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/left_outer_finger>
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
-        }
-
-        over "right_outer_finger"
-        {
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/right_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/right_outer_finger>
-                point3f physics:localPos0 = (0, 0, 0)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, 0, 0, 0)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
     }
 }

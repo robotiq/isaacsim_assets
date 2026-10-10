@@ -12,6 +12,7 @@
     subLayers = [
         @./Robotiq_2F_85_physx_common_physics.usda@,
         @./Robotiq_2F_85_collision_physics.usda@,
+        @./Robotiq_2F_85_parallel_weld_physics.usda@,
         @./Robotiq_2F_85_body_mass_physics.usda@,
         @./Robotiq_2F_85_fingertip_physics.usda@,
         @./Robotiq_2F_85_kinematics_physics.usda@
@@ -35,7 +36,8 @@ def Xform "Robotiq_2F_85" (
         # and the mimic coupling that algebraically ties the passive joints to it.
         # The open-tree parallel grip does NOT use the compliant four-bar's
         # outer_finger / inner_knuckle revolutes -> suppressed (active=false); the
-        # outer_knuckle<->outer_finger link is a rigid FixedJoint weld (see below).
+        # outer_knuckle<->outer_finger link is a rigid FixedJoint weld
+        # (./Robotiq_2F_85_parallel_weld_physics.usda).
         # (The finger_joint drive API + zero targets and the right_outer_knuckle mimic
         # wiring, identical in both PhysX variants, are in the physx_common layer; the
         # gains and mimic stiffness below are this variant's.)
@@ -127,18 +129,6 @@ def Xform "Robotiq_2F_85" (
             float3 physics:diagonalInertia = (0.0000132201985, 0.0000042931024, 0.000010880907)
             float physics:mass = 0.039179202
             quatf physics:principalAxes = (0.76604444, -0.64278764, 0, 0)
-
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_outer_finger>
-                float physics:breakForce = 3.4028235e38
-                float physics:breakTorque = 3.4028235e38
-                point3f physics:localPos0 = (7.4505797e-9, 7.45058e-9, 3.87445e-9)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, -5.531774e-8, -4.2146855e-8, 2.370759e-8)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
 
         # Distal body (finger4step) only — the pad is the separate
@@ -178,18 +168,6 @@ def Xform "Robotiq_2F_85" (
             float3 physics:diagonalInertia = (0.0000132201985, 0.0000042931024, 0.000010880907)
             float physics:mass = 0.039179202
             quatf physics:principalAxes = (0.76604444, 0.64278764, 0, 0)
-
-            def PhysicsFixedJoint "FixedJoint"
-            {
-                rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_knuckle>
-                rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger>
-                float physics:breakForce = 3.4028235e38
-                float physics:breakTorque = 3.4028235e38
-                point3f physics:localPos0 = (3.725291e-9, -7.45058e-9, -3.4324326e-9)
-                point3f physics:localPos1 = (0, 0, 0)
-                quatf physics:localRot0 = (1, -5.5317734e-8, 4.2146844e-8, -2.634178e-9)
-                quatf physics:localRot1 = (1, 0, 0, 0)
-            }
         }
 
         over "right_inner_finger" (
