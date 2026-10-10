@@ -5,7 +5,6 @@
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008",
         "com.nvidia.simready.RV.007"
       ]
     },
@@ -13,7 +12,6 @@
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008",
         "com.nvidia.simready.RV.004"
       ]
     },
@@ -21,15 +19,13 @@
       "blocking": [],
       "optional": [
         "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008",
         "com.nvidia.simready.RV.001"
       ]
     },
     "FET_000_STANDARD": {
       "blocking": [],
       "optional": [
-        "com.nvidia.simready.NP.005",
-        "com.nvidia.simready.NP.008"
+        "com.nvidia.simready.NP.005"
       ]
     },
     "FET_001_STANDARD": {
@@ -82,7 +78,9 @@
     },
     "FET_006_MDL": {
       "blocking": [],
-      "optional": []
+      "optional": [
+        "com.nvidia.simready.VM.MDL.003"
+      ]
     },
     "FET_006_OPENPBR": {
       "blocking": [],
