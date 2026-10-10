@@ -115,81 +115,32 @@ def Xform "Robotiq_2F_85" (
             over "right_inner_knuckle_joint" (active = false) {}
         }
 
-        # base_link + left/right_outer_knuckle rigid-body mass is authored once in
-        # ./Robotiq_2F_85_body_mass_physics.usda (a subLayer, above) and shared with
-        # the compliant and Newton variants — single source of truth for mass + CoM.
+        # Every link's rigid-body mass is authored once in
+        # ./Robotiq_2F_85_body_mass_physics.usda (a subLayer, above), shared with the
+        # compliant and Newton variants.
 
         over "left_outer_finger" (
-            delete apiSchemas = ["PhysicsMassAPI"]
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
-            point3f physics:centerOfMass = (0.000005531254, -0.06595047, 0.06895309)
-            float3 physics:diagonalInertia = (0.0000132201985, 0.0000042931024, 0.000010880907)
-            float physics:mass = 0.039179202
-            quatf physics:principalAxes = (0.76604444, -0.64278764, 0, 0)
         }
-
-        # Distal body (finger4step) only — the pad is the separate
-        # left_fingertip rigid body. Mass is the CAD part ratio (11.29 g distal
-        # / 22.10 g pad) applied to the 0.039254718 kg per-side total, so it is
-        # not the raw CAD part mass. Inertia is the part's own tensor about its
-        # own CoM.
-        over "left_inner_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            point3f physics:centerOfMass = (-0.00000139, -0.05940770, 0.10376717)
-            float3 physics:diagonalInertia = (8.956112865e-07, 1.209160565e-06, 1.440650775e-06)
-            float physics:mass = 0.01327301
-            quatf physics:principalAxes = (0.1989801, 0.6786246, -0.6783625, -0.1992485)
-        }
-
-        over "left_inner_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
-        )
-        {
-            point3f physics:centerOfMass = (-2.005321e-10, -0.03222066, 0.083420366)
-            float3 physics:diagonalInertia = (0.000011838778, 0.0000044877793, 0.00000800488)
-            float physics:mass = 0.027306942
-            quatf physics:principalAxes = (0.9063078, -0.42261827, 0, 0)
-        }
-
-        # right_outer_knuckle rigid-body mass: see ./Robotiq_2F_85_body_mass_physics.usda.
 
         over "right_outer_finger" (
-            delete apiSchemas = ["PhysicsMassAPI"]
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
-            point3f physics:centerOfMass = (-0.000005531254, 0.06595047, 0.06895309)
-            float3 physics:diagonalInertia = (0.0000132201985, 0.0000042931024, 0.000010880907)
-            float physics:mass = 0.039179202
-            quatf physics:principalAxes = (0.76604444, 0.64278764, 0, 0)
         }
 
         over "right_inner_finger" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
-            point3f physics:centerOfMass = (0.00000139, 0.05940770, 0.10376717)
-            float3 physics:diagonalInertia = (8.956112865e-07, 1.209160565e-06, 1.440650775e-06)
-            float physics:mass = 0.01327301
-            quatf physics:principalAxes = (-0.6783625, -0.1992485, 0.1989801, 0.6786246)
         }
 
         over "right_inner_knuckle" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
             kind = "group"
         )
         {
-            point3f physics:centerOfMass = (2.005321e-10, 0.03222066, 0.083420366)
-            float3 physics:diagonalInertia = (0.000011838778, 0.0000044877793, 0.00000800488)
-            float physics:mass = 0.027306942
-            quatf physics:principalAxes = (0.9063078, 0.42261827, 0, 0)
         }
 
         # Fingertip rigid bodies + PhysicsFixedJoints are shared with the compliant
