@@ -35,6 +35,15 @@ floppy and the fingertips sag ~20° out of parallel. Treat it like the
 `mjc:armature`/`damping` tuning — do **not** replace it with CAD inertias without
 re-tuning the loop-closure `solref` (or adding passive-joint armature).
 
+## Link mass
+
+The Newton variants use the 2F-85's CAD link mass and centre of mass from the shared
+`payloads/Robotiq_2F_85_body_mass_physics.usda`, the same values as PhysX (as on the
+2F-140); `newton_common` overrides only the isotropic inertia above. Before that, the
+Newton links carried ~0.02 kg values ported from a standalone Newton model. If the loop
+ever proves unstable, lighter link masses are the first knob to try -- author them in
+`newton_common` as a Newton-only override.
+
 ## Isaac Sim source patch — `solreflimit` ×180/π backport (required)
 
 Newton **1.2.1** (bundled with Isaac Sim 6.0.1) over-scales the *angular*
