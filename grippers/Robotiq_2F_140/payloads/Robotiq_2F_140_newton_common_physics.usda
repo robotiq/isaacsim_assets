@@ -54,7 +54,7 @@ over "Robotiq_2F_140"
         # are inherited from ./Robotiq_2F_140_body_mass_physics.usda (the 2F-140's real values);
         # Newton overrides only the inertia with the isotropic (0.001)^3 solver-stability value
         # (identity principalAxes, overridden together for RB.COL.004). The attachment
-        # (parallel weld vs compliant filteredPairs) is added per-variant.
+        # (parallel weld vs live compliant revolute) is added per-variant.
         over "left_outer_finger"
         {
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
@@ -91,7 +91,7 @@ over "Robotiq_2F_140"
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        # Fingertip pad friction. The compliant overlay adds MjcMaterialAPI.
+        # Fingertip pad friction. The fourbar overlay adds MjcMaterialAPI.
         def Scope "Physics"
         {
             def Material "GripMaterial" (

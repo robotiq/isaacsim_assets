@@ -19,7 +19,7 @@ engine-specific bits on top:
 base_link + left/right_outer_knuckle MASS stay in ./Robotiq_2F_85_body_mass_physics.usda, and the
 fingertip bodies + their inner_finger welds come from ./Robotiq_2F_85_fingertip_physics.usda (both
 shared with the PhysX variants too; the Newton variant payloads sublayer them). This layer is Newton-pure: only UsdPhysics +
-Newton* schemas, no Physx*/Mjc* (RV.011); the Mjc tuning lives in the compliant overlay.
+Newton* schemas, no Physx*/Mjc* (RV.011); the Mjc tuning lives in the fourbar overlay.
 """
     metersPerUnit = 1
     upAxis = "Z"
@@ -41,7 +41,7 @@ over "Robotiq_2F_85"
             float3 physics:diagonalInertia = (0.001, 0.001, 0.001)
         }
 
-        # outer_finger mass only; the attachment (parallel weld vs compliant filteredPairs)
+        # outer_finger mass only; the attachment (parallel weld vs live compliant revolute)
         # is added per-variant.
         over "left_outer_finger" (
             prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
@@ -103,7 +103,7 @@ over "Robotiq_2F_85"
             quatf physics:principalAxes = (1, 0, 0, 0)
         }
 
-        # Silicone fingertip pad friction. The compliant overlay adds MjcMaterialAPI.
+        # Silicone fingertip pad friction. The fourbar overlay adds MjcMaterialAPI.
         def Scope "Physics"
         {
             def Material "GripMaterial" (
@@ -120,7 +120,7 @@ over "Robotiq_2F_85"
 }
 
 # Convex-hull colliders cooked from the shared visual CAD meshes (over the instanced
-# masters). Newton-pure here; the compliant overlay adds MjcCollisionAPI + mjc:* params.
+# masters). Newton-pure here; the fourbar overlay adds MjcCollisionAPI + mjc:* params.
 over "Meshes"
 {
     over "base_link"
