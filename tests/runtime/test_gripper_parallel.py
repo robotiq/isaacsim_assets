@@ -18,15 +18,15 @@ import omni.timeline
 import pytest
 from isaacsim.core.experimental.prims import RigidPrim
 
-from _scene import load_gripper, step
+from _scene import FRAME_DT, load_gripper, move_to, step
 
 GRIPPERS = ["Robotiq_2F_85", "Robotiq_2F_140"]
 PHYSICS = ["Physx_parallel_grip", "Physx_compliant", "Newton_parallel_grip", "Newton_compliant"]
 PADS = ["left_inner_finger", "right_inner_finger"]
 
 SETTLE_FRAMES = 30
-MOVE_FRAMES = 120  # per direction, 2 s at 60 Hz
-SAMPLE_EVERY = 10
+HOLD_FRAMES = 60  # 1 s at 60 Hz after each ramp (close / open at the datasheet finger speed)
+SAMPLE_EVERY = 5
 CLOSE_TARGET = 0.8  # rad, ~46 deg
 SETTLED_TOL = math.radians(2.0)  # pad rotation away from its open orientation, at rest (closed / reopened)
 # While moving: the rigid parallel-grip coupling holds the pads; the compliant
@@ -34,14 +34,8 @@ SETTLED_TOL = math.radians(2.0)  # pad rotation away from its open orientation, 
 MOVING_TOL = {"parallel_grip": math.radians(2.0), "compliant": math.radians(3.0)}
 REOPEN_TOL = math.radians(1.0)
 
-# Known: the 2F-85 Newton_compliant pads swing ~11 deg while closing (settled
-# pose is fine). Expected to fail until the Newton spring / inertia tuning changes.
-KNOWN_SWING = {("Robotiq_2F_85", "Newton_compliant")}
-
-
 def _case_id(gripper: str, physics: str):
-    marks = [pytest.mark.xfail(strict=True, reason="pads swing while closing")] if (gripper, physics) in KNOWN_SWING else []
-    return pytest.param(gripper, physics, id=f"{gripper}-{physics}", marks=marks)
+    return pytest.param(gripper, physics, id=f"{gripper}-{physics}")
 
 
 def _angle_between(q1: np.ndarray, q2: np.ndarray) -> float:
@@ -71,20 +65,20 @@ def test_fingers_stay_parallel(simulation_app, view, gripper: str, physics: str)
             if dev > worst[p][0]:
                 worst[p] = (dev, phase)
 
-    robot.set_dof_position_targets([CLOSE_TARGET], dof_indices=[finger])
-    step(simulation_app, MOVE_FRAMES, SAMPLE_EVERY, sample)
+    # Close, then open, at the datasheet finger speed (ramped targets).
+    ramp = move_to(simulation_app, scene, finger, CLOSE_TARGET, settle_frames=HOLD_FRAMES, every=SAMPLE_EVERY, on_sample=sample)
     closed = float(robot.get_dof_positions().numpy()[0][finger])
     settled["closed"] = deviations()
 
     phase = "opening"
-    robot.set_dof_position_targets([0.0], dof_indices=[finger])
-    step(simulation_app, MOVE_FRAMES, SAMPLE_EVERY, sample)
+    move_to(simulation_app, scene, finger, 0.0, settle_frames=HOLD_FRAMES, every=SAMPLE_EVERY, on_sample=sample)
     reopened = float(robot.get_dof_positions().numpy()[0][finger])
     settled["reopened"] = deviations()
     omni.timeline.get_timeline_interface().stop()
 
     print(
-        f"{gripper} {physics}: closed {math.degrees(closed):.2f} deg, reopened {math.degrees(reopened):.2f} deg; "
+        f"{gripper} {physics}: closed {math.degrees(closed):.2f} deg (ramp {ramp * FRAME_DT:.2f} s), "
+        f"reopened {math.degrees(reopened):.2f} deg; "
         + ", ".join(f"{p} max {math.degrees(d):.2f} deg ({w})" for p, (d, w) in worst.items())
         + "; settled "
         + ", ".join(f"{k} L/R {math.degrees(v[0]):.2f}/{math.degrees(v[1]):.2f} deg" for k, v in settled.items())

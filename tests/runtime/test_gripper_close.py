@@ -15,10 +15,10 @@ import numpy as np
 import omni.timeline
 import pytest
 
-from _scene import load_gripper, step
+from _scene import FRAME_DT, load_gripper, move_to, step
 
 SETTLE_FRAMES = 30
-CLOSE_FRAMES = 120  # 2 s at 60 Hz
+HOLD_FRAMES = 60  # 1 s at 60 Hz, after the close ramp
 
 
 @dataclass(frozen=True)
@@ -82,15 +82,15 @@ def test_gripper_closes(simulation_app, view, gripper: str, physics: str) -> Non
     assert np.all(np.isfinite(q)), f"non-finite DOF positions after settle: {q}"
     assert abs(q[driven]) < spec.open_tol, f"not open by default: {spec.driven}={_fmt(q[driven], spec.unit)}"
 
-    robot.set_dof_position_targets([spec.target], dof_indices=[driven])
-    step(simulation_app, CLOSE_FRAMES)
+    # Close at the datasheet finger speed (the target is ramped, not stepped).
+    ramp_frames = move_to(simulation_app, scene, driven, spec.target, settle_frames=HOLD_FRAMES)
 
     q = robot.get_dof_positions().numpy()[0]
     omni.timeline.get_timeline_interface().stop()
 
     print(
-        f"{gripper} {physics}: {spec.driven}={_fmt(q[driven], spec.unit)} (target {_fmt(spec.target, spec.unit)}), "
-        f"{spec.follower}={_fmt(q[follower], spec.unit)}"
+        f"{gripper} {physics}: {spec.driven}={_fmt(q[driven], spec.unit)} (target {_fmt(spec.target, spec.unit)}, "
+        f"ramped over {ramp_frames * FRAME_DT:.2f} s), {spec.follower}={_fmt(q[follower], spec.unit)}"
     )
     assert np.all(np.isfinite(q)), f"non-finite DOF positions after close: {q}"
     assert abs(q[driven] - spec.target) < spec.close_tol, (

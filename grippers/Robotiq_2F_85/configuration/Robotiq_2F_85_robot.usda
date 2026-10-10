@@ -121,8 +121,8 @@ over "Robotiq_2F_85" (
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_outer_finger_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
             ]
         }
         "Newton_parallel_grip" {
@@ -134,8 +134,8 @@ over "Robotiq_2F_85" (
                 </Robotiq_2F_85/Robotiq_2F_85/right_outer_finger/FixedJoint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_knuckle_joint>,
                 </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_knuckle_joint>,
-                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_knuckle_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/left_inner_finger_joint>,
+                </Robotiq_2F_85/Robotiq_2F_85/Joints/right_inner_finger_joint>,
             ]
         }
     }

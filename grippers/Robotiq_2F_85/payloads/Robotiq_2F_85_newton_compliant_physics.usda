@@ -4,7 +4,7 @@
     doc = """Newton (MuJoCo-Warp) compliant physics for the Robotiq 2F-85.
 
 Thin overlay on the shared Newton four-bar (./Robotiq_2F_85_newton_fourbar_physics.usda:
-loop_closure spherical equalities, inner-knuckle springs, right_outer_knuckle NewtonMimic,
+loop_closure spherical equalities, inner_finger pad springs, right_outer_knuckle NewtonMimic,
 finger_joint drive, root_joint + articulation root, Mjc tuning) over the shared Newton-pure
 bodies/colliders (./Robotiq_2F_85_newton_common_physics.usda) and the neutral joint frames
 (./Robotiq_2F_85_kinematics_physics.usda).
@@ -16,7 +16,7 @@ variant instead suppresses + welds those joints.
 
 Body-name correspondence to the standalone Newton asset:
   base_link -> base | outer_knuckle -> driver | outer_finger -> coupler
-  inner_knuckle -> spring_link | inner_finger -> follower
+  inner_knuckle -> spring_link (name only; the spring is now on inner_finger_joint) | inner_finger -> follower
 Newton->PhysX frame: rotate 90 deg about +Z, translate Z by -0.01076 m (the Newton adapter
 plate). Apply to any ported geometric coordinate.
 
@@ -50,7 +50,7 @@ over "Robotiq_2F_85"
             )
             {
                 uniform double mjc:armature = 0
-                uniform double mjc:damping = 0.5
+                uniform double mjc:damping = 0
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
             }
@@ -60,7 +60,7 @@ over "Robotiq_2F_85"
             )
             {
                 uniform double mjc:armature = 0
-                uniform double mjc:damping = 0.5
+                uniform double mjc:damping = 0
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
                 uniform double[] mjc:solreflimit = [0.00707, 2]
             }

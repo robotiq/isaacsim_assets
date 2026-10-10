@@ -10,8 +10,7 @@ finger-chain links (outer_knuckle, outer_finger, inner_knuckle, inner_finger), t
 pad friction, and the per-mesh convex-hull colliders (+ pad material binding).
 Sublayered by each Newton variant payload, together with the fourbar layer:
   * newton_fourbar (both variants): the four-bar loop closures, the
-    PhysicsFilteredPairsAPI on outer_finger (loop-closure self-collision exclusion),
-    and all MuJoCo tuning -- MjcMaterialAPI on GripMaterial, MjcCollisionAPI + mjc:*
+    inner_knuckle / inner_finger collision groups, and all MuJoCo tuning -- MjcMaterialAPI on GripMaterial, MjcCollisionAPI + mjc:*
     solver params on the mesh colliders.
   * newton_parallel_grip only: the FixedJoint weld on outer_finger (rigid
     coupler), with the outer_finger joints deactivated.

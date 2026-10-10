@@ -11,7 +11,7 @@ not use (active=false), and adds its variant-only joints (parallel welds, Newton
 loop-closure).
 
 Mirrors OUR 2F-85 kinematics_physics layer exactly (same axis=Z convention,
-localRot pattern, limit scheme, PhysX body order for inner_finger_knuckle_joint)
+localRot pattern, limit scheme, PhysX body order)
 and changes ONLY the joint positions for the 2F-140's longer links and the
 driven closing range (45 deg vs the 85's 47).
 
@@ -19,9 +19,9 @@ Neutrality rule (SimReady RV.011): only UsdPhysics + PhysicsJointStateAPI here -
 NO Physx*/Mjc*/Newton* schemas, no drives/mimics/actuators, no armature, and no
 physics:excludeFromArticulation (the articulation-tree/loop-closure choice is
 per-engine and lives in the variant overlays). The union is the full 10-revolute
-compliant set; inner_finger_knuckle_joint uses the PhysX body order
-(inner_finger -> inner_knuckle) and the Newton overlay overrides its body rels
-(Newton requires parent=body0 in the opposite direction). root_joint and the
+compliant set, in the PhysX body order. Newton uses the same order: it keeps
+inner_finger_joint live and suppresses inner_finger_knuckle_joint, closing the loop
+there with a spherical equality instead. root_joint and the
 fingertip/mass welds remain in their existing layers.
 """
     metersPerUnit = 1
