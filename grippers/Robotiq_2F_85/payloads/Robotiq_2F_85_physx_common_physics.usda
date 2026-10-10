@@ -1,9 +1,10 @@
 #usda 1.0
 (
     # PhysX-only physics shared by the 2F-85 Physx_parallel_grip and Physx_compliant
-    # variants: the articulation root + root_joint (fixed base) and every PhysX
-    # convex-hull collider -- the five body-link colliders and the tip collider of each
-    # Fingertip variant. Identical across both PhysX grip formulations, so it lives here
+    # variants: the articulation root + root_joint (fixed base) and the PhysX collision
+    # schemas on every collider -- the five body-link colliders and the tip collider of
+    # each Fingertip variant (which meshes collide, as UsdPhysics convex hulls, is the
+    # engine-neutral ./Robotiq_2F_85_collision_physics.usda). Identical across both PhysX grip formulations, so it lives here
     # once and is sublayered by both; the grip-specific content (mimics, outer_finger
     # welds, drive tuning, solver iteration count) stays in each variant payload.
     #
@@ -67,11 +68,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_basestep_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_basestep" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }
@@ -81,11 +80,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger4step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger4step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }
@@ -95,11 +92,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger3step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger3step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }
@@ -109,11 +104,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger2step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger2step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }
@@ -123,11 +116,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_Finger1step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_Finger1step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }
@@ -137,11 +128,9 @@ over "Meshes"
         over "tip_standard"
         {
             over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxTriangleMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
 
@@ -153,11 +142,9 @@ over "Meshes"
         over "tip_tsf85"
         {
             over "TSF_85_case" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysxCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
             }
         }
     }

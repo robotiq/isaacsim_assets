@@ -271,10 +271,12 @@ variant swaps its geometry, collider and mass:
 
 Layer ownership: `payloads/<gripper>_fingertip_physics.usda` holds only the
 engine-neutral fingertip bodies, mass and welds, and every Physics variant (PhysX and
-Newton) sublayers it. All PhysX-only content (the articulation root and `root_joint`,
-plus the `/Meshes` collision groups and every PhysX collider, including the tip colliders for each `Fingertip` variant)
-lives in `payloads/<gripper>_physx_common_physics.usda`, shared by `Physx_parallel_grip`
-and `Physx_compliant`. Newton variants never sublayer it and author their own colliders in
+Newton) sublayers it. Which meshes collide (the UsdPhysics convex hulls, including the
+tip collider of each `Fingertip` variant) is likewise engine-neutral, in
+`payloads/<gripper>_collision_physics.usda`. All PhysX-only content (the articulation root
+and `root_joint`, the `/Meshes` collision groups and the PhysX collision schemas) lives in
+`payloads/<gripper>_physx_common_physics.usda`, shared by `Physx_parallel_grip` and
+`Physx_compliant`. Newton variants never sublayer it and add their own collision schemas in
 `<gripper>_newton_common_physics.usda`.
 
 | Variant | What it gives you |
