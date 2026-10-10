@@ -638,16 +638,18 @@ with a `PhysicsScene`, sublayer [`scene/Robotiq_Newton_scene_physics.usda`](scen
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
 
-**One runtime step after every stop → play:** run
-[`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py)
-once (Script Editor or MCP bridge). It re-applies the only two settings that
-cannot be persisted in USD:
-
-1. `opt.impratio = 10` — the anti-slip setting (raising the friction *impedance
-   ratio* is what actually stopped the grasp slipping — not the friction
-   coefficient);
-2. the near-rigid finger-coupling equality `solref` — the equality has no USD
-   prim (it is synthesized at model build).
+**Scene settings, authored once:** on Isaac Sim 6.1+, sublayer the shared scene layer
+[`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda) into your
+stage (§5.3). It authors the elliptic friction cone and the anti-slip
+`mjc:option:impratio = 10` on `/PhysicsScene` (with `MjcSceneAPI`); or author both attributes on
+your own scene. Raising the friction *impedance ratio* is what actually stopped the grasp slipping
+— not the friction coefficient. The gripper has no `PhysicsScene`, so these cannot live in the
+asset. The near-rigid finger-coupling equality (`solref = [0.002, 1]`) is authored on
+`right_outer_knuckle_joint` via `MjcEqualityJointAPI`. All of it needs **Isaac Sim 6.1 /
+Newton 1.5.0**; on **6.0.1 (Newton 1.2.1)**, which reads neither the scene options nor the
+coupling's `solref`/`solimp`, run
+[`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py) after every
+stop → play instead.
 
 Everything else (drive gains, armature, `mjc:damping`, spring stiffness,
 `solreflimit`, loop-closure equalities, contact tuning) is baked into the
@@ -730,13 +732,13 @@ The loop (five-bar) variant is where Newton earns its place:
   - A negative gain skips the mapping, which is the 6.0.1 behaviour.
   - The mixed value must stay negative against the other shape's default `+1000`: `-1` would give `0.5*(-1) + 0.5*1000 = +499.5`. A large magnitude keeps it negative for any `mix` and any plausible partner gain, and it is only compared with zero, so the size costs nothing.
   - Large positive gains (1e5 to 1e7) also hold the lift tests, but then `test_gripper_closes_on_fixed_cylinder[Robotiq_2F_85-Newton_compliant]` fails marginally (`finger_joint still moving: 0.281 deg` against 0.25 deg); the negative gain passes every test.
-- **The shared scene layer, [`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda):** it holds `mjc:option:cone = "elliptic"` on `/PhysicsScene` (with `MjcSceneAPI`). **Add it as a sublayer of any stage that holds a Newton gripper on Isaac Sim 6.1+**, or set the same attribute by hand. It only adds opinions to the prim `/PhysicsScene`, so it merges with a scene you already have **only if that scene is at exactly `/PhysicsScene`**. If yours is elsewhere (e.g. `/physicsScene` or `/World/PhysicsScene`) the stage would get a second scene prim, so author `mjc:option:cone = "elliptic"` (with `MjcSceneAPI`) on your own scene instead. The layer is harmless on PhysX and on Isaac Sim 6.0.1. The runtime tests and the teleop demo scene both use it.
+- **The shared scene layer, [`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda):** it holds `mjc:option:cone = "elliptic"` and the 2F's anti-slip `mjc:option:impratio = 10` on `/PhysicsScene` (with `MjcSceneAPI`). **Add it as a sublayer of any stage that holds a Newton gripper on Isaac Sim 6.1+**, or set the same attributes by hand. It only adds opinions to the prim `/PhysicsScene`, so it merges with a scene you already have **only if that scene is at exactly `/PhysicsScene`**. If yours is elsewhere (e.g. `/physicsScene` or `/World/PhysicsScene`) the stage would get a second scene prim, so author `mjc:option:cone = "elliptic"` and `mjc:option:impratio = 10` on your own scene instead, with `MjcSceneAPI` in its `prepend apiSchemas` (without the API schema the importer ignores the attributes). The layer is harmless on PhysX and on Isaac Sim 6.0.1, which ignores both; the Hand-E does not use `impratio` and is not hurt by it. The runtime tests and the teleop demo scene both use it.
 - **Caveats:**
   - A negative `kf` is Newton's MuJoCo-solver behaviour (Newton 1.5.0 and 1.6.1), not a documented API; 1.2.1 ignores the attribute. If a future Newton reads it as a real coefficient this breaks, and the lift tests (`test_gripper_lift.py`) are what catch it.
   - **Only the MuJoCo solver should load these materials.** Newton's SemiImplicit/Featherstone solvers use `kf` directly and would treat the negative gain as negative friction (Isaac exposes neither).
   - `GripMaterial` is bound to every collision shape of the gripper (all of them on the Hand-E), not just the pads, so the mapping is off on all of them.
   - The gain is averaged with the contact partner's, so a negative pad gain also overrides a partner authored with `newton:contactFrictionGain = 0` (frictionless): the contact gets MuJoCo's native friction. A partner with a very large positive `kf` could in principle flip the sign (untested).
-- **`impratio`:** the "cannot be authored in USD" note in §5.1 is Isaac Sim 6.0.1 behaviour. #124 reports that 6.1+ reads `mjc:option:impratio` on the scene like the cone, so it could move into this layer too; that is left to #124, and `apply_gripper_tuning.py` still sets it at runtime on every version.
+- **`impratio`:** Isaac Sim 6.1+ reads `mjc:option:impratio` from the scene like the cone, so it lives in the shared layer above. Isaac Sim 6.0.1 ignores it, and `apply_gripper_tuning.py` sets it (and the coupling `solref`/`solimp`) at runtime there only.
 
 ### 5.4 Where to find the asset
 
@@ -746,7 +748,7 @@ The loop (five-bar) variant is where Newton earns its place:
   five-bar loop closure) and `payloads/Robotiq_2F_85_newton_common_physics.usda`
   (bodies and collision cooked from the shared visual CADs), with the thin
   `..._newton_compliant_physics.usda` / `..._newton_parallel_grip_physics.usda`
-  on top, plus the runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
+  on top, plus the Isaac Sim 6.0.1-only runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
 
 **Provenance:** both the visual meshes (`Defeatured_2F_85_*`, shared with the
 PhysX asset) and the Newton physics parameters (masses/inertias, joints, the
