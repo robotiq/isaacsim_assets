@@ -11,6 +11,46 @@ Deep-dive companion to [the parent `README.md`](../README.md). Covers:
 
 For gripper/cube physics tuning, see [PHYSICS_TUNING.md](PHYSICS_TUNING.md).
 
+## Quick start
+
+From a **clean shell** (no `/opt/ros` sourced — the script sources ROS where needed):
+
+```bash
+./run_demo.sh
+```
+
+It starts Isaac with the scene open and playing, then the teleop stack. Isaac's first
+boot takes ~90–150 s. Ctrl-C stops everything.
+
+A **DualSense gamepad is optional but strongly recommended** for the full experience: its
+R2 trigger gives force feedback on grip (needs `pip install -r requirements.txt` and
+`libhidapi-hidraw0`). Without it, the keyboard works.
+
+Flags:
+
+| Flag | Effect |
+|---|---|
+| *(none)* | Tick-paced teleop inside Isaac (gamepad, keyboard fallback) + haptics. **Default.** |
+| `--servo` | Old MoveIt Servo stack + gamepad (needs a gamepad). |
+| `--keyboard` | Servo stack + keyboard frontend. |
+| `--no-frontend` | Isaac + Servo only; drive it yourself. |
+| `--no-isaac` | Attach to an Isaac you already have running. |
+| `--/a/b=c` | Forwarded to Isaac as a Kit setting. `--` forwards any other args. |
+
+Environment variables:
+
+| Variable | Values (default first) | Effect |
+|---|---|---|
+| `TELEOP_GRIPPER` | `2F85`, `2F140`, `HandE` | Gripper variant. |
+| `TELEOP_PHYSICS` | `Physx_compliant`, `Physx_parallel_grip`, `Newton_compliant`, `Newton_parallel_grip` | Physics variant. `Newton_*` automatically launches Isaac's Newton experience (`isaac-sim.newton.sh`). Hand-E has one PhysX and one Newton variant. |
+| `TELEOP_HAPTICS` | `1`, `0` | `0` drops the contact-force plot and R2 rumble. |
+| `MCP_EXT_ROOT` | `../mcp_bridge/isaacsim-mcp-server` | MCP extension path. Required for the plot and R2 rumble; see [mcp_bridge/README.md](../mcp_bridge/README.md). |
+| `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim` / derived from physics | Isaac install and launcher override. |
+| `TELEOP_ROS_DISTRO` | `jazzy`, `humble` | ROS distro to source. |
+| `JOY_DEV` | `/dev/input/js0` | Gamepad device. |
+
+Example: `TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_compliant ./run_demo.sh`
+
 ## Goal
 
 Drive tool0 in cartesian space from a gamepad or keyboard (A/D, W/X for
