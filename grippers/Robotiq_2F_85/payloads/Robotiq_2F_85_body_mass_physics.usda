@@ -1,16 +1,15 @@
 #usda 1.0
-# Single source of truth for the base_link + outer-knuckle rigid-body mass.
+# Single source of truth for the rigid-body mass of the nine 2F-85 body links.
 #
-# These three bodies carry their colliders in the shared invisible /Meshes scope
-# (not as rigid-body children), so PhysX cannot auto-compute their mass — it must
-# be authored explicitly. The mass + centre-of-mass are identical across every
-# physics variant, so they live here and are `subLayers`-referenced by the
-# parallel-grip, compliant, and Newton payloads (same pattern as the shared
-# fingertip bodies). Variant-specific bits — e.g. the deliberately different
-# diagonal inertia in the Newton solver — are overridden per variant on top of
-# this layer. Mass + CoM come from the gripper's CAD; the diagonal inertia here
-# is the PhysX value (base_link is a fixed base, so its inertia is inert; the
-# outer knuckles get a small tensor on the order of the sibling knuckles).
+# Every body link carries its collider in the shared invisible /Meshes scope (not
+# as a rigid-body child), so the mass is authored explicitly rather than left to
+# the engine. It is sublayered by every Physics variant payload (same pattern as
+# the 2F-140 and the shared fingertip bodies); variant-specific bits -- the
+# deliberately different diagonal inertia (and, for now, the ported link masses)
+# of the Newton solver -- are overridden on top of this layer in
+# ./Robotiq_2F_85_newton_common_physics.usda. Mass + CoM come from the gripper's
+# CAD; base_link is a fixed base, so its inertia is inert; the outer knuckles get
+# a small tensor on the order of the sibling knuckles.
 (
     defaultPrim = "Robotiq_2F_85"
     metersPerUnit = 1
@@ -49,6 +48,71 @@ over "Robotiq_2F_85"
             float3 physics:diagonalInertia = (0.00001, 0.000008, 0.000004)
             float physics:mass = 0.02
             quatf physics:principalAxes = (1, 0, 0, 0)
+        }
+
+        over "left_outer_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0.000005531254, -0.06595047, 0.06895309)
+            float3 physics:diagonalInertia = (0.0000132201985, 0.0000042931024, 0.000010880907)
+            float physics:mass = 0.039179202
+            quatf physics:principalAxes = (0.76604444, -0.64278764, 0, 0)
+        }
+
+        # Distal body (finger4step) only — the pad is the separate
+        # left_fingertip rigid body. Mass is the CAD part ratio (11.29 g distal
+        # / 22.10 g pad) applied to the 0.039254718 kg per-side total, so it is
+        # not the raw CAD part mass. Inertia is the part's own tensor about its
+        # own CoM.
+        over "left_inner_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (-0.00000139, -0.05940770, 0.10376717)
+            float3 physics:diagonalInertia = (8.956112865e-07, 1.209160565e-06, 1.440650775e-06)
+            float physics:mass = 0.01327301
+            quatf physics:principalAxes = (0.1989801, 0.6786246, -0.6783625, -0.1992485)
+        }
+
+        over "left_inner_knuckle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (-2.005321e-10, -0.03222066, 0.083420366)
+            float3 physics:diagonalInertia = (0.000011838778, 0.0000044877793, 0.00000800488)
+            float physics:mass = 0.027306942
+            quatf physics:principalAxes = (0.9063078, -0.42261827, 0, 0)
+        }
+
+        over "right_outer_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (-0.000005531254, 0.06595047, 0.06895309)
+            float3 physics:diagonalInertia = (0.0000132201985, 0.0000042931024, 0.000010880907)
+            float physics:mass = 0.039179202
+            quatf physics:principalAxes = (0.76604444, 0.64278764, 0, 0)
+        }
+
+        over "right_inner_finger" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0.00000139, 0.05940770, 0.10376717)
+            float3 physics:diagonalInertia = (8.956112865e-07, 1.209160565e-06, 1.440650775e-06)
+            float physics:mass = 0.01327301
+            quatf physics:principalAxes = (-0.6783625, -0.1992485, 0.1989801, 0.6786246)
+        }
+
+        over "right_inner_knuckle" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (2.005321e-10, 0.03222066, 0.083420366)
+            float3 physics:diagonalInertia = (0.000011838778, 0.0000044877793, 0.00000800488)
+            float physics:mass = 0.027306942
+            quatf physics:principalAxes = (0.9063078, 0.42261827, 0, 0)
         }
     }
 }
