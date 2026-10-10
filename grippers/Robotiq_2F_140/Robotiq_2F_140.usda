@@ -153,9 +153,8 @@ def Xform "Robotiq_2F_140" (
             doc = "Namespace of the prim in Isaac Sim"
         )
     }
-    # The Silicone / V-Groove / Tactile_TSF140 fingertip variants are follow-up
-    # work (their tip placements still need live validation); today the asset
-    # ships the two PhysX solver variants with the stock Flat-Overmolded fingertip.
+    # The Silicone / V-Groove / Tactile_TSF140 fingertip tip placements still need
+    # live validation; the default is the stock Flat-Overmolded fingertip.
     variantSet "Physics" = {
         "None" (
             customData = {

@@ -718,10 +718,12 @@ PhysX asset) and the Newton physics parameters (masses/inertias, joints, the
 five-bar loop closure, and the MuJoCo contact/friction tuning) are Robotiq's own.
 
 **Self-collision:** Newton/MuJoCo auto-excludes only kinematic parent-child body
-pairs. The four-bar's `outer_finger`↔`inner_finger` (coupler↔follower) are joined
-only by the spherical loop-closure equality — not a parent-child joint — so they
-are excluded explicitly via `physics:filteredPairs` (both sides). Without it the
-convex hulls overlap inside the linkage and the fingers jam on self-contact
-instead of relaxing to the parallel pose.
+pairs. The four-bar's `inner_finger`↔`inner_knuckle` are joined only by the
+spherical loop-closure equality at the knuckle pin — not a parent-child joint — and
+their convex hulls overlap there. Newton's USD importer ignores
+`physics:filteredPairs` on body prims, so the pair is excluded with two
+`PhysicsCollisionGroup`s (`Physics/InnerKnuckles`, `Physics/InnerFingers` in the
+fourbar layer): distinct positive groups never collide with each other but still
+collide with everything else. Without it the fingers jam on self-contact.
 
 ---
