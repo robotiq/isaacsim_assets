@@ -12,8 +12,8 @@ pad friction, and the per-mesh convex-hull colliders (+ pad material binding).
 Sublayered by each Newton variant payload, which then overlays only its variant- and
 engine-specific bits on top:
   * newton_parallel_grip: FixedJoint weld on outer_finger (rigid coupler).
-  * newton_compliant: PhysicsFilteredPairsAPI on outer_finger (loop-closure
-    self-collision exclusion), and the MuJoCo tuning -- MjcMaterialAPI on GripMaterial,
+  * newton_fourbar (both variants): the inner_knuckle / inner_finger collision
+    groups, and the MuJoCo tuning -- MjcMaterialAPI on GripMaterial,
     MjcCollisionAPI + mjc:* solver params on the mesh colliders.
 
 base_link + left/right_outer_knuckle MASS stay in ./Robotiq_2F_85_body_mass_physics.usda, and the

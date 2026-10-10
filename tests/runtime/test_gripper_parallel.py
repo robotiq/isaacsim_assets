@@ -34,14 +34,8 @@ SETTLED_TOL = math.radians(2.0)  # pad rotation away from its open orientation, 
 MOVING_TOL = {"parallel_grip": math.radians(2.0), "compliant": math.radians(3.0)}
 REOPEN_TOL = math.radians(1.0)
 
-# Known: the 2F-85 Newton_compliant pads swing ~11 deg while closing (settled
-# pose is fine). Expected to fail until the Newton spring / inertia tuning changes.
-KNOWN_SWING = {("Robotiq_2F_85", "Newton_compliant")}  # left pad: ~11 deg moving, ~2.6 deg settled
-
-
 def _case_id(gripper: str, physics: str):
-    marks = [pytest.mark.xfail(strict=True, reason="pads swing while closing")] if (gripper, physics) in KNOWN_SWING else []
-    return pytest.param(gripper, physics, id=f"{gripper}-{physics}", marks=marks)
+    return pytest.param(gripper, physics, id=f"{gripper}-{physics}")
 
 
 def _angle_between(q1: np.ndarray, q2: np.ndarray) -> float:
