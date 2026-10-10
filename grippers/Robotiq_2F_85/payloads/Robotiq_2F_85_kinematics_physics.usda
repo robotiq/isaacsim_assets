@@ -5,7 +5,7 @@
 
 Single source of truth for the revolute joint set: frames (axis / localPos /
 localRot), limits, body relations, and PhysicsJointStateAPI. Sublayered by
-base.usda so it is present in every physics variant; each variant payload then
+each physics variant payload; each variant payload then
 OVERLAYS only its engine-specific physics (PhysX drive/mimic, Mjc/Newton
 actuators + equalities, armature), suppresses the joints its topology does not
 use (active=false), and adds its variant-only joints (parallel welds, Newton
