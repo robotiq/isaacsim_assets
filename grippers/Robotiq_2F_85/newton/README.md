@@ -44,6 +44,26 @@ Newton links carried ~0.02 kg values ported from a standalone Newton model. If t
 ever proves unstable, lighter link masses are the first knob to try -- author them in
 `newton_common` as a Newton-only override.
 
+## Provenance: the standalone Newton model
+
+The Newton four-bar was first ported from a standalone Newton 2F-85 model. Body-name
+correspondence to it:
+
+| this asset | standalone Newton |
+| --- | --- |
+| `base_link` | `base` |
+| `outer_knuckle` | `driver` |
+| `outer_finger` | `coupler` |
+| `inner_knuckle` | `spring_link` (name only; the spring is now on `inner_finger_joint`) |
+| `inner_finger` | `follower` |
+
+Newton → this asset's frame: rotate 90° about +Z, translate Z by −0.01076 m (the Newton
+adapter plate). Apply it to any coordinate ported from that model.
+
+`Newton_parallel_grip` was verified live in Isaac + Newton (standalone and in the UR5e
+teleop): it drives 0..0.80 rad and back, settling with zero joint velocity (rigid) at every
+commanded position.
+
 ## Isaac Sim source patch — `solreflimit` ×180/π backport (required)
 
 Newton **1.2.1** (bundled with Isaac Sim 6.0.1) over-scales the *angular*
