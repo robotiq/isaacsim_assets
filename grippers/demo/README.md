@@ -11,8 +11,10 @@ gamepad or keyboard. Details, data flow and gotchas: [teleop/README.md](teleop/R
   sudo apt install ros-jazzy-moveit ros-jazzy-moveit-servo ros-jazzy-ur-description \
                    ros-jazzy-ur-moveit-config ros-jazzy-joy
   ```
-- Optional: a DS4/DualSense gamepad (`/dev/input/js0`). R2 force feedback needs a
-  **DualSense** plus `pip install -r teleop/requirements.txt` and `libhidapi-hidraw0`.
+- Optional, but **a DualSense gamepad is strongly recommended** for the full experience
+  (keyboard works without it). It appears as `/dev/input/js0`, and its R2 trigger gives
+  force feedback on grip; that needs `pip install -r teleop/requirements.txt` and
+  `libhidapi-hidraw0`. A DualShock 4 drives the arm but has no force feedback.
 
 ## Start
 
