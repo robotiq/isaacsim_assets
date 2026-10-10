@@ -53,9 +53,6 @@ def Xform "Robotiq_2F_140" (
                 delete apiSchemas = ["PhysicsDriveAPI:angular"]
             )
             {
-                float drive:angular:physics:damping = 0
-                float drive:angular:physics:maxForce = 0
-                float drive:angular:physics:stiffness = 0
                 float physxJoint:armature = 0.0001
                 float physxMimicJoint:rotZ:dampingRatio = 0
                 float physxMimicJoint:rotZ:naturalFrequency = 0
@@ -66,10 +63,6 @@ def Xform "Robotiq_2F_140" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
-                float drive:angular:physics:damping = 0
-                float drive:angular:physics:maxForce = 0
-                float drive:angular:physics:stiffness = 0
-                float drive:angular:physics:targetPosition = 0
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = 1
@@ -82,9 +75,6 @@ def Xform "Robotiq_2F_140" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
-                float drive:angular:physics:damping = 0
-                float drive:angular:physics:stiffness = 0
-                float drive:angular:physics:targetPosition = 0
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = -1
@@ -97,8 +87,6 @@ def Xform "Robotiq_2F_140" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
-                float drive:angular:physics:damping = 0
-                float drive:angular:physics:stiffness = 0
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = 1
@@ -111,10 +99,6 @@ def Xform "Robotiq_2F_140" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotX"]
             )
             {
-                float drive:angular:physics:damping = 0
-                float drive:angular:physics:maxForce = 0
-                float drive:angular:physics:stiffness = 0
-                float drive:angular:physics:targetPosition = 0
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotX:dampingRatio = 0
                 float physxMimicJoint:rotX:gearing = -1
