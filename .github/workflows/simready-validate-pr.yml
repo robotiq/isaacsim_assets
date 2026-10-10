@@ -21,6 +21,9 @@ name: simready-validate-pr
 # review freely, and the gate runs once, on the final merge candidate. The
 # branch ruleset must enable "Require merge queue" with `validate` required.
 on:
+  # TEMPORARY: pull_request stays until the merge queue is enabled, so this PR
+  # can satisfy the required check. A follow-up removes it.
+  pull_request:
   merge_group:
 
 permissions:
@@ -38,8 +41,8 @@ jobs:
       - name: Select grippers touched by this merge group
         id: scope
         env:
-          BASE: ${{ github.event.merge_group.base_sha }}
-          HEAD: ${{ github.event.merge_group.head_sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
         run: |
           changed="$(git diff --name-only "$BASE...$HEAD")"
           echo "Changed files:"; echo "$changed"
