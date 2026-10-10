@@ -17,8 +17,11 @@
 # in `gripper`, and commit its baseline in ci/simready/expected/.
 name: simready-validate-pr
 
+# Runs only in the merge queue (merge_group), not on every PR push: iterate and
+# review freely, and the gate runs once, on the final merge candidate. The
+# branch ruleset must enable "Require merge queue" with `validate` required.
 on:
-  pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -32,11 +35,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Select grippers touched by this PR
+      - name: Select grippers touched by this merge group
         id: scope
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.merge_group.head_sha }}
         run: |
           changed="$(git diff --name-only "$BASE...$HEAD")"
           echo "Changed files:"; echo "$changed"
@@ -59,7 +62,7 @@ jobs:
       matrix:
         gripper: ${{ fromJSON(needs.changes.outputs.grippers) }}
     # statuses:write is only to satisfy the called workflow's declared permissions;
-    # it does not write commit statuses on pull_request events.
+    # it does not write commit statuses on merge_group events.
     permissions:
       contents: read
       statuses: write
