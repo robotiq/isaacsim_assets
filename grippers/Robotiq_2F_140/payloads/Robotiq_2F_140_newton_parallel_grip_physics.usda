@@ -4,7 +4,7 @@
     doc = """Newton (MuJoCo-Warp) parallel-grip physics for the Robotiq 2F-140.
 
 Thin overlay on the shared Newton four-bar (./Robotiq_2F_140_newton_fourbar_physics.usda:
-loop_closure spherical equalities, inner-knuckle springs, right_outer_knuckle NewtonMimic,
+loop_closure spherical equalities, inner_finger pad springs, right_outer_knuckle NewtonMimic,
 finger_joint drive, root_joint + articulation root, Mjc tuning) over the shared Newton-pure
 bodies/colliders (./Robotiq_2F_140_newton_common_physics.usda) and the neutral joint frames
 (./Robotiq_2F_140_kinematics_physics.usda).
@@ -14,8 +14,7 @@ forced PARALLEL instead of encompassing:
   * left/right_outer_finger_joint are SUPPRESSED (active=false), and
   * outer_finger is rigidly WELDED to outer_knuckle (FixedJoint).
 
-outer_finger stays in the articulation (so the loop_closure equality, which references it,
-still resolves); locking its DOF constrains the four-bar to parallel motion. This closed-loop
+outer_finger stays in the articulation (the inner_finger pad joint hangs off it); locking its DOF constrains the four-bar to parallel motion. This closed-loop
 formulation is rigid (no oscillation), unlike an open tree coupled by independent mimic
 constraints. Mirrors the 2F-85 Newton variant of the same name; only the 2F-140 values
 differ.
@@ -50,8 +49,7 @@ over "Robotiq_2F_140"
 
         # Rigidly weld outer_finger to outer_knuckle (removes the four-bar's distal DOF
         # -> forces parallel). Same prim name, bodies and identity frames as the PhysX
-        # parallel_grip weld (all link frames are identity/world), so robot.usda covers both. Composes with the shared fourbar layer's outer_finger
-        # loop-closure self-collision exclusion on the same prim.
+        # parallel_grip weld (all link frames are identity/world), so robot.usda covers both.
         over "left_outer_finger"
         {
             def PhysicsFixedJoint "FixedJoint"
