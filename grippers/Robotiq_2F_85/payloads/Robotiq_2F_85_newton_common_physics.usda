@@ -119,8 +119,9 @@ over "Robotiq_2F_85"
     }
 }
 
-# Convex-hull colliders cooked from the shared visual CAD meshes (over the instanced
-# masters). Newton-pure here; the fourbar overlay adds MjcCollisionAPI + mjc:* params.
+# Newton collision schemas on the convex-hull colliders cooked from the shared visual CAD
+# meshes (over the instanced masters; the neutral collider declaration is
+# ./Robotiq_2F_85_collision_physics.usda). Newton-pure here; the fourbar overlay adds MjcCollisionAPI + mjc:* params.
 over "Meshes"
 {
     over "base_link"
@@ -128,11 +129,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_basestep_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_basestep" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 float newton:contactGap = 0
             }
         }
@@ -143,11 +142,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger4step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger4step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 float newton:contactGap = 0
             }
         }
@@ -158,11 +155,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger3step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger3step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 float newton:contactGap = 0
             }
         }
@@ -173,11 +168,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_finger2step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_finger2step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 float newton:contactGap = 0
             }
         }
@@ -188,11 +181,9 @@ over "Meshes"
         over "Defeatured_2F_85_PAD_OPEN_Finger1step_01"
         {
             over "Defeatured_2F_85_PAD_OPEN_Finger1step" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 float newton:contactGap = 0
             }
         }
@@ -203,11 +194,9 @@ over "Meshes"
         over "tip_standard"
         {
             over "Defeatured_2F_85_PAD_OPEN_fingertipsstep" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 rel material:binding:physics = </Robotiq_2F_85/Robotiq_2F_85/Physics/GripMaterial>
                 float newton:contactGap = 0
             }
@@ -216,11 +205,9 @@ over "Meshes"
         over "tip_tsf85"
         {
             over "TSF_85_case" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "NewtonCollisionAPI", "PhysicsMeshCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
+                prepend apiSchemas = ["NewtonCollisionAPI", "NewtonMeshCollisionAPI", "MaterialBindingAPI"]
             )
             {
-                uniform token physics:approximation = "convexHull"
-                bool physics:collisionEnabled = 1
                 rel material:binding:physics = </Robotiq_2F_85/Robotiq_2F_85/Physics/GripMaterial>
                 float newton:contactGap = 0
             }
