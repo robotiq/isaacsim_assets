@@ -9,6 +9,8 @@ Options (see README.md):
   --hold       with --gui, keep the window open after the last test until closed
   --save-view  with --gui --hold, write the camera pose + lights to the last
                test's preset in views/ when the window is closed
+  --save-cube  with --gui --hold, write the grasp cube's size and position to
+               the last test's gripper preset in cubes/ (on R and on close)
 """
 
 from __future__ import annotations
@@ -27,6 +29,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="with --gui --hold, save the viewport camera + lights of the last test to views/ on window close. "
              "SCOPE picks the file: case (default: this parametrized case), test (every case of the test "
              "function), gripper (every test of that gripper), default (every test)",
+    )
+    parser.addoption(
+        "--save-cube", action="store_true", default=False,
+        help="with --gui --hold, save /World/Cube (size + position, moved/scaled in the Isaac UI) to the last "
+             "test's gripper preset in cubes/: before each R replay, so the replay uses it, and on window close",
     )
     parser.addoption(
         "--screenshot", default=None, metavar="DIR",
@@ -231,6 +238,8 @@ def _hold(config: pytest.Config) -> None:
             if replay["requested"] and last is not None:
                 replay["requested"] = False
                 print(f"\nreplaying {last.nodeid}")
+                if config.getoption("--save-cube"):
+                    _save_cube(last.nodeid)
                 _run_items(config, [last], hold_factor)
                 continue
             try:
@@ -268,6 +277,22 @@ def _hold(config: pytest.Config) -> None:
         pacing["factor"] = hold_factor
 
 
+def _save_cube(nodeid: str) -> None:
+    from isaacsim.core.experimental.utils import stage as stage_utils
+
+    from _cube import save_cube
+    from _views import _gripper_in
+
+    gripper = _gripper_in(nodeid.split("::")[-1])
+    if gripper is None:
+        print(f"--save-cube: no gripper in {nodeid}, nothing saved")
+        return
+    try:
+        print(f"cube saved: {save_cube(stage_utils.get_current_stage(), gripper)}")
+    except RuntimeError as e:
+        print(f"--save-cube: {e}")
+
+
 def pytest_unconfigure(config: pytest.Config) -> None:
     global _app
     if _app is None:
@@ -287,6 +312,8 @@ def pytest_unconfigure(config: pytest.Config) -> None:
             scope = config.getoption("--save-view")
             path = save_view(config._isaac_last_nodeid, stage_utils.get_current_stage(), scope)
             print(f"view saved ({scope}): {path}")
+        if config.getoption("--save-cube") and config._isaac_last_nodeid:
+            _save_cube(config._isaac_last_nodeid)
     _app.close()
     _app = None
 
