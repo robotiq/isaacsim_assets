@@ -1,7 +1,7 @@
 #usda 1.0
 (
     # PhysX-only physics shared by the 2F-140 Physx_parallel_grip and Physx_compliant
-    # variants: the articulation root + root_joint (fixed base), the collision-group
+    # variants: the PhysX articulation API, the collision-group
     # plumbing, and the PhysX collision schemas on every collider -- the nine body-link
     # colliders and the tip collider of each Fingertip variant (which meshes collide, as
     # UsdPhysics convex hulls, is the engine-neutral
@@ -28,21 +28,14 @@ def Xform "Robotiq_2F_140" (
 )
 {
     over Xform "Robotiq_2F_140" (
-        prepend apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+        prepend apiSchemas = ["PhysxArticulationAPI"]
         kind = "assembly"
     )
     {
         bool physxArticulation:enabledSelfCollisions = 0
 
-        # Root/mount joint pinning the gripper base to the world (fixed base).
-        def PhysicsFixedJoint "root_joint"
-        {
-            rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/base_link>
-            point3f physics:localPos0 = (0, 0, 0)
-            point3f physics:localPos1 = (0, 0, 0)
-            quatf physics:localRot0 = (1, 0, 0, 0)
-            quatf physics:localRot1 = (1, 0, 0, 0)
-        }
+        # root_joint and PhysicsArticulationRootAPI are the shared neutral defs in
+        # ./Robotiq_2F_140_kinematics_physics.usda; this layer adds the PhysX articulation API.
 
         # Finger joint velocity cap (deg/s): the one value shared by both PhysX grip
         # variants, so they cannot drift apart. Armature and the other drive tuning stay
