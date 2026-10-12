@@ -10,7 +10,7 @@ is IDENTICAL across those variants: the finger_joint driver, the right_outer_knu
 NewtonMimic, the pad preload springs on the inner_finger joints (the same joint and
 preload as PhysX), the loop_closure spherical equalities (MjcEqualityConnectAPI) that
 close the linkage loop at the inner_finger <-> inner_knuckle pin in place of the
-inner_finger_knuckle revolutes, the inner_knuckle / inner_finger collision groups, and the
+inner_finger_knuckle revolutes, and the
 per-material / per-mesh MuJoCo tuning (MjcMaterialAPI,
 MjcCollisionAPI).
 
@@ -165,35 +165,10 @@ over "Robotiq_2F_85"
             }
         }
 
-        # MuJoCo pad-material tuning on top of the shared Newton GripMaterial, and the
-        # Newton collision groups. Nested under the inner prim on purpose: the scope is
+        # MuJoCo pad-material tuning on top of the shared Newton GripMaterial. Nested under the inner prim on purpose: the scope is
         # /Robotiq_2F_85/Robotiq_2F_85/Physics (an `over` one level up composes nothing).
         over "Physics"
         {
-            # inner_knuckle <-> inner_finger are joined only by the loop_closure equality
-            # now (no revolute, so MuJoCo does not exclude them as parent/child) and their
-            # hulls overlap at the knuckle pin. Newton's USD importer ignores
-            # physics:filteredPairs on body prims and the colliders are instance proxies
-            # of shared meshes, so the exclusion is done with collision groups: a shape in
-            # a positive group only collides with its own group and with the default
-            # (negative) group, so two distinct groups never touch each other while both
-            # still collide with everything else (objects, the base, the other finger).
-            def PhysicsCollisionGroup "InnerKnuckles"
-            {
-                prepend rel collection:colliders:includes = [
-                    </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>,
-                    </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>,
-                ]
-            }
-
-            def PhysicsCollisionGroup "InnerFingers"
-            {
-                prepend rel collection:colliders:includes = [
-                    </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>,
-                    </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>,
-                ]
-            }
-
             over "GripMaterial" (
                 prepend apiSchemas = ["MjcMaterialAPI"]
             )
@@ -247,6 +222,17 @@ over "Meshes"
                 prepend apiSchemas = ["MjcCollisionAPI"]
             )
             {
+                # Excluded from collision with the inner_finger: the pair's hulls overlap at the
+                # knuckle pin and they are joined only by the loop_closure equality. Newton's importer
+                # honours physics:filteredPairs on the collider prim (target = the instance-proxy path
+                # of the other collider). Do not use a PhysicsCollisionGroup for this: Newton gives
+                # ungrouped shapes group 1, so a grouped knuckle would collide with nothing else.
+                # The collider is one shared prototype for both sides, so both fingers are
+                # listed (the cross-side pair is far apart and never in contact anyway).
+                prepend rel physics:filteredPairs = [
+                    </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger/visuals/Defeatured_2F_85_PAD_OPEN_finger4step_01/Defeatured_2F_85_PAD_OPEN_finger4step>,
+                    </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger/visuals/Defeatured_2F_85_PAD_OPEN_finger4step_01/Defeatured_2F_85_PAD_OPEN_finger4step>,
+                ]
                 uniform int mjc:condim = 3
                 uniform double mjc:gap = 0
                 uniform int mjc:group = 2
@@ -293,6 +279,14 @@ over "Meshes"
                 prepend apiSchemas = ["MjcCollisionAPI"]
             )
             {
+                # Excluded from collision with the inner knuckles (PhysX has articulation
+                # self-collision off, so the knuckle touches only objects). Authored here, not on
+                # the knuckle, so it stays inert for fingertip variants that are not selected.
+                # One shared prototype for both sides: both knuckles are listed.
+                prepend rel physics:filteredPairs = [
+                    </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle/visuals/Defeatured_2F_85_PAD_OPEN_finger3step_01/Defeatured_2F_85_PAD_OPEN_finger3step>,
+                    </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle/visuals/Defeatured_2F_85_PAD_OPEN_finger3step_01/Defeatured_2F_85_PAD_OPEN_finger3step>,
+                ]
                 uniform int mjc:group = 3
                 uniform int mjc:priority = 1
                 uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
@@ -306,6 +300,14 @@ over "Meshes"
                 prepend apiSchemas = ["MjcCollisionAPI"]
             )
             {
+                # Excluded from collision with the inner knuckles (PhysX has articulation
+                # self-collision off, so the knuckle touches only objects). Authored here, not on
+                # the knuckle, so it stays inert for fingertip variants that are not selected.
+                # One shared prototype for both sides: both knuckles are listed.
+                prepend rel physics:filteredPairs = [
+                    </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle/visuals/Defeatured_2F_85_PAD_OPEN_finger3step_01/Defeatured_2F_85_PAD_OPEN_finger3step>,
+                    </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle/visuals/Defeatured_2F_85_PAD_OPEN_finger3step_01/Defeatured_2F_85_PAD_OPEN_finger3step>,
+                ]
                 uniform int mjc:group = 3
                 uniform int mjc:priority = 1
                 uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
