@@ -16,7 +16,8 @@ position come from the preset; without a "holder" entry it is a thin plate centr
 under the cube.
 
 ``add_fixed_cube`` builds the fixed-cube test's box instead (preset
-``fixed_cubes/<gripper folder>.json``: "size" [sx, sy, sz] and "position", its
+``fixed_cubes/<gripper folder>.json``, ``<gripper folder>_compliant.json`` for the
+compliant cases: "size" [sx, sy, sz] and "position", its
 centre): a static collider with no rigid body and no holder, so nothing can move it.
 Like the holder it is a unit box mesh scaled by ``xformOp:scale``, so it can be
 stretched per axis with the scale gizmo on both engines. That preset also keeps the

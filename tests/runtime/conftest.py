@@ -297,6 +297,8 @@ def _save_cube(nodeid: str) -> None:
         print(f"--save-cube: no gripper in {nodeid}, nothing saved")
         return
     fixed = "test_gripper_fixed_cube" in nodeid
+    if fixed and "compliant" in nodeid.split("[", 1)[-1]:
+        gripper += "_compliant"  # the compliant cases' own placement, see test_gripper_fixed_cube.py
     try:
         print(f"cube saved: {save_cube(stage_utils.get_current_stage(), gripper, fixed)}")
     except RuntimeError as e:

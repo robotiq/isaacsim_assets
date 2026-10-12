@@ -1,8 +1,10 @@
-"""The 2F parallel-grip variants close on a cube fixed in space.
+"""The 2F grippers close on a cube fixed in space.
 
-For both 2F grippers, on PhysX and Newton: a cube that nothing can move (a static
-collider, no holder, placed by hand per gripper in fixed_cubes/, see _cube.py) sits
-between the open pads. The driven joint is ramped at the datasheet finger speed
+For both 2F grippers, on PhysX and Newton, in two tests: the parallel-grip variants
+and the compliant variants. A cube that nothing can move (a static collider, no
+holder, placed by hand per gripper in fixed_cubes/, see _cube.py; the compliant test
+has its own placement, fixed_cubes/<gripper>_compliant.json) sits between the open
+pads. The driven joint is ramped at the datasheet finger speed
 toward its full-close target, past the cube, so the cube stops the fingers. During
 the hold that follows, check:
 
@@ -10,7 +12,7 @@ the hold that follows, check:
    on the right) stalls at its recorded baseline, within JOINT_TOL, at rest;
 2. the pads stay parallel to their open orientation.
 
-The baselines live in the gripper's preset, under "expected" per Physics variant.
+The baselines live in the case's preset, under "expected" per Physics variant.
 Record them with ``--record-baseline`` (it writes the measured positions instead of
 checking them); moving or resizing the cube with ``--save-cube`` drops them.
 """
@@ -47,6 +49,17 @@ CASES = [
     ("Robotiq_2F_140", "Physx_parallel_grip"),
     ("Robotiq_2F_140", "Newton_parallel_grip"),
 ]
+COMPLIANT_CASES = [
+    ("Robotiq_2F_85", "Physx_compliant"),
+    ("Robotiq_2F_85", "Newton_compliant"),
+    ("Robotiq_2F_140", "Physx_compliant"),
+    ("Robotiq_2F_140", "Newton_compliant"),
+]
+
+
+def preset_name(gripper: str, physics: str) -> str:
+    """The fixed_cubes/ preset of a case: the compliant variants have their own."""
+    return f"{gripper}_compliant" if physics.endswith("compliant") else gripper
 
 
 def _angle_between(q1: np.ndarray, q2: np.ndarray) -> float:
@@ -55,8 +68,19 @@ def _angle_between(q1: np.ndarray, q2: np.ndarray) -> float:
 
 @pytest.mark.parametrize(("gripper", "physics"), CASES, ids=[f"{g}-{p}" for g, p in CASES])
 def test_gripper_closes_on_fixed_cube(request, simulation_app, view, gripper: str, physics: str) -> None:
+    _close_on_fixed_cube(request, simulation_app, view, gripper, physics)
+
+
+@pytest.mark.parametrize(("gripper", "physics"), COMPLIANT_CASES, ids=[f"{g}-{p}" for g, p in COMPLIANT_CASES])
+def test_compliant_gripper_closes_on_fixed_cube(request, simulation_app, view, gripper: str, physics: str) -> None:
+    _close_on_fixed_cube(request, simulation_app, view, gripper, physics)
+
+
+def _close_on_fixed_cube(request, simulation_app, view, gripper: str, physics: str) -> None:
+    name = preset_name(gripper, physics)
+
     def setup(stage):
-        add_fixed_cube(stage, gripper)
+        add_fixed_cube(stage, name)
         if engine_for(physics) == "physx":
             scene_prim = next(p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene))
             PhysxSchema.PhysxSceneAPI.Apply(scene_prim).CreateTimeStepsPerSecondAttr().Set(PHYSX_HZ)
@@ -89,13 +113,13 @@ def test_gripper_closes_on_fixed_cube(request, simulation_app, view, gripper: st
         + f"; pad rotation L/R {math.degrees(pad_dev[0]):.2f}/{math.degrees(pad_dev[1]):.2f} deg"
     )
 
-    preset = load_preset(gripper, fixed=True)
+    preset = load_preset(name, fixed=True)
     if request.config.getoption("--record-baseline"):
         preset.setdefault("expected", {})[physics] = {f"{j}_deg": measured[j] for j in JOINTS}
-        print(f"baseline recorded: {write_preset(gripper, preset, fixed=True)}")
+        print(f"baseline recorded: {write_preset(name, preset, fixed=True)}")
     else:
         expected = preset.get("expected", {}).get(physics)
-        assert expected, f"no baseline for {physics} in fixed_cubes/{gripper}.json: run with --record-baseline"
+        assert expected, f"no baseline for {physics} in fixed_cubes/{name}.json: run with --record-baseline"
         # 1. joint positions, at rest
         for j, v, d in zip(JOINTS, q, drift):
             want = math.radians(expected[f"{j}_deg"])

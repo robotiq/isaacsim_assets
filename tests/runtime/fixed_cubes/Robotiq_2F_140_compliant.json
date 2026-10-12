@@ -1,0 +1,22 @@
+{
+  "size": [
+    0.05,
+    0.05,
+    0.016214
+  ],
+  "position": [
+    0.0,
+    0.0,
+    0.226888
+  ],
+  "expected": {
+    "Physx_compliant": {
+      "finger_joint_deg": 29.348,
+      "right_outer_knuckle_joint_deg": 29.183
+    },
+    "Newton_compliant": {
+      "finger_joint_deg": 30.351,
+      "right_outer_knuckle_joint_deg": 30.351
+    }
+  }
+}
