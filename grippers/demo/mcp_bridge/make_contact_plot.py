@@ -36,14 +36,11 @@ Caveats:
   * The prim paths below are specific to the UR5e teleop scene
     (ur5robot_with_2F-85.usda): the gripper is the Robotiq_*_edit prim under
     /World/ur5e/wrist_3_link. Adjust for other scenes.
-  * The engine-level contact reading is contact_forces.py (shared with the
-    runtime tests); its source is prepended to the injected code.
   * Never scan the Python heap per frame — an earlier version fell back to
     `gc.get_objects()` every frame when it could not find the Newton solver,
     which dropped the sim from ~50 to ~2.6 FPS. Backend detection is one-shot.
 """
 import json, socket
-from pathlib import Path
 def send(cmd, t=70):
     s=socket.socket(); s.settimeout(t); s.connect(("127.0.0.1",8766))
     s.sendall(json.dumps(cmd).encode()); buf=b""
@@ -54,7 +51,7 @@ def send(cmd, t=70):
         try: return json.loads(buf.decode())
         except: continue
     return {}
-code=(Path(__file__).resolve().parent/"contact_forces.py").read_text()+r'''
+code=r'''
 import traceback
 try:
     import omni.ui as ui, omni.kit.app, carb, gc, time, socket, numpy as np
@@ -89,7 +86,10 @@ try:
     WRIST="/World/ur5e/wrist_3_link"
     SCAN_INTERVAL=2.0      # Newton: re-find the live Data at most this often (s)
 
-    flat=_flat   # contact_forces.py
+    def A(x):
+        try: return np.asarray(x.numpy())
+        except: return np.asarray(x)
+    def flat(x): return np.asarray(A(x)).reshape(-1)
 
     # ------------------------------------------------------- NEWTON discovery
     def find_live():
@@ -105,9 +105,16 @@ try:
         past. When more than one is alive, pick the one whose Data.time is closest
         to the current sim time.
 
-        Isaac's Newton stage knows its current solver: ask it first (cheap)."""
-        s=newton_solver()
-        if s is not None: return s
+        Isaac's Newton stage knows its current solver: ask it first (cheap, and
+        never a stale one); the heap scan is only the fallback."""
+        try:
+            import isaacsim.physics.newton as newton_ext
+            ns=newton_ext.acquire_stage()
+            s=getattr(ns,"solver",None) if ns is not None else None
+            if s is not None and getattr(s,"mjw_model",None) is not None and getattr(s,"mjw_data",None) is not None:
+                return s
+        except Exception:
+            pass
         solvers=[o for o in gc.get_objects()
                  if type(o).__name__=="SolverMuJoCo" and "mujoco" in getattr(type(o),"__module__","")
                  and getattr(o,"mjw_model",None) is not None and getattr(o,"mjw_data",None) is not None]
@@ -151,8 +158,11 @@ try:
         # like "..._Robotiq_2F_85_left_inner_finger"). None if unavailable, so callers
         # fall back to a positional heuristic. No heap scan -- uses the cached solver.
         try:
-            if getattr(solver,"mj_model",None) is None: return None
-            return newton_body_names(solver)
+            import mujoco
+            mj=getattr(solver,"mj_model",None)
+            if mj is None: return None
+            return {i:(mujoco.mj_id2name(mj, mujoco.mjtObj.mjOBJ_BODY, i) or "")
+                    for i in range(mj.nbody)}
         except Exception:
             return None
 
@@ -171,6 +181,7 @@ try:
             st["gb"]=gb; st["par"]=flat(mjm.body_parentid).astype(int)
             obj_bodies={int(jb[j]) for j in range(jt.size) if int(jt[j])==0}  # 0 = mjJNT_FREE
             st["obj_bodies"]=obj_bodies
+            st["obj_geoms"]={g for g in range(gb.size) if int(gb[g]) in obj_bodies}
             # Left/right finger body seeds, used by newton_side() to attribute a
             # contact to the left or right pad. Matched by BODY NAME (the raw MuJoCo
             # model's names, e.g. "..._Robotiq_2F_140_left_inner_finger"), scoped to
@@ -182,7 +193,6 @@ try:
             # when names are unavailable.
             lseed=set(); rseed=set()
             names=body_names(st["solver"])
-            st["names"]=names
             if names:
                 for bid,nm in names.items():
                     low=nm.lower()
@@ -203,16 +213,27 @@ try:
             c=int(par[c])
         return None
     def read_newton(st):
-        if st["mjm"] is None or st["mjd"] is None: return None
-        fL=0.0; fR=0.0; obs=st["obj_bodies"]
-        for pc in newton_pairs(st["solver"], names=st.get("names") or {}):
-            if pc.a_id in obs: ob=pc.b_id
-            elif pc.b_id in obs: ob=pc.a_id
-            else: continue
-            if ob==0 or ob in obs: continue
-            s=newton_side(st,ob)
-            if s=="L": fL+=pc.force
-            elif s=="R": fR+=pc.force
+        mjm,mjd=st["mjm"],st["mjd"]
+        if mjm is None or mjd is None: return None
+        nacon=int(flat(mjd.nacon)[0]); fL=0.0; fR=0.0
+        if nacon>0:
+            geom=np.asarray(mjd.contact.geom.numpy()); ea=np.asarray(mjd.contact.efc_address.numpy())
+            ef=flat(mjd.efc.force); gb=st["gb"]
+            og=st["obj_geoms"]; obs=st["obj_bodies"]
+            for k in range(nacon):
+                g0,g1=int(geom[k,0]),int(geom[k,1])
+                if g0 in og: other=g1
+                elif g1 in og: other=g0
+                else: continue
+                ob=int(gb[other])
+                if ob==0 or ob in obs: continue
+                s=newton_side(st,ob)
+                if s is None: continue
+                addr=int(ea[k,0])
+                if 0<=addr<ef.size:
+                    f=abs(float(ef[addr]))
+                    if s=="L": fL+=f
+                    else: fR+=f
         return fL,fR
 
     # -------------------------------------------------------- PHYSX discovery
@@ -221,24 +242,53 @@ try:
         layer so the user's scene file is never dirtied. Returns True if it had to
         apply it (i.e. PhysX only reports them after the next Stop -> Play)."""
         import omni.usd
-        from pxr import Usd
+        from pxr import PhysxSchema, Usd
         stage=omni.usd.get_context().get_stage()
+        newly=False
         with Usd.EditContext(stage, stage.GetSessionLayer()):
-            return physx_report_contacts([stage.GetPrimAtPath(p) for p in (st["L"],st["R"])])
+            for p in (st["L"],st["R"]):
+                prim=stage.GetPrimAtPath(p)
+                if not prim or not prim.IsValid(): continue
+                if not prim.HasAPI(PhysxSchema.PhysxContactReportAPI): newly=True
+                PhysxSchema.PhysxContactReportAPI.Apply(prim).CreateThresholdAttr(0.0)
+        return newly
     def physx_setup(st):
-        import omni.usd
+        import omni.physx, omni.usd
+        from pxr import PhysxSchema
+        stage=omni.usd.get_context().get_stage()
         newly=physx_report_pads(st)
-        st["dt"]=physx_scene_dt(omni.usd.get_context().get_stage())
+        # physics dt
+        dt=1.0/60.0
+        for p in stage.Traverse():
+            if p.GetTypeName()=="PhysicsScene":
+                sc=PhysxSchema.PhysxSceneAPI.Get(stage,p.GetPath())
+                a=sc.GetTimeStepsPerSecondAttr()
+                if a and a.Get(): dt=1.0/float(a.Get())
+                break
+        st["si"]=omni.physx.get_physx_simulation_interface(); st["dt"]=dt
+        from pxr import PhysicsSchemaTools
+        st["_p"]=lambda e:(str(PhysicsSchemaTools.intToSdfPath(e)))
         return newly
     def read_physx(st):
+        import math
+        si=st["si"]; dt=st["dt"]; P=st["_p"]; LEFT_PAD=st["L"]; RIGHT_PAD=st["R"]
+        hdrs,data=si.get_contact_report()
         fL=0.0; fR=0.0
-        for pc in physx_pairs(st["dt"]):
-            if st["L"] in (pc.a,pc.b): pad=st["L"]
-            elif st["R"] in (pc.a,pc.b): pad=st["R"]
+        for h in hdrs:
+            a0=P(h.actor0); a1=P(h.actor1)
+            pad=None; other=None
+            if LEFT_PAD in (a0,a1): pad="L"
+            elif RIGHT_PAD in (a0,a1): pad="R"
             else: continue
-            if pc.other(pad).startswith(ROBOT_ROOT): continue    # ignore self/arm contacts
-            if pad==st["L"]: fL+=pc.force
-            else: fR+=pc.force
+            other = a1 if (LEFT_PAD in a0 or RIGHT_PAD in a0) else a0
+            if other.startswith(ROBOT_ROOT): continue    # ignore self/arm contacts
+            off=h.contact_data_offset; n=h.num_contact_data; mag=0.0
+            for i in range(off,off+n):
+                if i<len(data):
+                    im=data[i].impulse; mag+=math.sqrt(im[0]**2+im[1]**2+im[2]**2)
+            f=mag/dt
+            if pad=="L": fL+=f
+            else: fR+=f
         return fL,fR
 
     # ------------------------------------------------- follow the mounted gripper

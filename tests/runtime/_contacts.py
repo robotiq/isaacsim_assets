@@ -1,8 +1,12 @@
-"""Contact forces between the gripper links and an object, on both engines.
+"""Contact forces between the gripper links and a static object, on both engines.
 
-The engine-level reading lives in grippers/demo/mcp_bridge/contact_forces.py,
-shared with the teleop demo's contact plot; this module only groups it per
-gripper link touching one object.
+Same approach as grippers/demo/mcp_bridge/make_contact_plot.py:
+- PhysX: ``PhysxContactReportAPI`` on every gripper rigid body (applied before
+  play), then the simulation interface's contact report each frame:
+  force = sum of contact impulses / physics dt.
+- Newton (MuJoCo-Warp): the live solver's contacts; the normal force of each
+  contact is ``efc.force`` at its constraint address, the separation is
+  ``contact.dist``. The object is its own body if dynamic, else a world-body geom.
 
 ``read()`` returns ``{link name: Contact}`` for every gripper link touching the
 object this frame.
@@ -11,15 +15,10 @@ object this frame.
 from __future__ import annotations
 
 import math
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
-from pxr import Usd, UsdPhysics
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "grippers" / "demo" / "mcp_bridge"))
-import contact_forces as cf  # noqa: E402
+from pxr import PhysxSchema, Usd, UsdPhysics
 
 # MuJoCo lists every geom pair within its collision margin as a contact, even
 # centimetres apart and carrying no force; count only pairs this close.
@@ -41,56 +40,91 @@ class ContactReader:
     def prepare(self, stage: Usd.Stage) -> None:
         if self.engine != "physx":
             return
-        root = stage.GetPrimAtPath(self.root)
-        cf.physx_report_contacts(cf.rigid_bodies_under(root))
-        # A gripper stalled on a static object comes to rest and PhysX puts the
-        # articulation to sleep (test stage only, the asset is untouched).
-        for prim in Usd.PrimRange(root):
+        for prim in Usd.PrimRange(stage.GetPrimAtPath(self.root)):
+            if prim.HasAPI(UsdPhysics.RigidBodyAPI):
+                PhysxSchema.PhysxContactReportAPI.Apply(prim).CreateThresholdAttr(0.0)
+            # A gripper stalled on a static object comes to rest and PhysX puts the
+            # articulation to sleep; sleeping bodies produce no contact reports.
+            # Keep it awake (test stage only, the asset is untouched).
             if prim.HasAPI(UsdPhysics.ArticulationRootAPI):
-                cf.physx_keep_awake(prim)
+                PhysxSchema.PhysxArticulationAPI.Apply(prim).CreateSleepThresholdAttr().Set(0.0)
 
     # -- while playing ---------------------------------------------------------
     def read(self) -> dict[str, Contact]:
         return self._read_physx() if self.engine == "physx" else self._read_newton()
 
     def _read_physx(self) -> dict[str, Contact]:
+        import omni.physx
         from isaacsim.core.simulation_manager import SimulationManager
+        from pxr import PhysicsSchemaTools
 
+        dt = SimulationManager.get_physics_dt()
+        headers, data = omni.physx.get_physx_simulation_interface().get_contact_report()
         out: dict[str, list] = {}
-        for pc in cf.physx_pairs(SimulationManager.get_physics_dt()):
-            if self.object_path not in (pc.a, pc.b):
+        for h in headers:
+            a0 = str(PhysicsSchemaTools.intToSdfPath(h.actor0))
+            a1 = str(PhysicsSchemaTools.intToSdfPath(h.actor1))
+            if self.object_path == a0:
+                link = a1
+            elif self.object_path == a1:
+                link = a0
+            else:
                 continue
-            link = pc.other(self.object_path)
             if not link.startswith(self.root + "/"):
                 continue
+            imp = np.zeros(3)
+            sep = math.inf
+            for i in range(h.contact_data_offset, h.contact_data_offset + h.num_contact_data):
+                imp += np.asarray(data[i].impulse, dtype=float)
+                sep = min(sep, float(data[i].separation))
             name = link[len(self.root) + 1:].split("/")[0]
             acc = out.setdefault(name, [np.zeros(3), math.inf, 0])
-            acc[0] += pc.force_vec
-            acc[1] = min(acc[1], pc.min_separation)
-            acc[2] += pc.points
+            acc[0] += imp / dt
+            acc[1] = min(acc[1], sep)
+            acc[2] += h.num_contact_data
         return {k: Contact(float(np.linalg.norm(v[0])), v[1], v[2]) for k, v in out.items()}
 
     def _read_newton(self) -> dict[str, Contact]:
-        solver = cf.newton_solver()
-        names = cf.newton_body_names(solver)
+        import mujoco
+        import isaacsim.physics.newton as newton_ext
+
+        solver = newton_ext.acquire_stage().solver  # the current solver
+        mj, mjm, mjd = solver.mj_model, solver.mjw_model, solver.mjw_data
+        flat = lambda x: np.asarray(x.numpy()).reshape(-1)
+        nacon = int(flat(mjd.nacon)[0])
+        if nacon == 0:
+            return {}
+        geom_body = flat(mjm.geom_bodyid).astype(int)
+        geom = np.asarray(mjd.contact.geom.numpy())
+        efc_addr = np.asarray(mjd.contact.efc_address.numpy())
+        dist = flat(mjd.contact.dist)
+        efc_force = flat(mjd.efc.force)
+        tag = f"{self.gripper}_"
+        name_of = lambda b: mujoco.mj_id2name(mj, mujoco.mjtObj.mjOBJ_BODY, b) or ""
         # The object: its own body if it is dynamic (MuJoCo names it after its path,
         # "/World/Cube" -> "..._World_Cube"), else world (body 0) for a static collider.
         obj_tag = self.object_path.replace("/", "_")
-        obj_bodies = {b for b, n in names.items() if n.endswith(obj_tag)} or {0}
-        tag = f"{self.gripper}_"
+        obj_bodies = {b for b in range(mj.nbody) if name_of(b).endswith(obj_tag)} or {0}
         out: dict[str, list] = {}
-        for pc in cf.newton_pairs(solver, touch_dist=NEWTON_TOUCH_DIST, names=names):
-            if pc.a_id in obj_bodies and pc.b_id not in obj_bodies:
-                name = pc.b
-            elif pc.b_id in obj_bodies and pc.a_id not in obj_bodies:
-                name = pc.a
+        for k in range(nacon):
+            g0, g1 = int(geom[k, 0]), int(geom[k, 1])
+            b0, b1 = int(geom_body[g0]), int(geom_body[g1])
+            if b0 in obj_bodies and b1 not in obj_bodies:
+                body = b1
+            elif b1 in obj_bodies and b0 not in obj_bodies:
+                body = b0
             else:
                 continue  # self-contact, or not involving the object
+            if float(dist[k]) > NEWTON_TOUCH_DIST:
+                continue  # within the collision margin, not touching
+            name = name_of(body)
             if tag not in name:
                 continue
             link = name.split(tag, 1)[1]
+            addr = int(efc_addr[k, 0])
+            f = abs(float(efc_force[addr])) if 0 <= addr < efc_force.size else 0.0
             acc = out.setdefault(link, [0.0, math.inf, 0])
-            acc[0] += pc.force
-            acc[1] = min(acc[1], pc.min_separation)
-            acc[2] += pc.points
+            acc[0] += f
+            acc[1] = min(acc[1], float(dist[k]))
+            acc[2] += 1
         return {k: Contact(v[0], v[1], v[2]) for k, v in out.items()}
