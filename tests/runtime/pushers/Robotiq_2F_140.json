@@ -1,0 +1,35 @@
+{
+  "size": [
+    0.04,
+    0.2,
+    0.005
+  ],
+  "start": [
+    0.0,
+    0.0,
+    0.21845
+  ],
+  "displacement": 0.034263,
+  "recorded": {
+    "Physx_compliant": {
+      "finger_joint_deg": -0.0,
+      "right_outer_knuckle_joint_deg": -0.0,
+      "left_fingertip_rotation_deg": 25.505,
+      "right_fingertip_rotation_deg": 25.656
+    },
+    "Newton_compliant": {
+      "finger_joint_deg": -0.003,
+      "right_outer_knuckle_joint_deg": -0.003,
+      "left_fingertip_rotation_deg": 25.574,
+      "right_fingertip_rotation_deg": 25.473
+    }
+  },
+  "expected": {
+    "compliant": {
+      "finger_joint_deg": -0.002,
+      "right_outer_knuckle_joint_deg": -0.002,
+      "left_fingertip_rotation_deg": 25.54,
+      "right_fingertip_rotation_deg": 25.564
+    }
+  }
+}
