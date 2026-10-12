@@ -12,8 +12,9 @@ Options (see README.md):
   --save-cube  with --gui --hold, write the cube's size and position to the last
                test's gripper preset, in cubes/ (grasp test) or fixed_cubes/
                (fixed-cube test), on R and on close; for the fixed-cylinder test,
-               the cylinder's size and position to fixed_cylinders/
-  --record-baseline  the fixed-cube / fixed-cylinder tests record the stalled
+               the cylinder's size and position to fixed_cylinders/; for the
+               pusher test, the plate and its end marker to pushers/
+  --record-baseline  the fixed-cube / fixed-cylinder / pusher tests record the stalled
                joint positions (and pad rotations) in their preset instead of
                checking them
 """
@@ -297,6 +298,14 @@ def _save_cube(nodeid: str) -> None:
     gripper = _gripper_in(nodeid.split("::")[-1])
     if gripper is None:
         print(f"--save-cube: no gripper in {nodeid}, nothing saved")
+        return
+    if "test_gripper_pusher" in nodeid:
+        from _pusher import save_pusher
+
+        try:
+            print(f"pusher saved: {save_pusher(stage_utils.get_current_stage(), gripper)}")
+        except RuntimeError as e:
+            print(f"--save-cube: {e}")
         return
     if "test_gripper_fixed_cylinder" in nodeid:
         from _cylinder import save_cylinder

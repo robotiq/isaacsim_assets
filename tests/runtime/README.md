@@ -97,6 +97,7 @@ Commit the JSON so the view travels with the test.
 | `test_gripper_grasp.py` | Every gripper and Physics variant closes at the datasheet speed on a free 1 kg cube resting on a static holder between the pads (`cubes/<gripper>.json`), toward full close so the cube stops the fingers. Checks: the driven joint stalls short of its target (position drift ≤ 0.1° / 0.05 mm) and the follower tracks it; both fingertips touch the cube (penetration ≤ 1 mm) and each pushes with ≥ 1 N, balanced within 20 % (40 % on the compliant variants, whose soft grip leaves the cube on its holder); no other link touches the cube; the pads stay within 2° of their open orientation; after reopening nothing touches the cube. PhysX runs this test at 1000 Hz (at the default 60 Hz the squeeze is not resolved). Contact forces: PhysX contact report, Newton `efc.force` (contacts within 1 mm only). |
 | `test_gripper_fixed_cube.py` | 2F-85 and 2F-140, PhysX and Newton, in two tests: `parallel_grip`, and `compliant` with its own box placement (`fixed_cubes/<gripper>_compliant.json`). Each closes at the datasheet speed on a cube fixed in space (a static box collider, no holder, `fixed_cubes/<gripper>.json`), toward full close so the cube stops the fingers. Checks: `finger_joint` and `right_outer_knuckle_joint` stall within 1° of the baseline recorded in the preset for that variant, at rest (drift ≤ 0.1°); the pads stay within 2° of their open orientation. PhysX runs at 1000 Hz. |
 | `test_gripper_fixed_cylinder.py` | 2F-85 and 2F-140 on all four Physics variants: closes at the datasheet speed on a cylinder fixed in space (a static collider, no holder, axis along the gripper's X for every gripper, one placement per gripper in `fixed_cylinders/<gripper>.json`), toward full close so the cylinder stops the fingers. PhysX and Newton share one baseline per grip (the mean of the two engines' recordings). Checks: `finger_joint` and `right_outer_knuckle_joint` within 1° of it (2° on compliant), at rest (drift ≤ 0.1°); each fingertip's rotation from its open orientation within 1° (1.5° on compliant) of it (about zero on parallel grip; the compliant pads tilt). PhysX runs at 1000 Hz. |
+| `test_gripper_pusher.py` | 2F-85 and 2F-140 on all four Physics variants, gripper held open: a flat plate on a prismatic joint (its own articulation; `pushers/<gripper>.json`) starts beyond the fingertips and is driven 50 mm/s toward the base by its displacement, pushing on the fingers with at most 50 N. Checks: everything is at rest; parallel grip stays rigid (the fingers stop the plate short of its end, pads rotate < 1°, knuckle joints within 1° of open); compliant bends (the plate reaches its end within 1 mm, pads rotate > 2°) and matches the baseline PhysX and Newton share within 2° (joints) / 1.5° (pads). PhysX runs at 1000 Hz. |
 
 `_scene.py` holds the shared setup (fresh stage, engine switch, play, Newton tuning) and `move_to`, which ramps a joint target at the gripper's datasheet finger speed (`FINGER_RATE`) instead of stepping it; `test_gripper_max_speed.py` deliberately steps, to saturate the velocity cap.
 
@@ -135,4 +136,17 @@ gripper, shared by its four variants). Its baselines also hold each fingertip's 
 ```bash
 ~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_fixed_cylinder.py -v --gui --hold --save-cube -k "2F_85 and Physx_parallel"
 ~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_fixed_cylinder.py -v --record-baseline
+```
+
+## Placing the pusher plate
+
+`test_gripper_pusher.py` reads `pushers/<gripper>.json`: the plate's size and start
+position, and its displacement toward the gripper base. Shape and move
+`/World/PusherRig/Pusher` to its start, and move the see-through `/World/PusherEnd` along
+Z to where the push should end; `--save-cube` saves both (one placement per gripper,
+shared by its four variants). Then record the compliant baselines:
+
+```bash
+~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_pusher.py -v --gui --hold --save-cube -k "2F_85 and Physx_parallel"
+~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_pusher.py -v --record-baseline
 ```
