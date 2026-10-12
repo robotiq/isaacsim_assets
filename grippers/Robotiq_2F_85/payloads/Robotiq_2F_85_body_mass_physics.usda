@@ -5,8 +5,8 @@
 # as a rigid-body child), so the mass is authored explicitly rather than left to
 # the engine. It is sublayered by every Physics variant payload (same pattern as
 # the 2F-140 and the shared fingertip bodies); variant-specific bits -- the
-# deliberately different diagonal inertia (and, for now, the ported link masses)
-# of the Newton solver -- are overridden on top of this layer in
+# deliberately different isotropic diagonal inertia of the Newton solver -- are
+# overridden on top of this layer in
 # ./Robotiq_2F_85_newton_common_physics.usda. Mass + CoM come from the gripper's
 # CAD; base_link is a fixed base, so its inertia is inert; the outer knuckles get
 # a small tensor on the order of the sibling knuckles.
