@@ -86,6 +86,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = pull_request ]; then
             echo "Stub: SimReady validation runs in the merge queue."
+            echo "### validate (stub)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Real SimReady validation runs once in the merge queue; a failure there removes this PR from the queue and is reported as a comment." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           echo "changes=$CHANGES gripper=$GRIPPER"
@@ -94,3 +96,22 @@ jobs:
             echo "::error::SimReady validation failed (or could not run)"
             exit 1
           fi
+
+  # A queue failure only shows as "removed from the merge queue" in the timeline
+  # while the PR box stays green (the stub passed), so say why on the PR itself.
+  notify-queue-failure:
+    needs: validate
+    if: failure() && github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment on the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # The queue branch is gh-readonly-queue/<base>/pr-<N>-<sha>.
+          pr="$(sed -E 's|.*/pr-([0-9]+)-.*|\1|' <<<"$GITHUB_REF")"
+          gh pr comment "$pr" --body "❌ Removed from the merge queue: SimReady validation failed. Details: $RUN_URL"
