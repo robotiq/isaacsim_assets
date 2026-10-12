@@ -39,14 +39,30 @@ def Xform "Robotiq_2F_85" (
         # root_joint and PhysicsArticulationRootAPI are the shared neutral defs in
         # ./Robotiq_2F_85_kinematics_physics.usda; this layer adds the PhysX articulation API.
 
-        # Finger joint velocity cap (deg/s): the one value shared by both PhysX grip
-        # variants, so they cannot drift apart. Armature and the other drive tuning stay
-        # in each variant payload.
+        # PhysX joint content identical in both PhysX grip variants, so they cannot drift
+        # apart: the finger_joint drive API, zero targets and velocity cap (deg/s), and
+        # the right_outer_knuckle mimic wiring. Drive gains, armature and the mimic
+        # stiffness stay in each variant payload.
         over "Joints"
         {
-            over "finger_joint"
+            over "finger_joint" (
+                prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:angular"]
+            )
             {
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
                 float physxJoint:maxJointVelocity = 86
+            }
+
+            # The right finger follows finger_joint through a PhysX mimic (gearing -1,
+            # mirror). Its stiffness (naturalFrequency / dampingRatio) is per variant.
+            over "right_outer_knuckle_joint" (
+                prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotZ"]
+            )
+            {
+                float physxJoint:maxJointVelocity = 10000
+                float physxMimicJoint:rotZ:gearing = -1
+                rel physxMimicJoint:rotZ:referenceJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
             }
         }
     }
