@@ -11,9 +11,11 @@ Options (see README.md):
                test's preset in views/ when the window is closed
   --save-cube  with --gui --hold, write the cube's size and position to the last
                test's gripper preset, in cubes/ (grasp test) or fixed_cubes/
-               (fixed-cube test), on R and on close
-  --record-baseline  the fixed-cube test records the stalled joint positions in
-               its fixed_cubes/ preset instead of checking them
+               (fixed-cube test), on R and on close; for the fixed-cylinder test,
+               the cylinder's size and position to fixed_cylinders/
+  --record-baseline  the fixed-cube / fixed-cylinder tests record the stalled
+               joint positions (and pad rotations) in their preset instead of
+               checking them
 """
 
 from __future__ import annotations
@@ -295,6 +297,14 @@ def _save_cube(nodeid: str) -> None:
     gripper = _gripper_in(nodeid.split("::")[-1])
     if gripper is None:
         print(f"--save-cube: no gripper in {nodeid}, nothing saved")
+        return
+    if "test_gripper_fixed_cylinder" in nodeid:
+        from _cylinder import save_cylinder
+
+        try:
+            print(f"cylinder saved: {save_cylinder(stage_utils.get_current_stage(), gripper)}")
+        except RuntimeError as e:
+            print(f"--save-cube: {e}")
         return
     fixed = "test_gripper_fixed_cube" in nodeid
     if fixed and "compliant" in nodeid.split("[", 1)[-1]:
