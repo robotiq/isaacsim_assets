@@ -17,12 +17,11 @@
 # in `gripper`, and commit its baseline in ci/simready/expected/.
 name: simready-validate-pr
 
-# Runs only in the merge queue (merge_group), not on every PR push: iterate and
-# review freely, and the gate runs once, on the final merge candidate. The
-# branch ruleset must enable "Require merge queue" with `validate` required.
+# The real validation runs only in the merge queue (merge_group), not on every
+# PR push: iterate and review freely, and the gate runs once, on the final merge
+# candidate. The ruleset requires the `validate` check on the PR head too, so on
+# pull_request only a stub `validate` runs and passes immediately.
 on:
-  # TEMPORARY: pull_request stays until the merge queue is enabled, so this PR
-  # can satisfy the required check. A follow-up removes it.
   pull_request:
   merge_group:
 
@@ -31,6 +30,7 @@ permissions:
 
 jobs:
   changes:
+    if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
       grippers: ${{ steps.scope.outputs.grippers }}
@@ -41,8 +41,8 @@ jobs:
       - name: Select grippers touched by this merge group
         id: scope
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+          BASE: ${{ github.event.merge_group.base_sha }}
+          HEAD: ${{ github.event.merge_group.head_sha }}
         run: |
           changed="$(git diff --name-only "$BASE...$HEAD")"
           echo "Changed files:"; echo "$changed"
@@ -84,6 +84,10 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           GRIPPER: ${{ needs.gripper.result }}
         run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            echo "Stub: SimReady validation runs in the merge queue."
+            exit 0
+          fi
           echo "changes=$CHANGES gripper=$GRIPPER"
           # `gripper` is "skipped" when no gripper folder changed: that passes.
           if [ "$CHANGES" != success ] || { [ "$GRIPPER" != success ] && [ "$GRIPPER" != skipped ]; }; then
