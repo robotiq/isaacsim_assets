@@ -19,7 +19,7 @@ formulation is rigid (no oscillation), unlike an open tree coupled by independen
 constraints. VERIFIED live in Isaac+Newton (standalone and full UR5e teleop): drives 0..0.80
 rad and back, settling with zero joint velocity (rigid) at every commanded position.
 
-RV.011: shared Newton+MuJoCo tuning (same as newton_compliant, from the fourbar layer) --
+RV.011: shared Newton+MuJoCo tuning (same as newton_compliant, from the newton_fourbar layer) --
 the mjc:* params tune the MuJoCo-Warp (Newton) solver; no Physx* runtime data here."""
     metersPerUnit = 1
     subLayers = [
@@ -41,7 +41,7 @@ over "Robotiq_2F_85"
         over "Joints"
         {
             # Parallel: distal coupler DOF removed (outer_finger welded rigid below). The
-            # live five-bar revolutes live in the compliant variant; the shared fourbar
+            # live five-bar revolutes live in the compliant variant; the shared newton_fourbar
             # layer leaves outer_finger_joint untouched so each variant decides its fate.
             over "left_outer_finger_joint" (active = false) {}
             over "right_outer_finger_joint" (active = false) {}

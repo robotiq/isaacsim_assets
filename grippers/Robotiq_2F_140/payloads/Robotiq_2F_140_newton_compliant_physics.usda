@@ -16,7 +16,7 @@ variant instead suppresses + welds those joints.
 
 Mirrors the 2F-85 Newton variant of the same name; only the 2F-140 values differ.
 
-RV.011: shared Newton+MuJoCo tuning (from the fourbar layer) -- the mjc:* params tune the
+RV.011: shared Newton+MuJoCo tuning (from the newton_fourbar layer) -- the mjc:* params tune the
 MuJoCo-Warp (Newton) solver; no Physx* data here."""
     metersPerUnit = 1
     subLayers = [
@@ -38,7 +38,7 @@ over "Robotiq_2F_140"
         over "Joints"
         {
             # Compliant: the distal coupler DOF stays live. These revolutes are the
-            # five-bar's distal joints (the shared fourbar layer leaves outer_finger_joint
+            # five-bar's distal joints (the shared newton_fourbar layer leaves outer_finger_joint
             # untouched so each variant decides its fate). MuJoCo tuning only; the neutral
             # frames/limits/bodies come from the kinematics layer.
             over "left_outer_finger_joint" (
