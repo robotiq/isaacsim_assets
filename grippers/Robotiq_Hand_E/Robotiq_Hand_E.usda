@@ -4,7 +4,6 @@
         # SR.001 requires these identity fields authored DIRECTLY in the root layer's
         # customLayerData (not only nested in SimReady_Metadata). They mirror the matching
         # SimReady_Metadata entries below.
-        string asset_name = "Robotiq_Hand_E"
         string asset_type = "gripper"
         string source_file = "ROBOTIQ_HAND-E_NO_FINGERTIPS_20190924.step"
         string usd_date_generated = "2026-10-07"
