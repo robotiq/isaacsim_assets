@@ -1,0 +1,52 @@
+{
+  "size": [
+    0.082636,
+    0.082636,
+    0.04
+  ],
+  "position": [
+    0.0,
+    0.0,
+    0.143789
+  ],
+  "recorded": {
+    "Physx_parallel_grip": {
+      "finger_joint_deg": 14.316,
+      "right_outer_knuckle_joint_deg": 14.316,
+      "left_fingertip_rotation_deg": 0.0,
+      "right_fingertip_rotation_deg": 0.04
+    },
+    "Physx_compliant": {
+      "finger_joint_deg": 39.335,
+      "right_outer_knuckle_joint_deg": 39.255,
+      "left_fingertip_rotation_deg": 36.337,
+      "right_fingertip_rotation_deg": 36.867
+    },
+    "Newton_parallel_grip": {
+      "finger_joint_deg": 14.702,
+      "right_outer_knuckle_joint_deg": 14.702,
+      "left_fingertip_rotation_deg": 0.0,
+      "right_fingertip_rotation_deg": 0.148
+    },
+    "Newton_compliant": {
+      "finger_joint_deg": 42.38,
+      "right_outer_knuckle_joint_deg": 42.379,
+      "left_fingertip_rotation_deg": 38.695,
+      "right_fingertip_rotation_deg": 38.757
+    }
+  },
+  "expected": {
+    "parallel_grip": {
+      "finger_joint_deg": 14.509,
+      "right_outer_knuckle_joint_deg": 14.509,
+      "left_fingertip_rotation_deg": 0.0,
+      "right_fingertip_rotation_deg": 0.094
+    },
+    "compliant": {
+      "finger_joint_deg": 40.858,
+      "right_outer_knuckle_joint_deg": 40.817,
+      "left_fingertip_rotation_deg": 37.516,
+      "right_fingertip_rotation_deg": 37.812
+    }
+  }
+}
