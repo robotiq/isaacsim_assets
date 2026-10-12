@@ -94,5 +94,22 @@ Commit the JSON so the view travels with the test.
 | `test_gripper_close.py` | Each gripper on every Physics variant (2F-85 and 2F-140: `Physx_parallel_grip`, `Physx_compliant`, `Newton_parallel_grip`, `Newton_compliant`; Hand-E: `PhysX`, `Newton`) is open by default, its driven joint closes to a target at the datasheet finger speed (150 mm/s, ramped target), and the coupled follower joint tracks it: `finger_joint` / right outer knuckle on the 2F, `left_finger_joint` / `right_finger_joint` on the Hand-E. The engine is switched per case with `SimulationManager.switch_physics_engine`; the Newton 2F cases run the gripper's `newton/apply_gripper_tuning.py` once the sim plays. |
 | `test_gripper_parallel.py` | 2F-85 and 2F-140 on all four Physics variants: through a close / open cycle at the datasheet finger speed (no object) the inner fingers (pads) keep their open orientation, sampled every 5 frames: within 2° at rest (closed and reopened) for every variant, and while moving within 2° on the parallel-grip variants and 3° on the compliant ones (the springs deflect under the fingers' inertia). The finger joint must come back to open. |
 | `test_gripper_max_speed.py` | 2F-85 and 2F-140, `parallel_grip` and `compliant`, PhysX and Newton: a full close commanded in one step peaks at the 86 deg/s finger joint velocity cap (datasheet 150 mm/s) (within +5 % / -10 %). The Newton cases are `xfail` (strict): the MuJoCo solver ignores joint velocity limits, so Newton runs at ~255 deg/s. |
+| `test_gripper_grasp.py` | Every gripper and Physics variant closes at the datasheet speed on a free 1 kg cube resting on a static holder between the pads (`cubes/<gripper>.json`), toward full close so the cube stops the fingers. Checks: the driven joint stalls short of its target (position drift ≤ 0.1° / 0.05 mm) and the follower tracks it; both fingertips touch the cube (penetration ≤ 1 mm) and each pushes with ≥ 1 N, balanced within 20 % (40 % on the compliant variants, whose soft grip leaves the cube on its holder); no other link touches the cube; the pads stay within 2° of their open orientation; after reopening nothing touches the cube. PhysX runs this test at 1000 Hz (at the default 60 Hz the squeeze is not resolved). Contact forces: PhysX contact report, Newton `efc.force` (contacts within 1 mm only). |
 
 `_scene.py` holds the shared setup (fresh stage, engine switch, play, Newton tuning) and `move_to`, which ramps a joint target at the gripper's datasheet finger speed (`FINGER_RATE`) instead of stepping it; `test_gripper_max_speed.py` deliberately steps, to saturate the velocity cap.
+
+## Placing the grasp cube
+
+Each gripper's preset (`cubes/<gripper>.json`) holds the cube's edge length and centre
+and the holder's size and X / Y position; the holder's top is always placed at the
+cube's bottom. Run one case of that gripper with `--save-cube`, move / scale
+`/World/Cube` and `/World/CubeHolder` in the Isaac UI during the hold, press **R** to
+replay with the new layout (it is saved first), and close the window to keep it:
+
+```bash
+~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_grasp.py -v --gui --hold --save-cube -k "2F_85 and Physx_parallel"
+```
+
+A non-uniform cube scale is averaged into its edge length and rotations are dropped.
+The cube's size is baked into `UsdGeom.Cube.size` (Newton ignores scale on primitive
+colliders); the holder is a scaled box mesh, whose scale Newton does apply.
