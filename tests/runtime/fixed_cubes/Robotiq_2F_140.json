@@ -1,0 +1,22 @@
+{
+  "size": [
+    0.05,
+    0.05,
+    0.016214
+  ],
+  "position": [
+    0.0,
+    0.0,
+    0.176483
+  ],
+  "expected": {
+    "Physx_parallel_grip": {
+      "finger_joint_deg": 29.163,
+      "right_outer_knuckle_joint_deg": 29.163
+    },
+    "Newton_parallel_grip": {
+      "finger_joint_deg": 29.445,
+      "right_outer_knuckle_joint_deg": 29.445
+    }
+  }
+}
