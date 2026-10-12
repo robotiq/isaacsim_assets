@@ -8,5 +8,15 @@
     0.0,
     0.0,
     0.124552
-  ]
+  ],
+  "expected": {
+    "Physx_parallel_grip": {
+      "finger_joint_deg": 30.753,
+      "right_outer_knuckle_joint_deg": 30.753
+    },
+    "Newton_parallel_grip": {
+      "finger_joint_deg": 30.846,
+      "right_outer_knuckle_joint_deg": 30.846
+    }
+  }
 }
