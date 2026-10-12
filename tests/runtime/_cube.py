@@ -15,11 +15,13 @@ overlapping (PhysX would kick the cube apart at play). Its size and its X / Y
 position come from the preset; without a "holder" entry it is a thin plate centred
 under the cube.
 
-``add_fixed_cube`` builds the fixed-cube test's cube instead (preset
-``fixed_cubes/<gripper folder>.json``, same "size" / "position" keys): a static box
-collider with no rigid body and no holder, so nothing can move it. That preset also
-keeps the test's recorded joint baselines under "expected" (see
-test_gripper_fixed_cube.py); moving or resizing the cube drops them.
+``add_fixed_cube`` builds the fixed-cube test's box instead (preset
+``fixed_cubes/<gripper folder>.json``: "size" [sx, sy, sz] and "position", its
+centre): a static collider with no rigid body and no holder, so nothing can move it.
+Like the holder it is a unit box mesh scaled by ``xformOp:scale``, so it can be
+stretched per axis with the scale gizmo on both engines. That preset also keeps the
+test's recorded joint baselines under "expected" (see test_gripper_fixed_cube.py);
+moving or resizing the box drops them.
 
 ``save_cube`` reads both back from the stage after someone moved / scaled them in
 the Isaac UI (``--save-cube``, see conftest.py).
@@ -99,11 +101,27 @@ def _define_cube(stage: Usd.Stage, preset: dict) -> UsdGeom.Cube:
     return cube
 
 
-def add_fixed_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
-    """The fixed-cube test's cube: a collider only (static), no holder."""
-    cube = _define_cube(stage, load_preset(gripper, fixed=True))
-    cube.GetDisplayColorAttr().Set([Gf.Vec3f(0.2, 0.45, 0.8)])
-    return cube
+def add_fixed_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Mesh:
+    """The fixed-cube test's box: a collider only (static), no holder."""
+    preset = load_preset(gripper, fixed=True)
+    size = preset["size"]
+    size = [float(v) for v in size] if isinstance(size, list) else [float(size)] * 3
+    mesh = _unit_box_mesh(stage, CUBE_PATH)
+    xf = UsdGeom.XformCommonAPI(mesh.GetPrim())
+    xf.SetTranslate(Gf.Vec3d(*preset["position"]))
+    xf.SetScale(Gf.Vec3f(*size))
+    UsdPhysics.CollisionAPI.Apply(mesh.GetPrim())
+    UsdPhysics.MeshCollisionAPI.Apply(mesh.GetPrim()).CreateApproximationAttr().Set(UsdPhysics.Tokens.convexHull)
+    mesh.GetDisplayColorAttr().Set([Gf.Vec3f(0.2, 0.45, 0.8)])
+    return mesh
+
+
+def _local_trs(prim: Usd.Prim) -> tuple[list[float], list[float], bool]:
+    """(translation, per-axis scale, rotated?) of ``prim``'s local transform,
+    whatever xformOps the Isaac gizmos authored."""
+    t = Gf.Transform(UsdGeom.Xformable(prim).GetLocalTransformation())
+    rotated = abs(t.GetRotation().GetAngle()) > 1e-4
+    return [float(v) for v in t.GetTranslation()], [float(v) for v in t.GetScale()], rotated
 
 
 def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
@@ -128,12 +146,29 @@ def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
 
 def save_cube(stage: Usd.Stage, gripper: str, fixed: bool = False) -> Path:
     """Write the cube (edge, position) and the holder (size, position) to the
-    gripper's preset (the fixed-cube test's with ``fixed``). A non-uniform cube scale
-    is averaged; rotations are not kept."""
+    gripper's preset; with ``fixed``, the fixed-cube test's box (per-axis size,
+    position). A non-uniform grasp-cube scale is averaged; rotations are not kept."""
     prim = stage.GetPrimAtPath(CUBE_PATH)
     if not prim:
         raise RuntimeError(f"no {CUBE_PATH} on the stage")
     notes = []
+    if fixed:
+        t, scale, rotated = _local_trs(prim)
+        if rotated:
+            notes.append("box rotation ignored")
+        if prim.IsA(UsdGeom.Cube):  # an older preset's primitive cube
+            scale = [v * float(UsdGeom.Cube(prim).GetSizeAttr().Get()) for v in scale]
+        data = {"size": [round(v, 6) for v in scale], "position": [round(v, 6) for v in t]}
+        old = load_preset(gripper, fixed) if preset_path(gripper, fixed).is_file() else {}
+        if "expected" in old:
+            if (data["size"], data["position"]) == (old.get("size"), old.get("position")):
+                data["expected"] = old["expected"]
+            else:
+                notes.append("box moved: recorded joint baselines dropped, record them again with --record-baseline")
+        path = write_preset(gripper, data, fixed)
+        if notes:
+            print("cube preset:", "; ".join(notes))
+        return path
     t, r, s, _pivot, _order = UsdGeom.XformCommonAPI(prim).GetXformVectors(Usd.TimeCode.Default())
     scale = [float(v) for v in s]
     size = float(UsdGeom.Cube(prim).GetSizeAttr().Get()) * sum(scale) / 3.0
@@ -145,12 +180,7 @@ def save_cube(stage: Usd.Stage, gripper: str, fixed: bool = False) -> Path:
     old = load_preset(gripper, fixed) if preset_path(gripper, fixed).is_file() else {}
     if "mass" in old:
         data["mass"] = old["mass"]
-    if "expected" in old:
-        if (data["size"], data["position"]) == (old.get("size"), old.get("position")):
-            data["expected"] = old["expected"]
-        else:
-            notes.append("cube moved: recorded joint baselines dropped, record them again with --record-baseline")
-    hprim = None if fixed else stage.GetPrimAtPath(HOLDER_PATH)
+    hprim = stage.GetPrimAtPath(HOLDER_PATH)
     if hprim:
         ht, hr, hs, _p, _o = UsdGeom.XformCommonAPI(hprim).GetXformVectors(Usd.TimeCode.Default())
         if any(abs(float(v)) > 1e-6 for v in hr):
