@@ -5,7 +5,7 @@
     # frames/limits/bodies live in ./Robotiq_2F_140_kinematics_physics.usda
     # (sublayered below); this layer OVERLAYS only the PhysX engine physics --
     # the finger_joint driver + armature and the mimic coupling that ties the
-    # passive joints to it -- suppresses the compliant four-bar's unused revolutes
+    # passive joints to it -- suppresses the compliant five-bar's unused revolutes
     # (active=false), and welds outer_knuckle<->outer_finger rigid. Drive gains,
     # mimic axes (rotZ/rotX) and gearings are the 85's; only the joint positions
     # (in the kinematics layer) and the driven range are the 2F-140's.
@@ -32,7 +32,7 @@ def Xform "Robotiq_2F_140" (
 
         # Engine overlay on the shared neutral joints. finger_joint is the single
         # driven DOF; the rest of the four-bar is reproduced with mimic joints (no
-        # closed loop). The compliant four-bar's outer_finger / inner_knuckle
+        # closed loop). The compliant five-bar's outer_finger / inner_knuckle
         # revolutes are not used here -> suppressed (active=false); the
         # outer_knuckle<->outer_finger link is a rigid FixedJoint weld (below).
         over "Joints"
@@ -126,7 +126,7 @@ def Xform "Robotiq_2F_140" (
                 rel physxMimicJoint:rotX:referenceJoint = </Robotiq_2F_140/Robotiq_2F_140/Joints/finger_joint>
             }
 
-            # Compliant four-bar joints the open-tree parallel grip does not use.
+            # Compliant five-bar joints the open-tree parallel grip does not use.
             over "left_outer_finger_joint" (active = false) {}
             over "right_outer_finger_joint" (active = false) {}
             over "left_inner_knuckle_joint" (active = false) {}

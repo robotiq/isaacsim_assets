@@ -8,7 +8,7 @@ Select `Physics = Newton_compliant` (encompassing grip) or `Newton_parallel_grip
 ensure the scene has a `PhysicsScene`, and play. The gripper is **open by default**
 (`finger_joint` drive target `0`); drive `finger_joint` toward 45° (≈0.785 rad) to close.
 
-Everything the solver needs is baked into the payloads — the shared four-bar
+Everything the solver needs is baked into the payloads — the shared Newton finger linkage
 ([`../payloads/Robotiq_2F_140_newton_fourbar_physics.usda`](../payloads/Robotiq_2F_140_newton_fourbar_physics.usda)),
 the shared Newton bodies/colliders
 ([`../payloads/Robotiq_2F_140_newton_common_physics.usda`](../payloads/Robotiq_2F_140_newton_common_physics.usda)),
@@ -37,7 +37,7 @@ from the 2F-85). Two bodies are deliberately left out: `base_link` keeps its CAD
 inertia from the shared mass layer (it is the fixed/welded base, so its inertia is
 inert), and the fingertips keep the real pad inertia (they are welded to `inner_finger`). The extra
 rotational inertia stabilizes the soft Newton loop-closure equalities so the weak
-parallel-grip spring holds; with physically-small inertias the four-bar goes
+parallel-grip spring holds; with physically-small inertias the linkage goes
 floppy and the fingertips sag ~20° out of parallel. Treat it like the
 `mjc:armature`/`damping` tuning — do **not** replace it with CAD inertias without
 re-tuning the loop-closure `solref` (or adding passive-joint armature).
