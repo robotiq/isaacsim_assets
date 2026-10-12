@@ -15,6 +15,12 @@ overlapping (PhysX would kick the cube apart at play). Its size and its X / Y
 position come from the preset; without a "holder" entry it is a thin plate centred
 under the cube.
 
+``add_fixed_cube`` builds the fixed-cube test's cube instead (preset
+``fixed_cubes/<gripper folder>.json``, same "size" / "position" keys): a static box
+collider with no rigid body and no holder, so nothing can move it. That preset also
+keeps the test's recorded joint baselines under "expected" (see
+test_gripper_fixed_cube.py); moving or resizing the cube drops them.
+
 ``save_cube`` reads both back from the stage after someone moved / scaled them in
 the Isaac UI (``--save-cube``, see conftest.py).
 
@@ -32,6 +38,7 @@ from pathlib import Path
 from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics, Vt
 
 CUBES_DIR = Path(__file__).resolve().parent / "cubes"
+FIXED_CUBES_DIR = Path(__file__).resolve().parent / "fixed_cubes"
 CUBE_PATH = "/World/Cube"
 HOLDER_PATH = "/World/CubeHolder"
 
@@ -40,15 +47,22 @@ HOLDER_FRACTION = 0.5  # default holder footprint, as a fraction of the cube edg
 HOLDER_THICKNESS = 0.005  # m, default
 
 
-def preset_path(gripper: str) -> Path:
-    return CUBES_DIR / f"{gripper}.json"
+def preset_path(gripper: str, fixed: bool = False) -> Path:
+    return (FIXED_CUBES_DIR if fixed else CUBES_DIR) / f"{gripper}.json"
 
 
-def load_preset(gripper: str) -> dict:
-    p = preset_path(gripper)
+def load_preset(gripper: str, fixed: bool = False) -> dict:
+    p = preset_path(gripper, fixed)
     if not p.is_file():
         raise FileNotFoundError(f"no cube preset {p}: place one with --gui --hold --save-cube -k {gripper}")
     return json.loads(p.read_text())
+
+
+def write_preset(gripper: str, data: dict, fixed: bool = False) -> Path:
+    path = preset_path(gripper, fixed)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+    return path
 
 
 def holder_layout(preset: dict) -> tuple[list[float], list[float]]:
@@ -75,15 +89,27 @@ def _unit_box_mesh(stage: Usd.Stage, path: str) -> UsdGeom.Mesh:
     return mesh
 
 
-def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
-    preset = load_preset(gripper)
+def _define_cube(stage: Usd.Stage, preset: dict) -> UsdGeom.Cube:
     cube = UsdGeom.Cube.Define(stage, CUBE_PATH)
     cube.GetSizeAttr().Set(float(preset["size"]))
     h = float(preset["size"]) / 2.0
     cube.GetExtentAttr().Set([Gf.Vec3f(-h, -h, -h), Gf.Vec3f(h, h, h)])
     UsdGeom.XformCommonAPI(cube.GetPrim()).SetTranslate(Gf.Vec3d(*preset["position"]))
+    UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+    return cube
+
+
+def add_fixed_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
+    """The fixed-cube test's cube: a collider only (static), no holder."""
+    cube = _define_cube(stage, load_preset(gripper, fixed=True))
+    cube.GetDisplayColorAttr().Set([Gf.Vec3f(0.2, 0.45, 0.8)])
+    return cube
+
+
+def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
+    preset = load_preset(gripper)
+    cube = _define_cube(stage, preset)
     prim = cube.GetPrim()
-    UsdPhysics.CollisionAPI.Apply(prim)
     UsdPhysics.RigidBodyAPI.Apply(prim)
     UsdPhysics.MassAPI.Apply(prim).CreateMassAttr().Set(float(preset.get("mass", DEFAULT_MASS)))
     PhysxSchema.PhysxRigidBodyAPI.Apply(prim).CreateSleepThresholdAttr().Set(0.0)  # keep reporting contacts
@@ -100,9 +126,10 @@ def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
     return cube
 
 
-def save_cube(stage: Usd.Stage, gripper: str) -> Path:
+def save_cube(stage: Usd.Stage, gripper: str, fixed: bool = False) -> Path:
     """Write the cube (edge, position) and the holder (size, position) to the
-    gripper's preset. A non-uniform cube scale is averaged; rotations are not kept."""
+    gripper's preset (the fixed-cube test's with ``fixed``). A non-uniform cube scale
+    is averaged; rotations are not kept."""
     prim = stage.GetPrimAtPath(CUBE_PATH)
     if not prim:
         raise RuntimeError(f"no {CUBE_PATH} on the stage")
@@ -115,19 +142,22 @@ def save_cube(stage: Usd.Stage, gripper: str) -> Path:
     if any(abs(float(v)) > 1e-6 for v in r):
         notes.append(f"cube rotation {list(r)} ignored")
     data = {"size": round(size, 6), "position": [round(float(v), 6) for v in t]}
-    old = load_preset(gripper) if preset_path(gripper).is_file() else {}
+    old = load_preset(gripper, fixed) if preset_path(gripper, fixed).is_file() else {}
     if "mass" in old:
         data["mass"] = old["mass"]
-    hprim = stage.GetPrimAtPath(HOLDER_PATH)
+    if "expected" in old:
+        if (data["size"], data["position"]) == (old.get("size"), old.get("position")):
+            data["expected"] = old["expected"]
+        else:
+            notes.append("cube moved: recorded joint baselines dropped, record them again with --record-baseline")
+    hprim = None if fixed else stage.GetPrimAtPath(HOLDER_PATH)
     if hprim:
         ht, hr, hs, _p, _o = UsdGeom.XformCommonAPI(hprim).GetXformVectors(Usd.TimeCode.Default())
         if any(abs(float(v)) > 1e-6 for v in hr):
             notes.append(f"holder rotation {list(hr)} ignored")
         # Height is not kept: add_cube always puts the holder's top at the cube's bottom.
         data["holder"] = {"size": [round(float(v), 6) for v in hs], "position": [round(float(v), 6) for v in ht][:2]}
-    path = preset_path(gripper)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n")
+    path = write_preset(gripper, data, fixed)
     if notes:
         print("cube preset:", "; ".join(notes))
     return path

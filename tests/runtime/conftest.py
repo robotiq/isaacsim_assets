@@ -9,8 +9,11 @@ Options (see README.md):
   --hold       with --gui, keep the window open after the last test until closed
   --save-view  with --gui --hold, write the camera pose + lights to the last
                test's preset in views/ when the window is closed
-  --save-cube  with --gui --hold, write the grasp cube's size and position to
-               the last test's gripper preset in cubes/ (on R and on close)
+  --save-cube  with --gui --hold, write the cube's size and position to the last
+               test's gripper preset, in cubes/ (grasp test) or fixed_cubes/
+               (fixed-cube test), on R and on close
+  --record-baseline  the fixed-cube test records the stalled joint positions in
+               its fixed_cubes/ preset instead of checking them
 """
 
 from __future__ import annotations
@@ -33,7 +36,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--save-cube", action="store_true", default=False,
         help="with --gui --hold, save /World/Cube (size + position, moved/scaled in the Isaac UI) to the last "
-             "test's gripper preset in cubes/: before each R replay, so the replay uses it, and on window close",
+             "test's gripper preset in cubes/ (fixed_cubes/ for the fixed-cube test): before each R replay, "
+             "so the replay uses it, and on window close",
+    )
+    parser.addoption(
+        "--record-baseline", action="store_true", default=False,
+        help="test_gripper_fixed_cube.py: write the stalled joint positions to the gripper's fixed_cubes/ "
+             "preset as the expected values, instead of checking them",
     )
     parser.addoption(
         "--screenshot", default=None, metavar="DIR",
@@ -287,8 +296,9 @@ def _save_cube(nodeid: str) -> None:
     if gripper is None:
         print(f"--save-cube: no gripper in {nodeid}, nothing saved")
         return
+    fixed = "test_gripper_fixed_cube" in nodeid
     try:
-        print(f"cube saved: {save_cube(stage_utils.get_current_stage(), gripper)}")
+        print(f"cube saved: {save_cube(stage_utils.get_current_stage(), gripper, fixed)}")
     except RuntimeError as e:
         print(f"--save-cube: {e}")
 
