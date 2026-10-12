@@ -8,5 +8,15 @@
     0.0,
     0.0,
     0.156906
-  ]
+  ],
+  "expected": {
+    "Physx_compliant": {
+      "finger_joint_deg": 30.788,
+      "right_outer_knuckle_joint_deg": 30.762
+    },
+    "Newton_compliant": {
+      "finger_joint_deg": 31.753,
+      "right_outer_knuckle_joint_deg": 31.753
+    }
+  }
 }
