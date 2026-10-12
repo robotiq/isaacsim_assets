@@ -103,7 +103,18 @@ try:
         a stale one and read a frozen 0. The LIVE solver is the one being stepped:
         its Data.time tracks the timeline while a stale one's is frozen far in the
         past. When more than one is alive, pick the one whose Data.time is closest
-        to the current sim time."""
+        to the current sim time.
+
+        Isaac's Newton stage knows its current solver: ask it first (cheap, and
+        never a stale one); the heap scan is only the fallback."""
+        try:
+            import isaacsim.physics.newton as newton_ext
+            ns=newton_ext.acquire_stage()
+            s=getattr(ns,"solver",None) if ns is not None else None
+            if s is not None and getattr(s,"mjw_model",None) is not None and getattr(s,"mjw_data",None) is not None:
+                return s
+        except Exception:
+            pass
         solvers=[o for o in gc.get_objects()
                  if type(o).__name__=="SolverMuJoCo" and "mujoco" in getattr(type(o),"__module__","")
                  and getattr(o,"mjw_model",None) is not None and getattr(o,"mjw_data",None) is not None]
