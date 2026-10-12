@@ -1,0 +1,215 @@
+#usda 1.0
+(
+    # Engine-neutral collider declarations for the 2F-140: which shared /Meshes CAD
+    # meshes collide, as UsdPhysics convex hulls (PhysicsCollisionAPI +
+    # PhysicsMeshCollisionAPI, physics:approximation, physics:collisionEnabled).
+    # Sublayered by every Physics variant payload, so it never composes under
+    # Physics = "None". The engine layers add only their own collision schemas and
+    # parameters on top: ./Robotiq_2F_140_physx_common_physics.usda (Physx*) and
+    # ./Robotiq_2F_140_newton_common_physics.usda (Newton*, + the pad material binding);
+    # Mjc* tuning is in ./Robotiq_2F_140_newton_fourbar_physics.usda.
+    #
+    # Only the tip collider of the selected "Fingertip" variant exists in the
+    # composed stage; the overs for the other tips are inert. They are authored here
+    # rather than in the fingertip payloads so a tip collider never composes under
+    # Physics = "None" (which would leave a world-static actor with no rigid body).
+    defaultPrim = "Robotiq_2F_140"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "Meshes"
+{
+    over "base_link"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_outer_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_outer_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_outer_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_outer_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_inner_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_inner_finger"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "left_inner_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "right_inner_knuckle"
+    {
+        over "mesh_0" (
+            prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+        )
+        {
+            uniform token physics:approximation = "convexHull"
+            bool physics:collisionEnabled = 1
+        }
+    }
+
+    over "fingertip_left"
+    {
+        over "tip_flat"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        over "tip_silicone"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        over "tip_vgroove"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        over "tip_tsf140"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+    }
+
+    over "fingertip_right"
+    {
+        over "tip_flat"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        over "tip_silicone"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        over "tip_vgroove"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+
+        over "tip_tsf140"
+        {
+            over "mesh_0" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]
+            )
+            {
+                uniform token physics:approximation = "convexHull"
+                bool physics:collisionEnabled = 1
+            }
+        }
+    }
+}
