@@ -78,7 +78,8 @@ over "Robotiq_2F_85" (
     )
 
     # robotJoints is variant-specific -- the four Physics variants model the 2F-85
-    # four-bar with different joint sets -- so it is authored per-variant here rather
+    # finger linkage (a five-bar in the compliant variants, a four-bar in the parallel
+    # ones) with different joint sets -- so it is authored per-variant here rather
     # than once on the default prim. (A default-prim value is Local-strength and could
     # not be overridden by a variant.) robotLinks stays shared above: the bodies are
     # the same across variants. Each list is a small set of joint paths, not the joint

@@ -1,14 +1,15 @@
 #usda 1.0
 (
     defaultPrim = "Robotiq_2F_85"
-    doc = """Shared Newton (MuJoCo-Warp) four-bar physics for the Robotiq 2F-85, common to
-every Newton grip formulation (newton_compliant, newton_parallel_grip, ...).
+    doc = """Shared Newton (MuJoCo-Warp) finger-linkage physics for the Robotiq 2F-85,
+common to every Newton grip formulation (newton_compliant, newton_parallel_grip, ...).
 
-Single source of truth for the closed four-bar linkage + its MuJoCo solver tuning that
+Single source of truth for the closed finger linkage (a five-bar; a four-bar once
+newton_parallel_grip welds the outer finger) + its MuJoCo solver tuning that
 is IDENTICAL across those variants: the finger_joint driver, the right_outer_knuckle
 NewtonMimic, the pad preload springs on the inner_finger joints (the same joint and
 preload as PhysX), the loop_closure spherical equalities (MjcEqualityConnectAPI) that
-close the four-bar at the inner_finger <-> inner_knuckle pin in place of the
+close the linkage loop at the inner_finger <-> inner_knuckle pin in place of the
 inner_finger_knuckle revolutes, the inner_knuckle / inner_finger collision groups, and the
 per-material / per-mesh MuJoCo tuning (MjcMaterialAPI,
 MjcCollisionAPI). Also authors the shared fixed-base root_joint + articulation root.
@@ -16,7 +17,7 @@ MjcCollisionAPI). Also authors the shared fixed-base root_joint + articulation r
 Each Newton variant payload sublayers this (stronger than kinematics, so these overlays
 win over the neutral joint defs) and adds ONLY its variant-specific distal-coupler delta:
   * newton_compliant:     left/right_outer_finger_joint as live revolute couplers
-                          (the four-bar's distal DOF -> encompassing grip).
+                          (the five-bar's second DOF -> encompassing grip).
   * newton_parallel_grip: left/right_outer_finger_joint SUPPRESSED (active=false) +
                           outer_finger WELDED to outer_knuckle (distal DOF removed
                           -> parallel grip).
@@ -57,7 +58,7 @@ over "Robotiq_2F_85"
         # overlays add ONLY the Newton/MuJoCo engine physics: the finger_joint driver,
         # the right_outer_knuckle NewtonMimic, mjc solver params, and the pad preload
         # springs on the inner_finger joints (same joint and same preload as PhysX).
-        # Newton closes the four-bar with the loop_closure spherical equalities below
+        # Newton closes the linkage loop with the loop_closure spherical equalities below
         # (kept local) at the inner_finger <-> inner_knuckle pin, instead of the
         # inner_finger_knuckle revolutes -> those are suppressed (active=false).
         # left/right_outer_finger_joint is NOT touched here -- its treatment is the
@@ -110,7 +111,7 @@ over "Robotiq_2F_85"
                 uniform double[] mjc:solreflimit = [0.02, 2]
             }
 
-            # PhysX four-bar revolutes Newton replaces with the loop_closure spherical
+            # PhysX loop revolutes Newton replaces with the loop_closure spherical
             # equalities (below) -> suppressed. The tree is then base -> outer_knuckle ->
             # outer_finger -> inner_finger (pad) and base -> inner_knuckle, exactly the
             # PhysX body order, so no joint needs its bodies swapped for Newton.

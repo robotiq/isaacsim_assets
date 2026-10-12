@@ -59,8 +59,9 @@ over "Robotiq_2F_140" (
     )
 
     # robotJoints is variant-specific -- the four Physics variants model the 2F-140
-    # four-bar with different joint sets -- so it is authored per-variant rather than
-    # on the default prim. Each list names the articulated joints of that variant
+    # finger linkage (a five-bar in the compliant variants, a four-bar in the parallel
+    # ones) with different joint sets -- so it is authored per-variant rather than on
+    # the default prim. Each list names the articulated joints of that variant
     # (fingertip welds and Newton's loop_closure equalities are not listed, as on the
     # 2F-85). robotLinks stays shared above: the bodies are the same across variants.
     variantSet "Physics" = {
