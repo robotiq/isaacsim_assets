@@ -279,6 +279,11 @@ and `root_joint`, the `/Meshes` collision groups and the PhysX collision schemas
 `Physx_compliant`. Newton variants never sublayer it and add their own collision schemas in
 `<gripper>_newton_common_physics.usda`.
 
+The 2F-85 and 2F-140 `payloads/*_physics.usda` layers are **generated** from one template
+by [`devel_helpers/gen_2f_layers.py`](../devel_helpers/gen_2f_layers.py) (per-gripper values
+in its `GRIPPERS` table), so the two grippers cannot drift apart: edit the script and re-run
+it rather than editing those layers; the `generated-layers` CI check fails otherwise.
+
 | Variant | What it gives you |
 |---|---|
 | `Standard` | The stock plastic pad (`fingertipsstep`) — the default, behaves like the previous single-part finger |
