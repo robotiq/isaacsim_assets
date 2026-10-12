@@ -3,7 +3,7 @@
     # PhysX "compliant" variant of the 2F-85: the shared neutral joint
     # frames/limits/bodies live in ./Robotiq_2F_85_kinematics_physics.usda
     # (sublayered below); this layer OVERLAYS only the PhysX engine physics --
-    # drive gains, the right_outer_knuckle mimic, and the closed four-bar loop
+    # drive gains, the right_outer_knuckle mimic, and the closed five-bar loop
     # (loop-closing excludeFromArticulation inner_finger_joint + a weak pad
     # spring). All 10 revolute joints are used.
     defaultPrim = "Robotiq_2F_85"

@@ -30,7 +30,7 @@ MCP bridge — idempotent):
 Every gripper link's `physics:diagonalInertia` is `(0.001, 0.001, 0.001)` —
 ~100× the physical value, and **intentional, not a placeholder**. The extra
 rotational inertia stabilizes the soft Newton loop-closure equalities so the weak
-parallel-grip spring holds; with physically-small inertias the four-bar goes
+parallel-grip spring holds; with physically-small inertias the linkage goes
 floppy and the fingertips sag ~20° out of parallel. Treat it like the
 `mjc:armature`/`damping` tuning — do **not** replace it with CAD inertias without
 re-tuning the loop-closure `solref` (or adding passive-joint armature).
