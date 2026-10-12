@@ -14,6 +14,8 @@ Options (see README.md):
                (fixed-cube test), on R and on close; for the fixed-cylinder test,
                the cylinder's size and position to fixed_cylinders/; for the
                pusher test, the plate and its end marker to pushers/
+  --record DIR  capture the viewport every other frame of each test to
+               DIR/<test id>/NNNNN.png (make videos with tests/runtime/make_videos.py)
   --record-baseline  the fixed-cube / fixed-cylinder / pusher tests record the stalled
                joint positions (and pad rotations) in their preset instead of
                checking them
@@ -41,6 +43,10 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="with --gui --hold, save /World/Cube (size + position, moved/scaled in the Isaac UI) to the last "
              "test's gripper preset in cubes/ (fixed_cubes/ for the fixed-cube test): before each R replay, "
              "so the replay uses it, and on window close",
+    )
+    parser.addoption(
+        "--record", default=None, metavar="DIR",
+        help="capture the viewport every other frame of each test to DIR/<test id>/ (see make_videos.py)",
     )
     parser.addoption(
         "--record-baseline", action="store_true", default=False,
@@ -98,8 +104,18 @@ def pytest_configure(config: pytest.Config) -> None:
     real_update = _app.update
     pacing = {"factor": config.getoption("--slow") if config.getoption("--gui") else 1.0}
 
+    # --record: the current test's frame folder (set per test, see pytest_runtest_setup).
+    record = {"dir": None, "frame": 0}
+    config._isaac_record = record
+
     def paced_update() -> None:
         real_update()
+        if record["dir"] is not None:
+            record["frame"] += 1
+            if record["frame"] % 2 == 0:  # 30 fps
+                from omni.kit.viewport.utility import capture_viewport_to_file, get_active_viewport
+
+                capture_viewport_to_file(get_active_viewport(), str(record["dir"] / f"{record['frame'] // 2:05d}.png"))
         if pacing["factor"] > 1.0:
             time.sleep((pacing["factor"] - 1.0) / 60.0)
 
@@ -384,3 +400,23 @@ def view(request: pytest.FixtureRequest):
         out = Path(shot_dir) / (preset_paths(request.node.nodeid)[0].stem + ".png")
         capture_viewport(config._isaac_app, out)
         print(f"screenshot: {out}")
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    out = item.config.getoption("--record")
+    if out and item.config.getoption("--gui"):
+        from pathlib import Path
+
+        from _views import preset_paths
+
+        d = Path(out) / preset_paths(item.nodeid)[0].stem
+        d.mkdir(parents=True, exist_ok=True)
+        item.config._isaac_record.update(dir=d, frame=0)
+
+
+def pytest_runtest_teardown(item: pytest.Item) -> None:
+    record = getattr(item.config, "_isaac_record", None)
+    if record and record["dir"] is not None:
+        record["dir"] = None
+        for _ in range(8):  # captures complete on later frames
+            item.config._isaac_app.update()

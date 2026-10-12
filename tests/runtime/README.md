@@ -150,3 +150,16 @@ shared by its four variants). Then record the compliant baselines:
 ~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_pusher.py -v --gui --hold --save-cube -k "2F_85 and Physx_parallel"
 ~/isaacsim/python.sh -m pytest tests/runtime/test_gripper_pusher.py -v --record-baseline
 ```
+
+## Recording videos
+
+`--record DIR` (with `--gui`) saves the viewport every other frame of each test to
+`DIR/<test id>/` (30 fps). `make_videos.py` (OpenCV, bundled with Isaac Sim's Python)
+turns them into VP9 `.webm` videos: one per case (`cases/`), the Physics variants of each
+test and gripper side by side (`grids/`, 2x2 for the 2F, 1x2 for the Hand-E) and all the
+grids one after the other (`all_tests.webm`):
+
+```bash
+~/isaacsim/python.sh -m pytest tests/runtime --gui --record /tmp/frames
+~/isaacsim/python.sh tests/runtime/make_videos.py /tmp/frames /tmp/videos
+```
