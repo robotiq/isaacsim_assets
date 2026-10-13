@@ -160,9 +160,9 @@ without re‑rendering.
 
 ---
 
-## Reusable script — `newton_video_pipeline.py`
+## Reusable script — `export_video_pipeline.py`
 
-The whole pipeline is packaged in `newton_video_pipeline.py` (run its functions
+The whole pipeline is packaged in `export_video_pipeline.py` (run its functions
 inside Isaac via the MCP socket / Script Editor; `encode_mp4` runs outside with
 system OpenCV). Functions: `install_recorder` → `arm`/`stop` → `bake` →
 `prep_render`/`set_pathtracing` → `render_frames` → `encode_mp4`.
