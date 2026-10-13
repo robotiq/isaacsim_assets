@@ -32,10 +32,13 @@ import sys, types, os
 
 
 # ---------------------------------------------------------------- recorder ----
-def install_recorder(scope_prefixes=("/World/ur5e", "/World/Cube", "/World/Cylinder")):
+def install_recorder(scope_prefixes=("/World/ur5e", "/World/Cube", "/World/Cylinder"), mesh_paths=()):
     """Install a persistent Fabric-transform recorder in sys.modules['_fabric_rec'].
-    Tracks every prim under scope_prefixes that carries omni:fabric:worldMatrix."""
-    import omni.kit.app, omni.usd
+    Tracks every prim under scope_prefixes that carries omni:fabric:worldMatrix.
+
+    mesh_paths: deformable meshes (e.g. ("/World/Tissue/skin",)) whose live vertex `points` are recorded
+    too -- a deformable body moves its vertices, not its transform, so Fabric poses alone would freeze it."""
+    import omni.kit.app, omni.usd, omni.timeline
     import usdrt
     from usdrt import Usd as RtUsd
 
@@ -64,16 +67,34 @@ def install_recorder(scope_prefixes=("/World/ur5e", "/World/Cube", "/World/Cylin
     mod = sys.modules.get("_fabric_rec") or types.ModuleType("_fabric_rec")
     sys.modules["_fabric_rec"] = mod
     mod.rst = rst; mod.paths = paths; mod.frames = []; mod.active = False; mod.mat16 = mat16
+    mod.mesh_paths = list(mesh_paths); mod.mesh_frames = {m: [] for m in mod.mesh_paths}
+    mod.errors = 0; mod.last_error = None; mod.t_wall = []; mod.t_sim = []
 
     def _on_update(e, _m=mod):
         if not _m.active:
             return
-        fr = {}
-        for pth in _m.paths:
-            at = _m.rst.GetPrimAtPath(pth).GetAttribute("omni:fabric:worldMatrix")
-            if at and at.HasValue():
-                fr[pth] = _m.mat16(at.Get())
+        try:
+            import time
+            fr = {}
+            for pth in _m.paths:
+                at = _m.rst.GetPrimAtPath(pth).GetAttribute("omni:fabric:worldMatrix")
+                if at and at.HasValue():
+                    fr[pth] = _m.mat16(at.Get())
+            meshes = {}
+            if _m.mesh_paths:
+                import numpy as np
+                from pxr import UsdGeom
+                for mp in _m.mesh_paths:
+                    pts = UsdGeom.Mesh(ust.GetPrimAtPath(mp)).GetPointsAttr().Get()
+                    meshes[mp] = np.array(pts, dtype=np.float32)
+        except Exception as ex:                      # never drop frames silently: count and keep the last error
+            _m.errors += 1; _m.last_error = repr(ex)
+            return
         _m.frames.append(fr)
+        for mp, a in meshes.items():
+            _m.mesh_frames[mp].append(a)
+        _m.t_wall.append(time.time())
+        _m.t_sim.append(omni.timeline.get_timeline_interface().get_current_time())
 
     bus = omni.kit.app.get_app().get_update_event_stream()
     if getattr(mod, "sub", None) is not None:
@@ -85,13 +106,17 @@ def install_recorder(scope_prefixes=("/World/ur5e", "/World/Cube", "/World/Cylin
 
 
 def arm():
-    m = sys.modules["_fabric_rec"]; m.frames = []; m.active = True
+    m = sys.modules["_fabric_rec"]; m.frames = []; m.mesh_frames = {k: [] for k in m.mesh_paths}
+    m.errors = 0; m.last_error = None; m.t_wall = []; m.t_sim = []; m.active = True
     print("ARMED")
 
 
 def stop():
     m = sys.modules["_fabric_rec"]; m.active = False
-    print("STOPPED; frames:", len(m.frames))
+    wall = (m.t_wall[-1] - m.t_wall[0]) if len(m.t_wall) > 1 else 0.0
+    sim = (m.t_sim[-1] - m.t_sim[0]) if len(m.t_sim) > 1 else 0.0
+    print("STOPPED; frames:", len(m.frames), "| wall %.1fs (%.1f fps) | sim %.2fs | errors %d %s"
+          % (wall, len(m.frames) / wall if wall else 0, sim, m.errors, m.last_error or ""))
     return len(m.frames)
 
 
@@ -144,6 +169,22 @@ def bake(out_layer_path, tcps=30.0, bake_all=True, min_move=0.002):
             if pth in f:
                 attr.Set(Gf.Matrix4d(*f[pth]), Usd.TimeCode(i))
 
+    for mp, arrs in mod.mesh_frames.items():          # deformable vertices (see install_recorder)
+        mesh = UsdGeom.Mesh(st.GetPrimAtPath(mp))
+        pa, ea = mesh.GetPointsAttr(), mesh.GetExtentAttr()
+        for i, a in enumerate(arrs[:N]):
+            pa.Set(Vt.Vec3fArray.FromNumpy(a), Usd.TimeCode(i))
+            ea.Set(Vt.Vec3fArray([Gf.Vec3f(*map(float, a.min(0))), Gf.Vec3f(*map(float, a.max(0)))]), Usd.TimeCode(i))
+
+    # A plain `points` value authored by the live sim in a STRONGER layer (the scene's root layer) would beat
+    # the recorded timeSamples here: the mesh would replay frozen at its final pose. Clear it (in memory only).
+    for mp in mod.mesh_frames:
+        for attr in ("points", "extent"):
+            for lyr in (st.GetSessionLayer(), root):
+                spec = lyr.GetAttributeAtPath(f"{mp}.{attr}")
+                if spec is not None and spec.default is not None:
+                    spec.ClearDefaultValue()
+
     _apply_reset_and_timecodes(st, target, N, tcps)
     anim.startTimeCode = 0; anim.endTimeCode = float(N - 1); anim.timeCodesPerSecond = tcps
     anim.Save()
@@ -192,6 +233,9 @@ def prep_render(N, tcps=30.0, resolution=(1920, 1080)):
     import omni.kit.viewport.utility as vpu
     carb.settings.get_settings().set("/persistent/physics/visualizationDisplayJoints", False)
     omni.usd.get_context().get_selection().clear_selected_prim_paths()
+    # The scrub time is in SECONDS and the baked take is stored at the STAGE's timeCodesPerSecond. Using any other
+    # rate here (e.g. 60 on a take baked at 30) shows only the first tcps_stage/tcps of the recording.
+    tcps = omni.usd.get_context().get_stage().GetTimeCodesPerSecond() or tcps
     tl = omni.timeline.get_timeline_interface()
     tl.set_time_codes_per_second(tcps); tl.set_start_time(0.0)
     tl.set_end_time((N - 1) / tcps); tl.set_looping(False)   # NB: seconds range must cover all frames or scrub CLAMPS
@@ -221,7 +265,9 @@ def render_frames(out_dir, start, end, tcps=30.0, sub=96):
     frame (path-tracing sample accumulation; ~96 with denoiser = clean 1080p)."""
     import omni.timeline, omni.kit.app
     import omni.kit.viewport.utility as vpu
+    import omni.usd
     os.makedirs(out_dir, exist_ok=True)
+    tcps = omni.usd.get_context().get_stage().GetTimeCodesPerSecond() or tcps   # see prep_render
     tl = omni.timeline.get_timeline_interface(); app = omni.kit.app.get_app()
     vp = vpu.get_active_viewport()
     for fr in range(start, end):
