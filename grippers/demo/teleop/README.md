@@ -102,7 +102,7 @@ viewport back.
 | Right button held + move | roll / pitch |
 | Right button held + scroll | yaw |
 
-Sensitivity is set by `MOUSE_FULL_PX` and `SCROLL_FULL` at the top of
+Sensitivity is set by `MOUSE_FULL_PX` and `SCROLL_TICKS_PER_NOTCH` at the top of
 `physx_tick_teleop.py`.
 
 ### Gamepad

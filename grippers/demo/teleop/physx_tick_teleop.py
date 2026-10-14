@@ -228,9 +228,10 @@ MOUSE_HELP = ("MOUSE: move=x/y  scroll=z  left button=close gripper  "
 # Pointer travel in one tick, in pixels, that commands full speed. Smaller is
 # more sensitive.
 MOUSE_FULL_PX = 12.0
-# Scroll notches in one tick that command full speed. A notch is short, so one
-# commands this fraction of full speed for a single tick.
-SCROLL_FULL = 0.25
+# Ticks of full speed per scroll notch. A notch is a single event, so it is
+# spread over a few ticks: at full speed, 4 ticks move about 17 mm or yaw
+# about 4 degrees. Larger is more sensitive.
+SCROLL_TICKS_PER_NOTCH = 4
 
 
 def _T(x):
@@ -432,6 +433,7 @@ class Keyboard:
         self._last_px = None    # pointer position at the previous move event
         self._dx = self._dy = 0.0
         self._scroll = 0.0
+        self._scroll_left = 0.0
         self._left = False
         self._right = False
         self.gamepad = None     # a PygamePad, set by _acquire_input()
@@ -462,6 +464,7 @@ class Keyboard:
         self._last_px = None
         self._dx = self._dy = 0.0
         self._scroll = 0.0
+        self._scroll_left = 0.0
         self._left = self._right = False
         print("[physx_teleop] input: " + (MOUSE_HELP if on else "KEYBOARD -- " + KEYBOARD_HELP))
 
@@ -535,8 +538,12 @@ class Keyboard:
         mx = max(-1.0, min(1.0, self._dx / MOUSE_FULL_PX))
         my = max(-1.0, min(1.0, self._dy / MOUSE_FULL_PX))
         self._dx = self._dy = 0.0
-        sc = max(-1.0, min(1.0, self._scroll * SCROLL_FULL))
+        # Each notch adds SCROLL_TICKS_PER_NOTCH ticks of full speed, used up
+        # one tick at a time; scrolling the other way cancels them.
+        self._scroll_left += self._scroll * SCROLL_TICKS_PER_NOTCH
         self._scroll = 0.0
+        sc = max(-1.0, min(1.0, self._scroll_left))
+        self._scroll_left -= sc
         if self._right:
             self.axes[AXIS_LX] = mx         # roll
             self.axes[AXIS_LY] = my         # pitch
