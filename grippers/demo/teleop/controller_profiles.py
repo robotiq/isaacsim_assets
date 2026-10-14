@@ -1,38 +1,45 @@
 """Gamepad profiles for physx_tick_teleop.py.
 
 A profile says which button or stick of YOUR gamepad drives each robot action.
-Gamepads are read with pygame, which numbers buttons and sticks the way the
-controller reports them; those numbers differ between models, hence one
-profile per model. See CONTROLLER_PROFILES.md to add one.
+Gamepads are read with pygame, which numbers buttons and sticks the way each
+controller reports them, so the numbers differ between models: one profile per
+model. CONTROLLER_PROFILES.md walks through adding one; this header is the
+reference.
 
-The profile is chosen automatically: the first one whose "match" text appears
-in the gamepad's name. Set TELEOP_CONTROLLER=<profile> to force one.
+Which profile is used: the first one whose "match" text appears in the
+gamepad's name (case-insensitive), else DEFAULT_PROFILE. Set the environment
+variable TELEOP_CONTROLLER=<profile> to force one.
 
-Each action maps to one source:
-    ("axis", i, sign)     stick axis i. pygame reports right = +1 and down = +1;
-                          sign -1 reverses it.
-    ("trigger", i)        analog trigger on axis i (released -1, pressed +1).
-    ("button", i)         button i.
-    ("hat", i, (x, y))    d-pad i in direction (x, y), e.g. (0, 1) = up.
+Sources -- what an action reads (run controller_probe.py to find the numbers):
+    ("axis", i, sign)     stick axis i, -1..1. pygame reports right = +1 and
+                          down = +1; sign -1 reverses the axis.
+    ("trigger", i)        analog trigger on axis i: released -1, pressed +1.
+    ("button", i)         button i: pressed or not.
+    ("hat", i, (x, y))    d-pad i held in direction (x, y): (0, 1) up,
+                          (0, -1) down, (-1, 0) left, (1, 0) right.
 
-Actions:
-    move_x, move_y        tool left/right and away/toward you, relative to
-                          the view (sticks: + = right, + = toward you)
-    roll, pitch           tool rotation (sticks)
-    up, down              tool up / down
-    yaw_left, yaw_right   tool rotation about its axis
-    grip                  close the gripper while held (trigger or button)
-    faster, slower        speed up / down by one step
-    tool_down             point the tool straight down
+Actions -- what the robot does:
+    move_x       stick: tool right (+) / left (-), relative to the view
+    move_y       stick: tool toward you (+) / away (-), relative to the view
+    roll, pitch  sticks: rotate the tool about its own axes
+    up, down     tool up / down (world vertical)
+    yaw_left, yaw_right   rotate the tool about its axis
+    grip         close the gripper while held; a trigger closes it in
+                 proportion to how far it is pressed
+    faster, slower        speed up / down one step (x1.25)
+    tool_down    point the tool straight down
     zoom_in, zoom_out     move the view closer to / away from the tool
-    restart               restart the simulation
-    help                  show the control list
-Leave an action out to leave it unmapped.
+    restart      restart the simulation
+    help         show the control list
+Leave an action out to leave it unmapped. "match" is not an action: it lists
+pieces of gamepad names this profile is for.
 """
 
 PROFILES = {
     # PS5 DualSense / PS4 DualShock 4, through SDL's PlayStation driver.
-    # Not yet checked with controller_probe.py on Windows.
+    # Layout from SDL's PlayStation mapping, not yet checked with
+    # controller_probe.py. On Linux a DualSense is read from /dev/input/js0
+    # instead, without a profile.
     "dualsense": {
         "match": ["DualSense", "PS5 Controller", "PS4 Controller", "Wireless Controller"],
         "move_x": ("axis", 2, +1), "move_y": ("axis", 3, +1),
@@ -45,9 +52,10 @@ PROFILES = {
         "tool_down": ("button", 0),
         "restart": ("button", 4), "help": ("button", 6),
     },
-    # Elecom wired gamepad (USB 05b8:1004). Button i is the label printed on
-    # the controller minus one. Back 5 / back 7 (left) move up / down, back 8
-    # (right lower) holds the gripper closed.
+    # Elecom wired gamepad (USB 05b8:1004). Button numbers measured on Linux
+    # (button = label printed on the controller minus one); not yet checked
+    # with controller_probe.py on Windows. Back 5 / back 7 (left) move up /
+    # down, back 8 (right lower) holds the gripper closed.
     "elecom": {
         "match": ["ELECOM", "JC-U"],
         "move_x": ("axis", 2, +1), "move_y": ("axis", 3, +1),
