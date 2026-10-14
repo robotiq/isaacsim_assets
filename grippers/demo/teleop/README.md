@@ -191,5 +191,4 @@ Without them the teleop still runs; only the plot and the rumble are missing.
 | `make_controls_diagram.py` | Regenerates `controls.png`. |
 | [PHYSICS_TUNING.md](PHYSICS_TUNING.md) | The gripper and object physics values and why. |
 
-This demo doesn't use ROS. To drive Isaac Sim from ROS 2 instead, see the
-repository's documentation on controlling Isaac Sim from ROS.
+This demo doesn't use ROS.
