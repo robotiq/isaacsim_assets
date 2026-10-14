@@ -2,7 +2,7 @@
 
 Notes on the non-default USD attribute values we ended up with after
 tuning the gripper for reliable grasping in Isaac Sim 6. None of this is
-required for the ROS teleop to *function* — but everything below affects
+required for the teleop to *function* — but everything below affects
 whether the gripper actually holds an object during motion.
 
 Two categories:

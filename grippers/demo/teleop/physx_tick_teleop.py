@@ -16,7 +16,7 @@ times harder than it advanced. Measured from screen capture, power in the
 3-5 Hz band, same scene and same frame rate:
 
     gamepad through Servo   1.9% of motion energy at 3-5 Hz
-    keyboard_jog (no Servo) 0.0%
+    per-joint jog, no Servo 0.0%
 
 The cause is a timebase mismatch, not a gain. Servo's control loop is paced by
 a WALL-clock rate, so it keeps emitting commands at its configured rate however
