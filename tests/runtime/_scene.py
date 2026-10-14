@@ -6,7 +6,6 @@ from __future__ import annotations
 import math
 import runpy
 from dataclasses import dataclass
-from pathlib import Path
 
 import omni.timeline
 from isaacsim.core.experimental.prims import Articulation
@@ -14,10 +13,10 @@ from isaacsim.core.experimental.utils import stage as stage_utils
 from isaacsim.core.simulation_manager import SimulationManager
 from pxr import UsdPhysics
 
-REPO = Path(__file__).resolve().parents[2]
+from _grippers import gripper_dir
 
 # Newton 2F variants need the gripper's runtime tuning after each play (the two
-# settings that cannot live in USD, see grippers/<gripper>/newton/).
+# settings that cannot live in USD, see the gripper's newton/ folder).
 _NEWTON_TUNING = {
     ("Robotiq_2F_85", "Newton_parallel_grip"): "newton/apply_gripper_tuning.py",
     ("Robotiq_2F_85", "Newton_compliant"): "newton/apply_gripper_tuning.py",
@@ -53,7 +52,7 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     stage = stage_utils.create_new_stage()
     UsdPhysics.Scene.Define(stage, "/physicsScene")
     stage_utils.add_reference_to_stage(
-        usd_path=str(REPO / "grippers" / gripper / f"{gripper}.usda"),
+        usd_path=str(gripper_dir(gripper) / f"{gripper}.usda"),
         path="/World/Gripper",
         variants=[("Physics", physics)],
     )
@@ -77,7 +76,7 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     simulation_app.update()
     tuning = _NEWTON_TUNING.get((gripper, physics))
     if tuning:
-        runpy.run_path(str(REPO / "grippers" / gripper / tuning))  # idempotent, needs a built model
+        runpy.run_path(str(gripper_dir(gripper) / tuning))  # idempotent, needs a built model
     return GripperScene(gripper, physics, robot, root)
 
 

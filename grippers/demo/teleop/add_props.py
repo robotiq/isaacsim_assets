@@ -68,7 +68,7 @@ CYLINDERS = [                # (name, x, y, colour)
 # 2F-85 parts are authored in -- they are named PAD_OPEN -- so it can be read
 # straight off the asset, which is better than the 85 mm nameplate: the
 # fingertip pads' facing surfaces sit at y = -0.0435 and +0.0435 in
-# grippers/Robotiq_2F_85/Robotiq_2F_85.usda, a gap of 87.0 mm.
+# grippers/Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda, a gap of 87.0 mm.
 GRIP_OPEN_GAP = 0.087
 BIG_CUBE = GRIP_OPEN_GAP - 0.020      # 67 mm
 

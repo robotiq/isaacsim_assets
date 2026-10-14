@@ -11,7 +11,7 @@ This fills both in place (idempotent; existing authored normals are kept):
     surfaces shade smoothly while hard edges stay sharp).
 
 Usage (needs `usd-core` + `numpy`):
-    python3 devel_helpers/author_mesh_extents_normals.py grippers/Robotiq_2F_140/parts/*.usd
+    python3 devel_helpers/author_mesh_extents_normals.py grippers/Robotiq_2F/Robotiq_2F_140/parts/*.usd
 """
 import argparse
 

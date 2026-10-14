@@ -27,7 +27,7 @@ on:
     inputs:
       asset:
         description: Asset USD to validate (repo-relative)
-        default: grippers/Robotiq_2F_85/Robotiq_2F_85.usda
+        default: grippers/Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda
       profile:
         description: SimReady profile
         default: Robot-Gripper
@@ -45,7 +45,7 @@ on:
       asset:
         description: Asset USD to validate (repo-relative)
         type: string
-        default: grippers/Robotiq_2F_85/Robotiq_2F_85.usda
+        default: grippers/Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda
       profile:
         description: SimReady profile
         type: string
@@ -126,7 +126,7 @@ jobs:
         run: |
           PROFILE="${{ inputs.profile || 'Robot-Gripper' }}"
           VERSION="${{ inputs.version || '3.0.0' }}"
-          ASSET_REL="${{ inputs.asset || 'grippers/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
+          ASSET_REL="${{ inputs.asset || 'grippers/Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
           # 2026.07.1 layout: capabilities/features/profiles live under the tier.
           # The validator imports the rules as the top-level 'capabilities'
           # package via sys.path, so absolute paths are required.
@@ -168,7 +168,7 @@ jobs:
         id: artifact
         if: always()
         run: |
-          asset="${{ inputs.asset || 'grippers/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
+          asset="${{ inputs.asset || 'grippers/Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
           stem="$(basename "$asset")"; echo "name=simready-results-${stem%.*}" >> "$GITHUB_OUTPUT"
 
       - name: Upload results

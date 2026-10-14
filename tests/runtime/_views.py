@@ -21,12 +21,12 @@ from pathlib import Path
 
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux
 
+from _grippers import gripper_dirs
+
 VIEWS_DIR = Path(__file__).resolve().parent / "views"
 
 _LIGHT_ATTRS = ("inputs:intensity", "inputs:exposure", "inputs:color", "inputs:texture:file", "inputs:radius", "inputs:angle")
 
-
-GRIPPERS_DIR = Path(__file__).resolve().parents[2] / "grippers"
 
 SCOPES = ("case", "test", "gripper", "default")
 
@@ -34,8 +34,8 @@ SCOPES = ("case", "test", "gripper", "default")
 def _gripper_in(nodeid: str) -> str | None:
     """The gripper folder name a parametrized id refers to, if any."""
     params = nodeid.split("[", 1)[1] if "[" in nodeid else ""
-    for d in sorted(GRIPPERS_DIR.iterdir(), key=lambda p: -len(p.name)):
-        if d.is_dir() and d.name in params:
+    for d in sorted(gripper_dirs(), key=lambda p: -len(p.name)):
+        if d.name in params:
             return d.name
     return None
 

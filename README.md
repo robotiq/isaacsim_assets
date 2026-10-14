@@ -13,8 +13,9 @@ tooling, scenes) can be added over time.
 grippers/                         Gripper assets
   GRIPPER_SIMULATION_GUIDE.md     How to simulate Robotiq grippers in Isaac Sim
   images/                         Figures used by the guide
-  Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
-  Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
+  Robotiq_2F/                     2F family: content shared by the 2F-85 and 2F-140
+    Robotiq_2F_85/                2F-85 gripper (PhysX + Newton solver variants)
+    Robotiq_2F_140/               2F-140 gripper (PhysX + Newton solver variants)
   Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
   demo/                           Demos, incl. the UR5e teleop for either gripper
 tests/runtime/                    Manual Isaac Sim runtime tests (need a GPU, not run in CI)
@@ -35,9 +36,9 @@ and grip — same body tree, geometry, and collision for all of them — and who
 
 | | 2F-85 | 2F-140 | Hand-E |
 | --- | --- | --- | --- |
-| Asset | [`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/) | [`grippers/Robotiq_2F_140/`](grippers/Robotiq_2F_140/) | [`grippers/Robotiq_Hand_E/`](grippers/Robotiq_Hand_E/) |
+| Asset | [`grippers/Robotiq_2F/Robotiq_2F_85/`](grippers/Robotiq_2F/Robotiq_2F_85/) | [`grippers/Robotiq_2F/Robotiq_2F_140/`](grippers/Robotiq_2F/Robotiq_2F_140/) | [`grippers/Robotiq_Hand_E/`](grippers/Robotiq_Hand_E/) |
 | `Physics` — PhysX | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `PhysX` *(default)* |
-| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | `Newton` |
+| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F/Robotiq_2F_140/newton/)) | `Newton` |
 | `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
 | `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) |
 

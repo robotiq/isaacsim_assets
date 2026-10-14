@@ -11,15 +11,20 @@
 #       ├── materials/ parts/ payloads/ configuration/ ...
 #
 # In this repo the asset is flat: the root `.usda` sits directly in
-# grippers/Robotiq_2F_85/ with its sublayer folders as siblings. Every USD
+# grippers/Robotiq_2F/Robotiq_2F_85/ with its sublayer folders as siblings. Every USD
 # reference is relative (`@./...@` / `@../...@`) and only ever reaches a sibling
 # folder, so copying the whole tree wholesale one level down into
 # <intermediate>/ keeps every reference resolving inside the asset folder.
 #
+# TODO: the 2F family folder (grippers/Robotiq_2F/) exists to hold content shared
+# by the 2F-85 and 2F-140. Once an asset references it (`@../...@` leaving the
+# asset folder), copying only <src-asset-dir> breaks that reference: staging must
+# then also bring the shared content into the package and rewrite the paths.
+#
 # Usage:
 #   stage_package.sh <src-asset-dir> <root-usd-filename> <out-dir> [intermediate]
 #
-#   <src-asset-dir>     e.g. grippers/Robotiq_2F_85 (its basename is the logical
+#   <src-asset-dir>     e.g. grippers/Robotiq_2F/Robotiq_2F_85 (its basename is the logical
 #                       asset name; must NOT contain a version)
 #   <root-usd-filename> e.g. Robotiq_2F_85.usda (the interface USD, relative to
 #                       <src-asset-dir>)

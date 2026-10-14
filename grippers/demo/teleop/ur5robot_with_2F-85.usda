@@ -1155,7 +1155,7 @@ def Xform "World" (
                 over "wrist_3_link"
                 {
                     def "Robotiq_2F_140_edit" (
-                        prepend payload = @../../Robotiq_2F_140/Robotiq_2F_140.usda@
+                        prepend payload = @../../Robotiq_2F/Robotiq_2F_140/Robotiq_2F_140.usda@
                     )
                     {
                         quatf xformOp:orient = (1, 0, 0, 0)
@@ -1237,7 +1237,7 @@ def Xform "World" (
                 over "wrist_3_link"
                 {
                     def "Robotiq_2F_85_edit" (
-                        prepend payload = @../../Robotiq_2F_85/Robotiq_2F_85.usda@
+                        prepend payload = @../../Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda@
                     )
                     {
                         quatf xformOp:orient = (1, 0, 0, 0)

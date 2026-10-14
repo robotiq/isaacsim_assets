@@ -140,8 +140,8 @@ physics without maintaining a second stage:
 
 | `Gripper` | Gripper asset |
 | --------- | ------------- |
-| `2F85` *(default)* | `Robotiq_2F_85/Robotiq_2F_85.usda` |
-| `2F140` | `Robotiq_2F_140/Robotiq_2F_140.usda` |
+| `2F85` *(default)* | `Robotiq_2F/Robotiq_2F_85/Robotiq_2F_85.usda` |
+| `2F140` | `Robotiq_2F/Robotiq_2F_140/Robotiq_2F_140.usda` |
 | `HandE` | `Robotiq_Hand_E/Robotiq_Hand_E.usda` |
 
 The Hand-E has one PhysX and one Newton variant, so the scene's `Physx_*` physics select its
