@@ -122,3 +122,6 @@ to squeeze harder. The script works on the gripper's default
 
 Press **Stop** to put the cube back where it started.
 
+---
+
+**Next:** [Control from ROS](4-Control_from_ROS.md): drive the robot and the gripper from ROS 2.

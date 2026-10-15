@@ -113,3 +113,7 @@ Two gotchas:
   refuses to load. Source ROS only in the consumer terminals.
 - **`get_isaac_logs` is the best diagnostic.** Many graph and physics errors
   never appear in tool responses, only in Isaac's console.
+
+---
+
+**Next:** [Tune physics for grasping](6-Tune_physics_for_grasping.md): make the grasp hold.
