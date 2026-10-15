@@ -161,8 +161,8 @@ robot.
    Run it once, then save the scene. These settings are for Newton only:
    PhysX runs the arm well with the stock values, and these haven't been
    tested with PhysX. To keep one scene for both engines, the teleop demo
-   puts them in a variant (`Gripper = newton` on
-   `/World` in `grippers/demo/teleop/ur5robot_with_2F-85.usda`).
+   authors them in the scene's Newton `Physics` variants
+   (`grippers/demo/teleop/ur5robot_with_2F-85.usda`).
 
 ### Franka Panda
 

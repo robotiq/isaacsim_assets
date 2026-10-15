@@ -46,8 +46,7 @@ Robotiq_<model>/
 
 **Demo**
 
-- [Teleop demo](demo/teleop/README.md): drive a UR5e with any gripper from a gamepad, the keyboard or the mouse.
-  - [Controller profiles](demo/teleop/CONTROLLER_PROFILES.md): add a profile for your gamepad.
+- [Teleop demo](demo/teleop/README.md): drive a UR5e with a Robotiq gripper from a gamepad or the keyboard.
   - [Physics tuning](demo/teleop/PHYSICS_TUNING.md)
 - [MCP bridge](demo/mcp_bridge/README.md): connect Claude Code to a running Isaac Sim.
 - [Record a Newton video](demo/video_export/NEWTON_VIDEO_RECORDING.md)
