@@ -20,10 +20,9 @@ see `devel_helpers/gen_hande_layers.py` and `devel_helpers/gen_hande_fingertip_c
 
 ## Source of the specifications
 
-The finger speed, the grip force and the fingertip force limits come from the Hand-E instruction
-manual, "6. Specifications" page:
-
-<https://assets.robotiq.com/website-assets/support_documents/document/online/Hand-E_Aubo_InstructionManual_HTML5_20190501.zip/Hand-E_Aubo_InstructionManual_HTML5/Content/6.%20Specifications.htm>
+The finger speed, the grip force and the fingertip force limits come from the "Specifications"
+section of the Hand-E instruction manual. Refer to the manual, available on the
+[Robotiq support page](https://robotiq.com/support).
 
 | Datasheet value | Used for |
 | --- | --- |
@@ -35,8 +34,8 @@ manual, "6. Specifications" page:
 
 ![Maximum payload / external force vs. custom finger Z offset](img/Hand-E_max_payload_vs_z_offset.png)
 
-*Hand-E: maximum payload / external force vs. custom finger design (Z offset), copied from the page
-above. The force is applied at the tip of the finger, in the middle of the inner surface; the Z offset
+*Hand-E: maximum payload / external force vs. custom finger design (Z offset), from the
+"Specifications" section of the Hand-E instruction manual. The force is applied at the tip of the finger, in the middle of the inner surface; the Z offset
 is measured from the housing face. Blue: finger mounted directly on the rack with 2 M3 screws. Red:
 fingertip on a fingertip holder with 2 M3 screws. Yellow: mounted directly on the rack with 3 M3
 screws.*
