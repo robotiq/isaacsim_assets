@@ -18,6 +18,7 @@ tooling, scenes) can be added over time.
 - [Do a pick and place](./docs/2-Do_a_pick_and_place.md)
 - [Control from ROS](./docs/3-Control_from_ROS.md)
 - [Connect AI agent to Isaac Sim](./docs/4-Connect_AI_agent_to_Isaac_Sim.md)
+- [Tune physics for grasping](./docs/5-Tune_physics_for_grasping.md)
 
 ## Layout
 
@@ -48,19 +49,12 @@ and grip — same body tree, geometry, and collision for all of them — and who
 | `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
 | `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) |
 
-`*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
-coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
-fingers wrap around the object. The Newton variants model the linkage more
-robustly but need a one-shot runtime tuning after each Stop→Play (see the
-gripper's `newton/` folder, linked in the table).
+The [UR5e teleop demo](grippers/demo/teleop/) runs any of these grippers.
 
-The [UR5e teleop demo](grippers/demo/teleop/) runs either gripper on either
-solver (`TELEOP_GRIPPER=2F85|2F140`, `TELEOP_PHYSICS=<Physics variant>`).
-
-Start with the
-**[2F gripper guide](grippers/docs/2F/README.md)** — it covers
-choosing a variant, mounting the gripper on a robot, tuning it for reliable
-grasping, the physics of the mechanism, and the Newton backend.
+To get started, follow the [general documentation](#general-documentation)
+to set up a scene, then open your gripper's guide from
+[`grippers/README.md`](grippers/README.md) for its variants and specific
+settings.
 
 ## Getting the assets
 

@@ -87,8 +87,8 @@ the referenced asset, so the scene can't set offsets on them, but PhysX adds
 the two sides' offsets together, so the object's values still give a
 visible skin.
 
-Before and after images of this fix are in the gripper README,
-[Tuning](../../docs/2F/README.md#tuning).
+Before and after images of this fix are in
+[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#all-engines).
 
 ## Fast motion: continuous collision detection (CCD)
 
