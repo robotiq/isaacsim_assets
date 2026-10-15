@@ -194,6 +194,9 @@ and [joint tuning](https://docs.isaacsim.omniverse.nvidia.com/6.0.0/robot_setup_
 
 ## 4. Physics of the gripper and physical properties
 
+How each PhysX variant models the linkage, joint by joint, with figures:
+[Linkage and joint setup](Linkage_and_joint_setup.md).
+
 ### 4.1 How the 2F-85 mechanism works (and how compliance works)
 
 The 2F-85 finger is an **underactuated five-bar linkage** — two kinematic DOF,
