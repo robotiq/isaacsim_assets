@@ -203,6 +203,10 @@ Any node that publishes on `/isaac_joint_commands` and reads
   provide, and on Isaac Sim 6.1 this crashes Isaac Sim at Play. Use PhysX
   for ROS 2 control.
 
+<!-- docs-site:exclude -->
+
 ---
 
 **Next:** [Connect AI agent to Isaac Sim](5-Connect_AI_agent_to_Isaac_Sim.md): let an AI agent build and inspect the scene.
+
+<!-- docs-site:exclude -->

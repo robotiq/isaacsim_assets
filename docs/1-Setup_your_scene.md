@@ -253,6 +253,10 @@ for i, angle in enumerate(home, start=1):
 
 ![Franka Panda Home Position](img/franka%20panda%20home.png)
 
+<!-- docs-site:exclude -->
+
 ---
 
 **Next:** [Get started](2-Get_started.md): attach the Robotiq gripper to the robot.
+
+<!-- docs-site:exclude -->
