@@ -114,6 +114,10 @@ Two gotchas:
 - **`get_isaac_logs` is the best diagnostic.** Many graph and physics errors
   never appear in tool responses, only in Isaac's console.
 
+<!-- docs-site:exclude -->
+
 ---
 
 **Next:** [Tune physics for grasping](6-Tune_physics_for_grasping.md): make the grasp hold.
+
+<!-- docs-site:exclude -->
