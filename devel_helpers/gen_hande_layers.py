@@ -531,16 +531,28 @@ def Xform "{N}"
 ''')
 
 
-COLLIDER_APIS = '["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]'
+COLLIDER_APIS = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
 
 
-def _px_block(i, name):
+GRIP_FRICTION = 1.0  # fingertip pad friction (static = dynamic), PhysX and Newton; PhysX combine mode "max", see gen_physx_common
+
+
+def _usd_list(names):
+    """['A', 'B'] -> '["A", "B"]' (a USDA string array)."""
+    return "[" + ", ".join(f'"{n}"' for n in names) + "]"
+
+
+def _px_block(i, name, material=None):
+    """`over` block putting the PhysX convex-hull collider on <name>; with ``material`` (a prim path) the
+    physics material is bound to it too (the fingertip pads)."""
+    apis = COLLIDER_APIS + (["MaterialBindingAPI"] if material else [])
+    binding = f"\n{i}    rel material:binding:physics = <{material}>" if material else ""
     return f'''{i}over "{name}" (
-{i}    prepend apiSchemas = {COLLIDER_APIS}
+{i}    prepend apiSchemas = {_usd_list(apis)}
 {i})
 {i}{{
 {i}    uniform token physics:approximation = "convexHull"
-{i}    bool physics:collisionEnabled = 1
+{i}    bool physics:collisionEnabled = 1{binding}
 {i}}}
 '''
 
@@ -580,7 +592,7 @@ def gen_physx_common():
     colliders = "".join(_collider(l) + "\n" for l in BODY_LINKS)
     colliders += "    # Tip colliders for every Fingertip variant (derived from TIPS; authored here, not in the\n"
     colliders += '    # variant payloads, so no tip collider ever composes under Physics = "None").\n'
-    colliders += _tip_hull_blocks(_px_block)
+    colliders += _tip_hull_blocks(lambda i, name: _px_block(i, name, GRIP_MATERIAL))  # the pads carry the friction material
     w(f"payloads/{N}_physx_common_physics.usda", HDR + f'''(
     # PhysX-only physics for the Hand-E: the articulation root + root_joint (fixed base), the
     # collision-group plumbing, and every PhysX convex-hull collider -- the body-link
@@ -616,6 +628,22 @@ def Xform "{N}" (
             point3f physics:localPos1 = (0, 0, 0)
             quatf physics:localRot0 = {IDQ}
             quatf physics:localRot1 = {IDQ}
+        }}
+
+        # Fingertip pad friction (PhysX): static = dynamic {GRIP_FRICTION:g}; combine mode "max" so it holds
+        # against any object whose own material is softer (the default "average" would drag it down).
+        # Bound to every tip collider below. The Newton variants author their own pad material.
+        def Scope "Physics"
+        {{
+            def Material "GripMaterial" (
+                prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+            )
+            {{
+                float physics:dynamicFriction = {GRIP_FRICTION:g}
+                float physics:staticFriction = {GRIP_FRICTION:g}
+                float physics:restitution = 0
+                token physxMaterial:frictionCombineMode = "max"
+            }}
         }}
     }}
 }}
