@@ -48,8 +48,8 @@ BODY_LINKS = ["base_link", "left_finger", "right_finger"]
 # Source: the Hand-E (Aubo) instruction manual, "6. Specifications" page, section "Moment and force
 # limits":
 #   https://assets.robotiq.com/website-assets/support_documents/document/online/Hand-E_Aubo_InstructionManual_HTML5_20190501.zip/Hand-E_Aubo_InstructionManual_HTML5/Content/6.%20Specifications.htm
-# A copy of the figure is kept in grippers/Robotiq_Hand_E/docs/Hand-E_max_payload_vs_z_offset.png
-# (see grippers/Robotiq_Hand_E/docs/README.md).
+# A copy of the figure is kept in grippers/docs/HandE/img/Hand-E_max_payload_vs_z_offset.png
+# (see grippers/docs/HandE/README.md).
 # The recommended maximum force F applied at the fingertip (middle of the inner pad surface) falls
 # with the Z offset of that point (measured from the housing face), and depends on how the finger is
 # mounted: "blue" = 2 x M3 directly on the rack, "red" = on a fingertip holder (2 x M3), "yellow" =

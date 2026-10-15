@@ -1,7 +1,7 @@
 <!-- docs-site:exclude -->
 # isaacsim_assets
 
-📖 Full documentation: https://robotiq.github.io
+📖 See rendered documentation on: https://robotiq.github.io
 <!-- docs-site:exclude -->
 
 Public [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) assets
@@ -24,7 +24,9 @@ tooling, scenes) can be added over time.
 ```
 docs/                             General Isaac Sim guides (scene setup, pick and place, ROS, AI agent)
 grippers/                         Gripper assets
+  README.md                       List of the gripper assets and their documentation
   docs/2F/                        2F-85 / 2F-140 guide (variants, tuning, physics, Newton)
+  docs/HandE/                     Hand-E guide (variants, specifications, finger force)
   Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
   Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
   Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
@@ -36,6 +38,9 @@ LICENSE                           Repository license + third-party attributions
 ## Contents
 
 ### Robotiq 2F-85, 2F-140 and Hand-E grippers
+
+[`grippers/README.md`](grippers/README.md) lists every gripper asset and its
+documentation.
 
 The 2F-85, 2F-140 and Hand-E grippers are authored for Isaac Sim 6 with the
 same layout: each is a single asset whose `Physics` variant selects the solver

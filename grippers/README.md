@@ -9,7 +9,7 @@ reference it, then pick the physics engine and fingertip with its variant sets.
 | --- | --- | --- | --- | --- |
 | 2F-85 | [`Robotiq_2F_85/Robotiq_2F_85.usda`](Robotiq_2F_85/Robotiq_2F_85.usda) | `Physx_parallel_grip` *(default)*, `Physx_compliant`, `Newton_compliant`, `Newton_parallel_grip` | `Standard` *(default)*, `Tactile_TSF85` | [2F guide](docs/2F/README.md), [Newton tuning](Robotiq_2F_85/newton/README.md) |
 | 2F-140 | [`Robotiq_2F_140/Robotiq_2F_140.usda`](Robotiq_2F_140/Robotiq_2F_140.usda) | `Physx_parallel_grip` *(default)*, `Physx_compliant`, `Newton_compliant`, `Newton_parallel_grip` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | [2F guide](docs/2F/README.md), [Newton tuning](Robotiq_2F_140/newton/README.md) |
-| Hand-E | [`Robotiq_Hand_E/Robotiq_Hand_E.usda`](Robotiq_Hand_E/Robotiq_Hand_E.usda) | `PhysX` *(default)*, `Newton` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` (+ `FingertipMount`: `Outside` / `Inside`) | [Hand-E README](Robotiq_Hand_E/docs/README.md) |
+| Hand-E | [`Robotiq_Hand_E/Robotiq_Hand_E.usda`](Robotiq_Hand_E/Robotiq_Hand_E.usda) | `PhysX` *(default)*, `Newton` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` (+ `FingertipMount`: `Outside` / `Inside`) | [Hand-E README](docs/HandE/README.md) |
 
 `Physx_*` variants run on the regular Isaac Sim app; `Newton_*` variants need
 Isaac Sim started with the Newton engine. See
@@ -33,7 +33,7 @@ Robotiq_<model>/
 
 - [2F-85 / 2F-140 guide](docs/2F/README.md): variants, physics engines, tuning, the physics of the mechanism, Newton.
 - [2F linkage and joint setup](docs/2F/Linkage_and_joint_setup.md): how each PhysX variant models the finger linkage, joint by joint.
-- [Hand-E](Robotiq_Hand_E/docs/README.md): variants, joints, source specifications and finger force per fingertip.
+- [Hand-E](docs/HandE/README.md): variants, joints, source specifications and finger force per fingertip.
 - Newton tuning: [2F-85](Robotiq_2F_85/newton/README.md), [2F-140](Robotiq_2F_140/newton/README.md).
 
 **Using a gripper in a scene** (general Isaac Sim guides, in [`../docs`](../docs/))
