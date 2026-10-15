@@ -152,8 +152,53 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
-    item.config._isaac_last_nodeid = item.nodeid
-    item.config._isaac_last_item = item
+    config = item.config
+    config._isaac_last_nodeid = item.nodeid
+    config._isaac_last_item = item
+    if config.getoption("--gui"):
+        _show_test_name(item.nodeid.split("::")[-1])
+    out = config.getoption("--record")
+    if out and config.getoption("--gui"):
+        from pathlib import Path
+
+        from _views import preset_paths
+
+        d = Path(out) / preset_paths(item.nodeid)[0].stem
+        d.mkdir(parents=True, exist_ok=True)
+        config._isaac_record.update(dir=d, frame=0)
+
+
+_test_name_label = None
+
+
+def _show_test_name(name: str) -> None:
+    """Show the running test's name over the top of the viewport (--gui). It is a UI
+    overlay, so --screenshot / --record captures do not include it."""
+    global _test_name_label
+    try:
+        if _test_name_label is None:
+            import omni.ui as ui
+            from omni.kit.viewport.utility import get_active_viewport_window
+
+            frame = get_active_viewport_window().get_frame("runtime_test_name")
+            with frame:
+                with ui.VStack():
+                    ui.Spacer(height=40)
+                    with ui.HStack(height=0):
+                        ui.Spacer()
+                        with ui.ZStack(width=0, height=0):
+                            ui.Rectangle(style={"background_color": 0xB0000000, "border_radius": 4})
+                            with ui.HStack(width=0):
+                                ui.Spacer(width=10)
+                                _test_name_label = ui.Label(name, width=0, height=30,
+                                                            style={"font_size": 20, "color": 0xFFFFFFFF})
+                                ui.Spacer(width=10)
+                        ui.Spacer()
+                    ui.Spacer()
+        else:
+            _test_name_label.text = name
+    except Exception as e:  # cosmetic: never fail a test over it
+        print(f"test name overlay: {type(e).__name__}: {e}")
 
 
 def _reload_asset_layers() -> None:
@@ -400,18 +445,6 @@ def view(request: pytest.FixtureRequest):
         out = Path(shot_dir) / (preset_paths(request.node.nodeid)[0].stem + ".png")
         capture_viewport(config._isaac_app, out)
         print(f"screenshot: {out}")
-
-
-def pytest_runtest_setup(item: pytest.Item) -> None:
-    out = item.config.getoption("--record")
-    if out and item.config.getoption("--gui"):
-        from pathlib import Path
-
-        from _views import preset_paths
-
-        d = Path(out) / preset_paths(item.nodeid)[0].stem
-        d.mkdir(parents=True, exist_ok=True)
-        item.config._isaac_record.update(dir=d, frame=0)
 
 
 def pytest_runtest_teardown(item: pytest.Item) -> None:
