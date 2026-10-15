@@ -1,21 +1,25 @@
 # Setup your scene
 
-How to set up a basic Isaac Sim scene, with a robot arm and a cube to pick,
+Here are some instructions to build a basic Isaac Sim scene, with a robot arm and a cube to pick,
 ready for a Robotiq gripper. Once it is ready, attach the gripper with
 [Get started](2-Get_started.md).
 
-Start a new Isaac Sim file and create an environment
+For more information about Isaac Sim, check related documentation:
+
+https://docs.isaacsim.omniverse.nvidia.com/latest/index.html
+
+- Start a new Isaac Sim file and create an environment
 **Create → Environments → Simple Room**
    
 ![Select a Robot](img/2-add%20environment.png)
 
 The Simple Room comes with a low table at the centre of the room, its top at
-about height `0`. The robot stands on it (see [Setup the robot](#setup-the-robot)).
+about height `0`.
 
 ## Add a cube to manipulate
 
-The pick and place examples (see [Do a pick and place](3-Do_a_pick_and_place.md)) need an object to pick:
-a 5 cm cube on the table, in reach of the robot.
+Let's add a 5 cm cube on the table, in reach of the robot so that we can play
+with it.
 
 1. **Create the cube.** **Create → Shape → Cube**. It appears as
    `/World/Cube`, at the centre of the room. Its width is the **Size** shown
@@ -107,10 +111,20 @@ robot.
 
 5. **Only with a Newton gripper variant: prepare the arm for Newton.** Skip
    this step with PhysX. Under Newton, the whole robot runs on Newton, not
-   only the gripper. The UR5e asset is tuned for PhysX: its joint drives
-   are very stiff and have almost no damping, and Newton makes the arm buzz
-   in place. In our tests, joint speeds reached 8.2 rad/s with the arm
-   commanded to hold still, and dropped to 0.4 rad/s with these settings:
+   only the gripper.
+
+   > **Warning: robot control under Newton is limited for now.** Isaac Sim
+   > robot assets, the UR5e included, are tuned for PhysX: their joint
+   > drives are very stiff and have almost no damping, which MuJoCo, the
+   > solver behind Newton, doesn't handle well. Out of the box, the arm
+   > vibrates when it should hold still. The settings below are a rough
+   > adjustment, not a proper tuning: they stop the vibration, but the arm
+   > still follows its targets loosely and can swing or drift. We don't have
+   > a good solution yet (see
+   > [issue #131](https://github.com/robotiq/isaacsim_assets/issues/131)).
+   > If you need precise arm control, use PhysX.
+
+   The rough adjustment:
 
    | Setting, on every arm joint | Value |
    |---|---|
@@ -145,9 +159,9 @@ robot.
    ```
 
    Run it once, then save the scene. These settings are for Newton only:
-   PhysX runs the arm well with the stock values, and the Newton values
-   haven't been tested with it. To keep one scene for both engines, the
-   teleop demo puts them in a variant (`Gripper = newton` on
+   PhysX runs the arm well with the stock values, and these haven't been
+   tested with PhysX. To keep one scene for both engines, the teleop demo
+   puts them in a variant (`Gripper = newton` on
    `/World` in `grippers/demo/teleop/ur5robot_with_2F-85.usda`).
 
 ### Franka Panda
