@@ -22,10 +22,10 @@ tooling, scenes) can be added over time.
 ## Layout
 
 ```
-docs/                             General Isaac Sim guides (scene setup, pick and place, ROS, AI agent)
-grippers/                         Gripper assets, their documentation and demos (see grippers/README.md)
-tests/                            Manual Isaac Sim runtime tests (need a GPU, not run in CI)
-LICENSE                           Repository license + third-party attributions
+docs/                             General Isaac Sim guides
+grippers/                         Gripper assets files
+tests/                            Isaac Sim runtime tests
+LICENSE                           license + third-party attributions
 ```
 
 ## Contents
@@ -47,11 +47,6 @@ and grip — same body tree, geometry, and collision for all of them — and who
 | `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | `Newton` |
 | `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
 | `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) |
-
-The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it has one
-`PhysX` and one `Newton` physics variant (one driven finger joint, the other finger follows it).
-The Newton coupling is a stiff MuJoCo joint equality baked into the asset, so no runtime tuning
-script is needed.
 
 `*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
 coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
