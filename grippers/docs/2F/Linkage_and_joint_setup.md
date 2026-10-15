@@ -120,7 +120,7 @@ The standalone gripper has its own articulation root so it can simulate by
 itself. When you mount it on a robot, remove it: the gripper's joints must
 belong to the robot's articulation. Two articulation roots is a common cause of
 a gripper that won't drive or behaves erratically. The step-by-step is in
-[Setup a scene](../../../docs/1-Setup_a_scene.md#13-attach-robotiq-gripper-to-the-robot).
+[Get started](../../../docs/2-Get_started.md#attach-the-robotiq-gripper-to-the-robot).
 
 ![Articulation Root API in the Physics property panel](img/articulation-root-panel.png)
 

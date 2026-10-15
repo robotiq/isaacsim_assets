@@ -19,7 +19,7 @@ Isaac Sim 6.1:
   waypoint to the next, like a `MoveJ` on a real robot, then sets
   `finger_joint` to open or close the gripper.
 
-It assumes the UR5e scene of §1.1 with the 2F-85 attached (§1.3), and the
+It assumes the UR5e scene of [Setup your scene](1-Setup_your_scene.md) with the 2F-85 attached ([Get started](2-Get_started.md)), and the
 cube of *Add a cube to manipulate* at `/World/Cube`.
 
 The script finds the cube where it is, so you can move it before you run the

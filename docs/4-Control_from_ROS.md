@@ -89,7 +89,7 @@ and save the scene. Press **Play**: the graph only runs while the simulation
 plays.
 
 The articulation root covers the arm and the gripper: once the gripper is
-attached (`1-setup_scene.md`, §1.3), its joints are part of the arm's
+attached ([Get started](2-Get_started.md)), its joints are part of the arm's
 articulation, so one graph handles both.
 
 ### 5. Test the connection

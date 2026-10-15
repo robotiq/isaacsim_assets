@@ -88,7 +88,7 @@ the two sides' offsets together, so the object's values still give a
 visible skin.
 
 Before and after images of this fix are in
-[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#all-engines).
+[Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md#all-engines).
 
 ## Fast motion: continuous collision detection (CCD)
 

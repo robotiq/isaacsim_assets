@@ -14,11 +14,12 @@ tooling, scenes) can be added over time.
 <!-- docs-site:exclude -->
 ## General documentation
 
-- [Setup a scene](./docs/1-Setup_a_scene.md)
-- [Do a pick and place](./docs/2-Do_a_pick_and_place.md)
-- [Control from ROS](./docs/3-Control_from_ROS.md)
-- [Connect AI agent to Isaac Sim](./docs/4-Connect_AI_agent_to_Isaac_Sim.md)
-- [Tune physics for grasping](./docs/5-Tune_physics_for_grasping.md)
+- [Setup your scene](./docs/1-Setup_your_scene.md)
+- [Get started](./docs/2-Get_started.md)
+- [Do a pick and place](./docs/3-Do_a_pick_and_place.md)
+- [Control from ROS](./docs/4-Control_from_ROS.md)
+- [Connect AI agent to Isaac Sim](./docs/5-Connect_AI_agent_to_Isaac_Sim.md)
+- [Tune physics for grasping](./docs/6-Tune_physics_for_grasping.md)
 
 ## Layout
 

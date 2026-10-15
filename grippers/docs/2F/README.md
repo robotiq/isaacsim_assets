@@ -67,9 +67,9 @@ way you run Isaac Sim must match it:
 | **Physics scene** | The stage needs a physics scene: **Create → Physics → Physics Scene** | Same |
 | **Finger drive** | Soft by default. To hold objects while the arm moves, raise its stiffness and damping: see [Tuning → PhysX variants](#physx-variants) | Already tuned in the asset |
 | **After every Play** | Nothing | Run [`Robotiq_2F_85/newton/apply_gripper_tuning.py`](../../Robotiq_2F_85/newton/apply_gripper_tuning.py) from **Window → Script Editor**, or the fingers go floppy |
-| **Robot arm** | Nothing | The arm runs on Newton too and needs its own settings: see step 5 of [Setup the robot](../../../docs/1-Setup_a_scene.md#universal-robot-ure5) |
-| **Objects to grasp** | Mass, collider and friction, plus PhysX contact settings: see [Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#physx) | Mass, collider and friction, plus MuJoCo contact settings: see [Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#newton) |
-| **ROS 2 joint states** | The standard **Joint States** graph works | On Isaac Sim 6.1, the standard **Joint States** graph crashes Isaac Sim at Play, because it asks Newton for joint efforts: see [Control from ROS](../../../docs/3-Control_from_ROS.md) |
+| **Robot arm** | Nothing | The arm runs on Newton too and needs its own settings: see step 5 of [Setup the robot](../../../docs/1-Setup_your_scene.md#universal-robots-ur5e) |
+| **Objects to grasp** | Mass, collider and friction, plus PhysX contact settings: see [Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md#physx) | Mass, collider and friction, plus MuJoCo contact settings: see [Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md#newton) |
+| **ROS 2 joint states** | The standard **Joint States** graph works | On Isaac Sim 6.1, the standard **Joint States** graph crashes Isaac Sim at Play, because it asks Newton for joint efforts: see [Control from ROS](../../../docs/4-Control_from_ROS.md) |
 | **Isaac Sim version** | 6.x | 6.1. On 6.0.1, the bundled Newton needs a fix: see the box in [§5.2](#52-why-newton-is-better-for-the-compliant-variant) |
 
 The table applies to both the 2F-85 and the 2F-140.
@@ -84,7 +84,7 @@ of the above.
 ## Tuning
 
 Start with the general guide,
-[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md): the
+[Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md): the
 object (mass, collider, friction) and the scene settings matter as much as
 the gripper. This section covers the settings specific to the 2F-85 and
 2F-140. Command **only `finger_joint`** with every variant: the other finger
@@ -118,7 +118,7 @@ demo leaves its objects at the MuJoCo defaults, not tuned).
 
 Select the prim in the **Stage** panel, then find its label in the
 **Property** panel. Object and scene settings are in the
-[general guide](../../../docs/5-Tune_physics_for_grasping.md#where-to-find-these-settings-in-isaac-sim).
+[general guide](../../../docs/6-Tune_physics_for_grasping.md#where-to-find-these-settings-in-isaac-sim).
 
 | Setting | Prim to select | Property panel label |
 |---|---|---|
@@ -296,7 +296,7 @@ to close.
 that must be re-applied after every Play with
 [`newton/apply_gripper_tuning.py`](../../Robotiq_2F_85/newton/apply_gripper_tuning.py).
 See [Tuning → Newton variants](#newton-variants) for that step, and
-[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#newton)
+[Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md#newton)
 for the contact settings of the objects you grasp.
 
 **Performance note:** the UR5 + gripper Newton sim is **physics-bound**. The real
