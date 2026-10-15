@@ -11,6 +11,8 @@ joints. `Robotiq_Hand_E.usda` is the entry point.
 
 Only `left_finger_joint` is driven; `right_finger_joint` follows it rigidly (a PhysX mimic joint, or
 a stiff MuJoCo joint equality on Newton), and both close with a positive position, 0 (open) to 25 mm.
+The Newton coupling is baked into the asset, so unlike the 2F grippers no runtime tuning script is
+needed.
 
 Most of the repetitive layers under `payloads/` and the fingertip collision pieces are generated:
 see `devel_helpers/gen_hande_layers.py` and `devel_helpers/gen_hande_fingertip_colliders.py`.
