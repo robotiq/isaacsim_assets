@@ -46,6 +46,8 @@ the ones loaded at startup). The session listens on `127.0.0.1:8777`
 Adjust `~/isaacsim` to your Isaac Sim install. One headless `SimulationApp` is
 started for the whole session (`conftest.py`); each test builds its own stage.
 
+With `--gui` the name of the running test (e.g. `test_gripper_pusher[Robotiq_2F_85-Newton_compliant]`) is shown at the top of the viewport. It is a UI overlay, so `--screenshot` and `--record` captures do not include it.
+
 ## Saved camera and lights for GUI runs
 
 A preset in `views/` holds the viewport camera pose, the viewport lighting
