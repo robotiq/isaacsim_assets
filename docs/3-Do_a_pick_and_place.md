@@ -1,9 +1,16 @@
 # Pick an place
 
+This present how to make a pick and place with a robot equipped with a gripper
+asset.
+
 ## Requirements
 
-The following instructions suppose that you setup the Isaac Sim scene as
-described in the `Setup scene` documentation.
+The following instructions suppose that you:
+
+1. set up the Isaac Sim scene as described in
+   [Setup your scene](1-Setup_your_scene.md);
+2. attached the gripper to the robot as described in
+   [Get started](2-Get_started.md).
 
 ## Pick and place from a Python script
 
