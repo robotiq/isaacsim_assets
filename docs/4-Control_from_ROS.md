@@ -235,7 +235,7 @@ Any node that publishes on `/isaac_joint_commands` and reads
   another terminal or left over from an earlier session. Use that one, or
   stop it (`pkill rmw_zenohd`) and start yours. If you restart the router,
   restart Isaac Sim too.
-- **ROS 2 does not see Isaac Sim's topics:** check that the router runs and
+- **ROS 2 does not see Isaac Sim's topics:** check that the router is running and
   that Isaac Sim was started with `ZENOH_CONFIG_OVERRIDE` set (step 2). Check
   that Windows Firewall does not block Isaac Sim: an **NVIDIA Omniverse Kit**
   inbound rule set to **Block** (created if you refused the firewall prompt
@@ -250,6 +250,6 @@ Any node that publishes on `/isaac_joint_commands` and reads
 
 ---
 
-**Next:** [Connect AI agent to Isaac Sim](5-Connect_AI_agent_to_Isaac_Sim.md): let an AI agent build and inspect the scene.
+**Next:** [Connect an AI agent to Isaac Sim](5-Connect_AI_agent_to_Isaac_Sim.md): let an AI agent build and inspect the scene.
 
 <!-- docs-site:exclude -->

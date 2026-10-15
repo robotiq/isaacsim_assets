@@ -1,9 +1,9 @@
 # Connecting an AI agent to Isaac Sim via MCP
 
-It is possible to connect an AI agent like **Claude** to Isaac Sim using a
-MCP **Model Context Protocol** server. Once connected, the agent can
-build Action Graphs, inspect prims, step physics, read/write joint state, run
-Python against the stage, and save. This is a convenient way to speed up
+You can connect an AI agent such as **Claude** to Isaac Sim through an
+MCP (**Model Context Protocol**) server. Once connected, the agent can
+build Action Graphs, inspect prims, step physics, read and write joint states,
+run Python on the stage, and save the scene. This is a convenient way to speed up
 your development with Isaac Sim.
 
 ```text
@@ -40,7 +40,7 @@ Everything goes in one folder in your home directory:
    This creates an `mcp-servers` folder in your home folder for the MCP
    server files.
 
-2. Clone the Isaac Sim extension from GitHub repository into the `extension`
+2. Clone the Isaac Sim extension from its GitHub repository into the `extension`
    folder next to the venv.
 
    ```bash
@@ -119,7 +119,7 @@ Everything goes in one folder in your home directory:
    adds these flags for you. It looks for the extension in its own folder by
    default, so set `MCP_EXT_ROOT=~/mcp-servers/isaacsim/extension` first.
 
-5. Check it works. Isaac's console (**Window → Console**) should show
+5. Check that it works. Isaac Sim's console (**Window → Console**) should show
    `Isaac Sim MCP server started on localhost:8766`, and `claude mcp list`
    should show `isaac-sim` as **Connected**. Then start a **new** Claude Code
    session, since MCP tools only load at session start, and ask it to call
@@ -128,10 +128,11 @@ Everything goes in one folder in your home directory:
 Two gotchas:
 
 - **Launch Isaac Sim from a clean shell.** Do *not* `source /opt/ros/humble`
-  first, or Humble's Python 3.10 shadows Isaac's 3.11/3.12 and the extension
-  refuses to load. Source ROS only in the consumer terminals.
+  first, or Humble's Python 3.10 shadows Isaac Sim's 3.11/3.12 and the
+  extension refuses to load. Source ROS 2 only in the terminals that run
+  ROS 2 nodes.
 - **`get_isaac_logs` is the best diagnostic.** Many graph and physics errors
-  never appear in tool responses, only in Isaac's console.
+  never appear in tool responses, only in Isaac Sim's console.
 
 <!-- docs-site:exclude -->
 

@@ -1,13 +1,13 @@
 <!-- docs-site:exclude -->
 # isaacsim_assets
 
-📖 See rendered documentation on: https://robotiq.github.io
+📖 See the rendered documentation at: https://robotiq.github.io
 <!-- docs-site:exclude -->
 
 Public [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) assets
 maintained by [Robotiq](https://robotiq.com). This repository is a home for
 Robotiq simulation assets and the documentation needed to use them. Three
-grippers are published here today, the **2F-85**, the **2F-140** and the **Hand-E**, and the
+grippers are published here today: the **2F-85**, the **2F-140** and the **Hand-E**. The
 layout is organized by asset category so other assets (grippers, robots,
 tooling, scenes) can be added over time.
 
@@ -18,7 +18,7 @@ tooling, scenes) can be added over time.
 - [Get started](./docs/2-Get_started.md)
 - [Do a pick and place](./docs/3-Do_a_pick_and_place.md)
 - [Control from ROS](./docs/4-Control_from_ROS.md)
-- [Connect AI agent to Isaac Sim](./docs/5-Connect_AI_agent_to_Isaac_Sim.md)
+- [Connect an AI agent to Isaac Sim](./docs/5-Connect_AI_agent_to_Isaac_Sim.md)
 - [Tune physics for grasping](./docs/6-Tune_physics_for_grasping.md)
 
 ## Layout
@@ -38,9 +38,9 @@ LICENSE                           license + third-party attributions
 documentation.
 
 The 2F-85, 2F-140 and Hand-E grippers are authored for Isaac Sim 6 with the
-same layout: each is a single asset whose `Physics` variant selects the solver
-and grip — same body tree, geometry, and collision for all of them — and whose
-`Fingertip` variant selects the fingertip.
+same layout. Each is a single asset whose `Physics` variant selects the solver
+and grip (the body tree, geometry and collision are the same for all of them),
+and whose `Fingertip` variant selects the fingertip.
 
 | | 2F-85 | 2F-140 | Hand-E |
 | --- | --- | --- | --- |
@@ -63,7 +63,7 @@ Original work in this repository (documentation, scripts, and Robotiq-authored
 asset content) is released under the **BSD 3-Clause License**.
 
 Some asset files were originally copied or derived from a third party (the NVIDIA
-Isaac Sim asset library) and remain under its own license. See
+Isaac Sim asset library) and remain under that party's license. See
 [`LICENSE`](LICENSE) for the full text and attributions, and the `LICENSE` files
 bundled next to the affected assets.
 <!-- docs-site:exclude -->

@@ -1,15 +1,14 @@
 # Get started
 
-Attach a Robotiq gripper to the robot of [Setup your scene](1-Setup_your_scene.md),
-then open and close it from the Isaac Sim GUI. The steps use the 2F-85 on a
-UR5e; the other grippers and the Franka Panda work the same way.
+This page shows how to attach a Robotiq gripper to a robot in an Isaac Sim scene
+(see [Setup your scene](1-Setup_your_scene.md)) and how to control it.
 
 ## Attach the Robotiq gripper to the robot
 
 > **Warning:** Use this method rather than Isaac Sim's **Robot Assembler**
 > (**Tools → Robotics → Asset Editors → Robot Assembler**).
 
-1. **Get the gripper asset from Robotiq Isaac Sim Asset repository.** Clone
+1. **Get the gripper asset from the Robotiq Isaac Sim asset repository.** Clone
    the repository in your project folder. The `.usd` files are stored with
    [Git LFS](https://git-lfs.com), so install it *before* cloning. Open a
    terminal in the folder where you want the project (for example
@@ -20,13 +19,13 @@ UR5e; the other grippers and the Franka Panda work the same way.
    git clone https://github.com/robotiq/isaacsim_assets.git
    ```
 
-   This creates an copy of the Robotiq Isaac Sim Asset repository in your project folder.
+   This creates a copy of the Robotiq Isaac Sim asset repository in your project folder.
 
    Open the **Content** browser (**Window → Browsers → Content**)
-   and navigate inside the previously cloned Robotiq Isaac Sim Asset repository
-   to the folder of the Robotiq gripper asset you want to import.
+   and, inside the cloned repository, go to the folder of the
+   Robotiq gripper asset you want to import.
 
-2. **Add the gripper to the robot.** In the **Content** browser, drag the usda
+2. **Add the gripper to the robot.** In the **Content** browser, drag the `.usda`
    file of the gripper you want to import (`Robotiq_2F_85.usda` in this example)
    onto the robot's flange body in the **Stage** panel.
 
@@ -40,21 +39,21 @@ UR5e; the other grippers and the Franka Panda work the same way.
 
    ![Drag and drop the gripper on the flange body](img/UR5e%20attach%20gripper.png)
 
-   > **Warning** This needs **Isaac Sim 6.x**. Isaac Sim 5.0 does not simulate
+   > **Warning:** This needs **Isaac Sim 6.x**. Isaac Sim 5.0 does not simulate
    > rigid bodies nested inside another rigid body: every gripper joint then
    > fails with `CreateJoint - no bodies defined at body0 and body1`.
 
-   > **Warning**
+   > **Warning:**
    > Do not use the default gripper asset available in Isaac Sim. This asset is
-   > not developped by robotiq and got some important limitation.
+   > not developed by Robotiq and has some important limitations.
 
-3. **Choose gripper variant.**
-   Robotiq Isaac Sim asset have some variant
-   which have the effect of changing the configuration of the asset.
-   As an example, variant will let you change the finger of the 2F85, select
-   the physics egine and grip mechanism.
-   Select the gripper prism in the stage tree (exampel: `Robotiq_2F_85` prim)
-   and set the variant of your choose in the `property` panel.
+3. **Choose the gripper variants.**
+   The Robotiq Isaac Sim assets have variant sets
+   that change the configuration of the asset.
+   For example, the variants let you change the fingertip of the 2F-85 and select
+   the physics engine and grip mechanism.
+   Select the gripper prim in the **Stage** panel (for example the `Robotiq_2F_85` prim)
+   and choose the variants you want in the **Property** panel.
 
    ![Select gripper variant](img/Ur5e%202F85%20variant.png)
 
@@ -63,14 +62,14 @@ UR5e; the other grippers and the Franka Panda work the same way.
    simulated without an arm. Two things make it standalone, and both must be
    undone on an arm:
 
-   - Its `root_joint` fixes it at a fixed position in the world. On an arm,
+   - Its `root_joint` fixes it to the world. On an arm,
      it would hold the gripper in place while the arm tries to move it.
    - Its articulation root makes it a separate robot for the physics engine.
      On an arm, its joints must belong to the arm's articulation instead.
 
    A fixed joint must then weld the gripper to the flange. Being a
    child of the flange body only
-   places the gripper there; it does not connect them physically. With the
+   puts the gripper in place; it does not connect them physically. With the
    timeline stopped, in the **Stage** panel expand the gripper down to its
    inner prim, `<FLANGE>/Robotiq_2F_85/Robotiq_2F_85` (two levels named
    `Robotiq_2F_85`), then:
@@ -88,7 +87,7 @@ UR5e; the other grippers and the Franka Panda work the same way.
    2. **Disable the gripper's world joint.** Expand the inner `Robotiq_2F_85`
       prim, right-click `root_joint` and choose **Deactivate**.
    
-      ![Desactivate gripper root joint](img/UR5e%20desactivate%202F85%20root%20joint.png)
+      ![Deactivate gripper root joint](img/UR5e%20desactivate%202F85%20root%20joint.png)
 
    3. **Weld the gripper to the flange.** Click the flange body (`FLANGE` in
       the table above), then **Ctrl+click** the gripper's `base_link`, inside
@@ -99,7 +98,7 @@ UR5e; the other grippers and the Franka Panda work the same way.
       ![Weld the gripper to the flange](img/UR5e%20attach%202F85%20to%20flange%20-%20fixed%20joint.png)
 
    <details>
-   <summary>Alternative: do the same three changes with a script</summary>
+   <summary>Alternative: make the same three changes with a script</summary>
 
    Open **Window → Script Editor**, set `ROBOT` and `FLANGE` from the table
    above, paste the script and click **Run**:
@@ -148,7 +147,7 @@ UR5e; the other grippers and the Franka Panda work the same way.
 
 Here is a quick way to play with the robot and see the gripper work. Do
 these steps **while the simulation runs**: the joint motors then move the
-robot, smoothly, like a real robot.
+robot smoothly, like a real robot.
 
 1. Press **Play**.
 2. Open **Tools → Physics → Physics Inspector** and select the robot's
@@ -161,7 +160,7 @@ robot, smoothly, like a real robot.
    motor should go. (**Joint States Position** would teleport the joints
    instead.)
 4. **Move the arm.** Drag the slider of an arm joint, for example
-   `wirst_3_joint`.
+   `wrist_3_joint`.
 5. **Open and close the gripper.** Drag the `finger_joint` slider.
 6. Press **Stop**. The robot goes back to its starting pose, but the targets
    you changed **stay changed**: on the next **Play**, the motors drive the

@@ -1,6 +1,6 @@
 # Robotiq gripper assets
 
-Isaac Sim 6 assets for Robotiq grippers. Each gripper is one USD file: open or
+Isaac Sim assets for Robotiq grippers. Each gripper is one USD file: open or
 reference it, then pick the physics engine and fingertip with its variant sets.
 
 ## Available grippers
@@ -9,9 +9,9 @@ reference it, then pick the physics engine and fingertip with its variant sets.
 | --- | --- | --- | --- | --- |
 | 2F-85 | [`Robotiq_2F_85/Robotiq_2F_85.usda`](Robotiq_2F_85/Robotiq_2F_85.usda) | `Physx_parallel_grip` *(default)*, `Physx_compliant`, `Newton_compliant`, `Newton_parallel_grip` | `Standard` *(default)*, `Tactile_TSF85` | [2F guide](docs/2F/README.md), [Newton tuning](Robotiq_2F_85/newton/README.md) |
 | 2F-140 | [`Robotiq_2F_140/Robotiq_2F_140.usda`](Robotiq_2F_140/Robotiq_2F_140.usda) | `Physx_parallel_grip` *(default)*, `Physx_compliant`, `Newton_compliant`, `Newton_parallel_grip` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | [2F guide](docs/2F/README.md), [Newton tuning](Robotiq_2F_140/newton/README.md) |
-| Hand-E | [`Robotiq_Hand_E/Robotiq_Hand_E.usda`](Robotiq_Hand_E/Robotiq_Hand_E.usda) | `PhysX` *(default)*, `Newton` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` (+ `FingertipMount`: `Outside` / `Inside`) | [Hand-E README](docs/HandE/README.md) |
+| Hand-E | [`Robotiq_Hand_E/Robotiq_Hand_E.usda`](Robotiq_Hand_E/Robotiq_Hand_E.usda) | `PhysX` *(default)*, `Newton` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` (+ `FingertipMount`: `Outside` / `Inside`) | [Hand-E guide](docs/HandE/README.md) |
 
-`Physx_*` variants run on the regular Isaac Sim app; `Newton_*` variants need
+The PhysX variants run on the regular Isaac Sim app. The Newton variants need
 Isaac Sim started with the Newton engine. See
 [Physics engines](docs/2F/README.md#physics-engines).
 
@@ -32,7 +32,7 @@ Robotiq_<model>/
 **Gripper guides**
 
 - [2F-85 / 2F-140 guide](docs/2F/README.md): variants, physics engines, tuning, the physics of the mechanism, Newton.
-- [Hand-E](docs/HandE/README.md): variants, joints, source specifications and finger force per fingertip.
+- [Hand-E guide](docs/HandE/README.md): variants, joints, source specifications and finger force per fingertip.
 - Newton tuning: [2F-85](Robotiq_2F_85/newton/README.md), [2F-140](Robotiq_2F_140/newton/README.md).
 
 **Using a gripper in a scene** (general Isaac Sim guides, in [`../docs`](../docs/))
@@ -50,4 +50,4 @@ Robotiq_<model>/
   - [Controller profiles](demo/teleop/CONTROLLER_PROFILES.md): add a profile for your gamepad.
   - [Physics tuning](demo/teleop/PHYSICS_TUNING.md)
 - [MCP bridge](demo/mcp_bridge/README.md): connect Claude Code to a running Isaac Sim.
-- [Recording a Newton video](demo/video_export/NEWTON_VIDEO_RECORDING.md)
+- [Record a Newton video](demo/video_export/NEWTON_VIDEO_RECORDING.md)

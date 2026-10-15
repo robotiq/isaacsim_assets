@@ -1,11 +1,14 @@
-# Pick an place
+# Pick and place
 
-This present how to make a pick and place with a robot equipped with a gripper
-asset.
+This page shows how to do a pick and place with a robot equipped with a gripper
+asset. It is only a way to see the asset in action.
+The gripper and the robot are controlled by a Python script run directly
+in Isaac Sim. This is not the standard way to control a simulated
+robot system. Refer to the [Isaac Sim documentation](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html) for details.
 
 ## Requirements
 
-The following instructions suppose that you:
+The following instructions assume that you have:
 
 1. set up the Isaac Sim scene as described in
    [Setup your scene](1-Setup_your_scene.md);
@@ -19,17 +22,17 @@ Isaac Sim, from the **Script Editor**, and only uses what ships with
 Isaac Sim 6.1:
 
 - **Where to go.** Each waypoint is a position of the gripper (above the
-  cube, on the cube, above the drop point...), always pointing down. The
-  Robot Poser's inverse kinematics solver (`isaacsim.robot.poser`) turns it
-  into joint angles.
+  cube, on the cube, above the drop point, and so on), always pointing down. The
+  Robot Poser's inverse kinematics solver (`isaacsim.robot.poser`) turns each
+  waypoint into joint angles.
 - **How to get there.** The script ramps the arm's drive targets from one
   waypoint to the next, like a `MoveJ` on a real robot, then sets
   `finger_joint` to open or close the gripper.
 
-It assumes the UR5e scene of [Setup your scene](1-Setup_your_scene.md) with the 2F-85 attached ([Get started](2-Get_started.md)), and the
-cube of *Add a cube to manipulate* at `/World/Cube`.
+It assumes the UR5e scene of [Setup your scene](1-Setup_your_scene.md) with
+the 2F-85 attached ([Get started](2-Get_started.md)).
 
-The script finds the cube where it is, so you can move it before you run the
+The script finds the cube wherever it is, so you can move the cube before you run the
 script. With the timeline **stopped**, open **Window → Script Editor**, paste
 the script and click **Run**. It presses **Play** itself; the whole cycle
 takes about 15 seconds.
@@ -124,7 +127,7 @@ asyncio.ensure_future(pick_and_place())
 
 When it ends, the Console prints `Pick and place done` and the cube sits at
 `PLACE`. Change `PLACE` to put it elsewhere, and `GRIP_CLOSED` (up to `47`)
-to squeeze harder. The script works on the gripper's default
+to squeeze harder. The script works with the gripper's default
 `Physx_parallel_grip` variant.
 
 Press **Stop** to put the cube back where it started.
