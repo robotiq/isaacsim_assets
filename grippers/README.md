@@ -38,11 +38,12 @@ Robotiq_<model>/
 
 **Using a gripper in a scene** (general Isaac Sim guides, in [`../docs`](../docs/))
 
-- [Setup a scene](../docs/1-Setup_a_scene.md): mount a gripper on a UR5e or Franka.
-- [Do a pick and place](../docs/2-Do_a_pick_and_place.md)
-- [Control from ROS](../docs/3-Control_from_ROS.md)
-- [Connect an AI agent to Isaac Sim](../docs/4-Connect_AI_agent_to_Isaac_Sim.md)
-- [Tune physics for grasping](../docs/5-Tune_physics_for_grasping.md): object mass, friction and contact settings, for any gripper.
+- [Setup your scene](../docs/1-Setup_your_scene.md): a room, a cube and a UR5e or Franka arm.
+- [Get started](../docs/2-Get_started.md): attach the gripper to the arm and try it.
+- [Do a pick and place](../docs/3-Do_a_pick_and_place.md)
+- [Control from ROS](../docs/4-Control_from_ROS.md)
+- [Connect an AI agent to Isaac Sim](../docs/5-Connect_AI_agent_to_Isaac_Sim.md)
+- [Tune physics for grasping](../docs/6-Tune_physics_for_grasping.md): object mass, friction and contact settings, for any gripper.
 
 **Demo**
 

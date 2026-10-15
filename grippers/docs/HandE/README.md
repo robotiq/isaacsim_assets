@@ -13,7 +13,7 @@ Only `left_finger_joint` is driven; `right_finger_joint` follows it rigidly (a P
 a stiff MuJoCo joint equality on Newton), and both close with a positive position, 0 (open) to 25 mm.
 The Newton coupling is baked into the asset, so unlike the 2F grippers no runtime tuning script is
 needed. For object and scene settings that make a grasp hold, see
-[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md).
+[Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md).
 
 Most of the repetitive layers under `payloads/` and the fingertip collision pieces are generated:
 see `devel_helpers/gen_hande_layers.py` and `devel_helpers/gen_hande_fingertip_colliders.py`.
