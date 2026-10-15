@@ -1,164 +1,157 @@
 # Physics tuning for the UR5e + 2F-85 + graspable objects
 
-Notes on the non-default USD attribute values we ended up with after
-tuning the gripper for reliable grasping in Isaac Sim 6. None of this is
-required for the teleop to *function* — but everything below affects
-whether the gripper actually holds an object during motion.
+The teleop scene (`ur5robot_with_2F-85.usda`) overrides some physics values
+of the gripper asset and sets others on the objects to grasp. This page
+lists those values and why each one is needed. The gripper asset itself is
+not changed: everything below is authored in the demo scene.
 
-Two categories:
+None of this is needed for the ROS teleop to *run*. It is what makes the
+gripper hold an object while the arm moves.
 
-- **Gripper (2F-85)** — variant choice, drive gains, joint topology
-- **Objects (cube / cylinder)** — mass, contact offsets, damping, solver
-  iterations
+The values apply to the scene's default `physx` gripper, which uses the
+`Physx_compliant` variant. The objects' values apply to any PhysX gripper,
+including `Physx_parallel_grip`. For the Newton gripper, see
+[Robotiq_2F_85/newton/README.md](../../Robotiq_2F_85/newton/README.md).
 
-## 2F-85 variant: use `Physx_Loop`, not `Physx_Mimic`
+## Gripper: `finger_joint` drive
 
-The NVIDIA 2F-85 asset has a `Physics` variant set on
-`.../Robotiq_2F_85_edit` with three options:
+The asset's finger drive is very soft: it assumes you put your own
+controller on top. The demo drives the gripper directly through the joint
+drive, so it needs firmer values:
 
-- `None` — no physics constraints; pure kinematic
-- `Physx_Mimic` — mimic joints hard-couple the passive fingers to
-  `finger_joint` algebraically
-- **`Physx_Loop`** ← the one we use
-
-The Physx_Loop variant models the real four-bar linkage as a proper
-closed kinematic chain, with the `*_inner_knuckle_joint`s marked
-`excludeFromArticulation = True` and solved as maximal-coordinate
-loop-closure constraints. Compared to the mimic variant this gives:
-
-- More realistic contact behavior (the fingertip pad can rotate slightly
-  under load to conform to the object, like the real hardware)
-- Better handling when the mimic would fight a contact force
-- Slightly higher solver cost — irrelevant at our scale
-
-The trade-off is small residual compliance at the loop-closure joints
-(you can see the inner knuckle wiggle a fraction of a degree under load).
-That's fundamental to maximal-coordinate constraints; ways to reduce it
-below.
-
-**Important consequence for teleop:** under Physx_Loop, command **only
-`finger_joint`**. The remaining finger joints are solved by the
-loop-closure constraint; sending explicit targets for them fights the
-solver. All frontend scripts in `grippers/demo/teleop/` do this
-correctly.
-
-## `finger_joint` drive — what works
-
-The NVIDIA asset defaults are very soft (they assume you'll layer your
-own controller on top). We're driving the gripper directly with the
-`PhysicsDriveAPI` and need firmer values:
-
-| Attribute | Asset default | Working value | Effect |
+| Attribute | Asset (`Physx_compliant`) | Demo scene | Effect |
 |---|---|---|---|
-| `drive:angular:physics:stiffness` | 0.17 | 50 | Actually holds the commanded angle under contact load |
-| `drive:angular:physics:damping` | 2e-4 | 3.0 | Kills the underdamped wobble when arm accelerates while gripping |
-| `drive:angular:physics:maxForce` | 16.5 N·m | 5.0 N·m | Prevents the gripper from crushing the object past its `restOffset` |
+| `drive:angular:physics:stiffness` | 0.17 | **50** | Holds the commanded angle under contact load. |
+| `drive:angular:physics:damping` | 0.0002 | **3** | Stops the finger wobbling when the arm accelerates during a grasp. |
+| `drive:angular:physics:maxForce` | 16.5 N·m | **1 N·m** | Caps the grip force so the fingers don't crush through the object. |
 
-`maxForce = 5 N·m` at the 30 mm effective lever arm is ~170 N of finger
-force. Enough to hold a 100 g cube through fast arm motion without
-tunneling through it.
+Raising the stiffness further holds better but passes vibration into the
+arm. Stiffness 50 with damping 3 is the balance we kept.
 
-## Contact offsets on graspable objects
+Command **only `finger_joint`**. With the compliant variant, the other
+finger joints are solved by the closed linkage; sending them targets fights
+the solver. All the demo's frontends send `finger_joint` only.
 
-Every rigid body has PhysX contact offset attributes that default to
-`-inf` (meaning "use scene default"). For centimeter-scale objects the
-scene default is too small — you get visible interpenetration during
-grasp. Set explicit values:
+## Gripper: closed-linkage solver iterations
 
-| Attribute | Default | Value we use | What it does |
+The compliant variant closes the finger linkage with loop-closure joints,
+which have a little residual give: you can see the inner knuckles move a
+fraction of a degree under load. Two settings reduce it:
+
+- **Per-body iterations** on the four bodies of the linkage
+  (`left_outer_finger`, `left_inner_finger`, `right_outer_finger`,
+  `right_inner_finger`):
+  ```
+  physxRigidBody:solverPositionIterationCount = 64
+  physxRigidBody:solverVelocityIterationCount = 8
+  ```
+  PhysX uses the highest count among the bodies linked by a constraint, so
+  these apply to the whole linkage.
+- **Scene stabilization**, on `/PhysicsScene`:
+  ```
+  physxScene:enableStabilization = True
+  ```
+  PhysX runs an extra pass that re-converges constraints between frames.
+  It is cheap and visibly tightens the linkage.
+
+The remaining instability of the compliant linkage under PhysX is why the
+asset also has Newton variants, which model it more robustly.
+
+## Arm: articulation solver iterations
+
+On the articulation root (`/World/ur5e/root_joint`):
+
+```
+physxArticulation:solverPositionIterationCount = 255
+physxArticulation:solverVelocityIterationCount = 8
+```
+
+With only 1 velocity iteration, contact velocity errors at the fingertips
+aren't resolved and the grasp jitters.
+
+## Objects to grasp
+
+Each graspable object needs the values below. `add_props.py` creates its
+props with them.
+
+| Attribute | Default | Demo scene | Why |
 |---|---|---|---|
-| `physxCollision:contactOffset` | `-inf` | 0.002 m (2 mm) | PhysX starts generating contact constraints when this close to the surface |
-| `physxCollision:restOffset` | `-inf` | 0.0005 m (0.5 mm) | Hard "skin" — objects rest this far apart at zero relative velocity, never compress through it |
+| `physics:mass` | 0 | **0.1 kg** (adjust per object) | Primitive shapes often come with mass 0 *and* density 0. PhysX then has no valid inertia, any contact force accelerates the object infinitely, and the fingers pass straight through it. |
+| `physxCollision:contactOffset` | scene default | **0.002 m** | Distance at which PhysX starts generating contacts. The scene default is too small for centimetre-scale objects. |
+| `physxCollision:restOffset` | scene default | **0.0005 m** | A thin "skin" PhysX keeps between surfaces, so the fingers can't press into the object. Must be smaller than `contactOffset`. |
+| `physxRigidBody:linearDamping` | 0 | **0.1** | Without damping, every contact disturbance makes the object oscillate in the grip. |
+| `physxRigidBody:solverVelocityIterationCount` | 1 | **4** | Resolves contact velocities better, which reduces jitter in the grip. |
 
-The pad meshes on the gripper are inside instance proxies (referenced
-NVIDIA asset), so USD blocks authoring offsets there. Setting them on
-the object side alone is enough because PhysX pairs the object's offsets
-against the pad's scene-default (small) — the pair still sums to a
+Setting the offsets on the object is enough. The finger pads are inside
+the referenced asset, so the scene can't set offsets on them, but PhysX adds
+the two sides' offsets together, so the object's values still give a
 visible skin.
 
-## Rigid-body properties on graspable objects
+Before and after images of this fix are in the gripper README,
+[Tuning](../../docs/2F/README.md#tuning).
 
-Beyond contact offsets, three more attributes matter for stable grasp:
+## Fast motion: continuous collision detection (CCD)
 
-| Attribute | Default | Value | Why |
-|---|---|---|---|
-| `physics:mass` | 0.0 (!) | 0.1 kg | The primitive-shape assets ship with `mass = 0, density = 0`, which gives PhysX undefined inertia (`centerOfMass = (-inf, -inf, -inf)`). Any contact force accelerates infinitely — objects tunnel through anything. Setting mass fixes this. |
-| `physxRigidBody:linearDamping` | 0.0 | 0.1 | Absorbs the small contact-noise oscillation that would otherwise vibrate the object at rest. |
-| `physxRigidBody:solverVelocityIterationCount` | 1 | 4 | Better contact-velocity resolution. Reduces jitter during grasp. |
+Physics advances in steps of a few milliseconds. The default collision
+detection only checks for overlap at the end of each step, so an object
+that moves further than its own thickness in one step can pass through a
+finger unseen. As a rule of thumb this happens when
+`speed × step time > thickness`: about 0.5 m/s for a 2 mm gap with a 4 ms
+step.
 
-## Articulation solver iterations
+If fast arm moves still make objects pass through the fingers, turn on
+CCD **on the small, fast object**:
 
-The full UR5e articulation runs 32 position / 1 velocity iterations by
-default. We bumped **velocity** iterations to 2 to sharpen contact
-resolution on the gripper end.
+| | `physxRigidBody:enableCCD` | `physxRigidBody:enableSpeculativeCCD` |
+|---|---|---|
+| How it works | Sweeps the body's motion and finds the time of impact | Enlarges the collision check by the expected motion |
+| Cost | High | Low |
+| Catches | Straight and rotating motion | Straight motion only |
+| Side effects | Can make contacts "sticky" | Almost none |
 
-Additionally, for the four bodies attached to the loop-closure joints
-(`left_outer_finger`, `left_inner_finger`, `right_outer_finger`,
-`right_inner_finger`), we set per-body iterations higher:
-
-```
-physxRigidBody:solverPositionIterationCount = 64
-physxRigidBody:solverVelocityIterationCount = 8
-```
-
-PhysX uses the max iteration count across bodies in a constraint island,
-so these four values apply to the island that includes the loop closures.
-Result: less visible residual motion at the inner knuckles.
-
-## Scene-level: enable stabilization
-
-```
-physxScene:enableStabilization = True
-```
-
-One-flag change on `/PhysicsScene`. PhysX runs an extra stabilization
-pass that re-converges constraints between frames. Cheap; measurably
-tightens the loop closures.
+Use **speculative CCD** first. Turn it on per object, not on static
+geometry (it gives them nothing) and not on every body: on a busy scene,
+CCD everywhere can multiply the physics cost 2–5×. The demo scene leaves
+CCD off; its objects and speeds don't need it.
 
 ## What we tried and reverted
 
-- **Cranking `finger_joint.stiffness` to hold better** — worked but
-  transferred vibration into the arm. K=50, C=3.0 hits the right damping
-  ratio for the finger inertia.
-- **Turning off the Butterworth smoothing in Servo** — thought Servo's
-  `internal_joint_state_` staleness came from the LPF; turns out it's a
-  separate integration-tracking issue in Servo's implementation. The LPF
-  is already at its minimum (`butterworth_filter_coeff = 1.5`) by
-  default.
-- **Rewriting the bridge to compute deltas from measured state** —
-  aimed at fixing the "first move after Stop→Play" jump. Worked in
-  principle but introduced its own edge cases; reverted to the simple
-  forward-with-NaN-guard bridge and use the `Circle (○)` gamepad button
-  to trigger `stop_servo → start_servo` as a manual resync instead.
+- **Much higher `finger_joint` stiffness:** held better, but passed
+  vibration into the arm.
+- **Turning off MoveIt Servo's smoothing filter** to fix stale joint
+  states in Servo: the staleness has another cause, and the filter is
+  already at its minimum (`butterworth_filter_coeff = 1.5`).
+- **Computing the bridge's deltas from measured joint states**, to fix the
+  jump on the first move after Stop → Play: it worked but added its own
+  edge cases. The bridge stays simple, and the gamepad's resync button
+  restarts Servo instead.
 
 ## Summary of changed USD attributes
 
-For quick reference, the attributes overridden from the NVIDIA asset
-defaults:
-
 ```
-/World/ur5e/wrist_3_link/Robotiq_2F_85_edit
-    Physics variant:  None|Physx_Mimic|Physx_Loop  →  Physx_Loop
+/World (variant set)
+    Gripper                                          physx  (gripper Physics = Physx_compliant)
 
 .../Robotiq_2F_85/Joints/finger_joint
-    drive:angular:physics:stiffness      0.17    →  50.0
-    drive:angular:physics:damping        2e-4    →  3.0
-    drive:angular:physics:maxForce       16.5    →  5.0
+    drive:angular:physics:stiffness                  0.17    ->  50
+    drive:angular:physics:damping                    0.0002  ->  3
+    drive:angular:physics:maxForce                   16.5    ->  1
 
-/World/Cube (or your graspable objects)
-    physics:mass                          0.0    →  0.1
-    physxCollision:contactOffset          -inf   →  0.002
-    physxCollision:restOffset             -inf   →  0.0005
-    physxRigidBody:linearDamping          0.0    →  0.1
-    physxRigidBody:solverVelocityIterationCount   1  →  4
+.../Robotiq_2F_85/{left,right}_{outer,inner}_finger
+    physxRigidBody:solverPositionIterationCount      inherit ->  64
+    physxRigidBody:solverVelocityIterationCount      inherit ->  8
 
 /World/ur5e/root_joint (articulation root)
-    physxArticulation:solverVelocityIterationCount   1  →  2
+    physxArticulation:solverPositionIterationCount           ->  255
+    physxArticulation:solverVelocityIterationCount           ->  8
 
-.../{left,right}_{outer,inner}_finger (bodies in the loop-closure island)
-    physxRigidBody:solverPositionIterationCount   inherit  →  64
-    physxRigidBody:solverVelocityIterationCount   inherit  →  8
+/World/Cube (and every graspable object)
+    physics:mass                                     0       ->  0.1 (per object)
+    physxCollision:contactOffset                     default ->  0.002
+    physxCollision:restOffset                        default ->  0.0005
+    physxRigidBody:linearDamping                     0       ->  0.1
+    physxRigidBody:solverVelocityIterationCount      1       ->  4
 
 /PhysicsScene
-    physxScene:enableStabilization       False   →  True
+    physxScene:enableStabilization                   False   ->  True
 ```

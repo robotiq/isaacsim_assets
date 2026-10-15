@@ -191,7 +191,7 @@ Newton/MuJoCo settings can't be saved in USD (`opt.impratio` and the finger
 loop-closure equality `solref`); run the gripper's
 `newton/apply_gripper_tuning.py` from **Window → Script Editor** after each
 Stop → Play, or the fingers go floppy. The Hand-E needs no tuning. See
-[the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
+[the 2F gripper guide](../../docs/2F/README.md) for the
 details.
 
 ## Haptics (Linux, DualSense)

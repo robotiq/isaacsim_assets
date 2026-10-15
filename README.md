@@ -1,4 +1,8 @@
+<!-- docs-site:exclude -->
 # isaacsim_assets
+
+📖 Full documentation: https://robotiq.github.io
+<!-- docs-site:exclude -->
 
 Public [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) assets
 maintained by [Robotiq](https://robotiq.com). This repository is a home for
@@ -7,12 +11,20 @@ grippers are published here today, the **2F-85**, the **2F-140** and the **Hand-
 layout is organized by asset category so other assets (grippers, robots,
 tooling, scenes) can be added over time.
 
+<!-- docs-site:exclude -->
+## General documentation
+
+- [Setup a scene](./docs/1-Setup_a_scene.md)
+- [Do a pick and place](./docs/2-Do_a_pick_and_place.md)
+- [Control from ROS](./docs/3-Control_from_ROS.md)
+- [Connect AI agent to Isaac Sim](./docs/4-Connect_AI_agent_to_Isaac_Sim.md)
+
 ## Layout
 
 ```
+docs/                             General Isaac Sim guides (scene setup, pick and place, ROS, AI agent)
 grippers/                         Gripper assets
-  GRIPPER_SIMULATION_GUIDE.md     How to simulate Robotiq grippers in Isaac Sim
-  images/                         Figures used by the guide
+  docs/2F/                        2F-85 / 2F-140 guide (variants, tuning, physics, Newton)
   Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
   Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
   Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
@@ -20,9 +32,6 @@ grippers/                         Gripper assets
 tests/runtime/                    Manual Isaac Sim runtime tests (need a GPU, not run in CI)
 LICENSE                           Repository license + third-party attributions
 ```
-
-New asset categories should be added as sibling top-level directories (e.g.
-`robots/`, `scenes/`), each self-contained with its own assets and docs.
 
 ## Contents
 
@@ -56,7 +65,7 @@ The [UR5e teleop demo](grippers/demo/teleop/) runs either gripper on either
 solver (`TELEOP_GRIPPER=2F85|2F140`, `TELEOP_PHYSICS=<Physics variant>`).
 
 Start with the
-**[Gripper Simulation Guide](grippers/GRIPPER_SIMULATION_GUIDE.md)** — it covers
+**[2F gripper guide](grippers/docs/2F/README.md)** — it covers
 choosing a variant, mounting the gripper on a robot, tuning it for reliable
 grasping, the physics of the mechanism, and the Newton backend.
 
@@ -82,3 +91,4 @@ Some asset files were originally copied or derived from a third party (the NVIDI
 Isaac Sim asset library) and remain under its own license. See
 [`LICENSE`](LICENSE) for the full text and attributions, and the `LICENSE` files
 bundled next to the affected assets.
+<!-- docs-site:exclude -->
