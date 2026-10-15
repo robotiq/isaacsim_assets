@@ -23,15 +23,8 @@ tooling, scenes) can be added over time.
 
 ```
 docs/                             General Isaac Sim guides (scene setup, pick and place, ROS, AI agent)
-grippers/                         Gripper assets
-  README.md                       List of the gripper assets and their documentation
-  docs/2F/                        2F-85 / 2F-140 guide (variants, tuning, physics, Newton)
-  docs/HandE/                     Hand-E guide (variants, specifications, finger force)
-  Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
-  Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
-  Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
-  demo/                           Demos, incl. the UR5e teleop for either gripper
-tests/runtime/                    Manual Isaac Sim runtime tests (need a GPU, not run in CI)
+grippers/                         Gripper assets, their documentation and demos (see grippers/README.md)
+tests/                            Manual Isaac Sim runtime tests (need a GPU, not run in CI)
 LICENSE                           Repository license + third-party attributions
 ```
 
