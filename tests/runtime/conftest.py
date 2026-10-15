@@ -360,6 +360,9 @@ def _save_cube(nodeid: str) -> None:
     if gripper is None:
         print(f"--save-cube: no gripper in {nodeid}, nothing saved")
         return
+    if "test_gripper_lift" in nodeid:
+        print("--save-cube: the lift test reuses cubes/<gripper>.json (place it with the grasp test), nothing saved")
+        return
     if "test_gripper_pusher" in nodeid:
         from _pusher import save_pusher
 
