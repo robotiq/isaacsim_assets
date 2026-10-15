@@ -23,25 +23,27 @@ Everything goes in one folder in your home directory:
 1. Install the MCP server.
 
    ```bash
-   # Linux
    uv venv ~/mcp-servers/isaacsim/.venv --python 3.12
    uv pip install --python ~/mcp-servers/isaacsim/.venv isaacsim-mcp-server
    ```
 
+   <details>
+   <summary>Windows (PowerShell)</summary>
+
    ```powershell
-   # Windows (PowerShell)
    uv venv $HOME\mcp-servers\isaacsim\.venv --python 3.12
    uv pip install --python $HOME\mcp-servers\isaacsim\.venv isaacsim-mcp-server
    ```
 
-   This Create a mcp-servers folder in your home folder and save MCP server files
-   in it.
+   </details>
+
+   This creates an `mcp-servers` folder in your home folder for the MCP
+   server files.
 
 2. Clone the Isaac Sim extension from GitHub repository into the `extension`
    folder next to the venv.
 
    ```bash
-   # Linux
    ext=~/mcp-servers/isaacsim/extension
    if [ -e "$ext" ]; then
      read -rp "$ext already exists. Replace it? [y/N] " answer
@@ -54,8 +56,10 @@ Everything goes in one folder in your home directory:
    fi
    ```
 
+   <details>
+   <summary>Windows (PowerShell)</summary>
+
    ```powershell
-   # Windows (PowerShell)
    $ext = "$HOME\mcp-servers\isaacsim\extension"
    if (Test-Path $ext) {
        $answer = Read-Host "$ext already exists. Replace it? [y/N]"
@@ -68,6 +72,8 @@ Everything goes in one folder in your home directory:
    }
    ```
 
+   </details>
+
    Full instructions, including other MCP clients, are in the
    [upstream README](https://github.com/whats2000/isaacsim-mcp-server#quick-start).
 
@@ -75,28 +81,41 @@ Everything goes in one folder in your home directory:
    entry:
 
    ```bash
-   # Linux
    claude mcp add --scope user isaac-sim -- ~/mcp-servers/isaacsim/.venv/bin/isaacsim-mcp-server
    ```
 
+   <details>
+   <summary>Windows (PowerShell)</summary>
+
    ```powershell
-   # Windows (PowerShell)
    claude mcp add --scope user isaac-sim -- $HOME\mcp-servers\isaacsim\.venv\Scripts\isaacsim-mcp-server.exe
    ```
+
+   </details>
 
 4. Launch Isaac Sim with the extension enabled:
 
    ```bash
-   # Linux
-   <ISAACSIM_ROOT>/isaac-sim.sh --ext-folder ~/mcp-servers/isaacsim/extension --enable isaac.sim.mcp_extension
+   ~/isaacsim/isaac-sim.sh --ext-folder ~/mcp-servers/isaacsim/extension --enable isaac.sim.mcp_extension
    ```
+
+   <details>
+   <summary>Windows (PowerShell)</summary>
 
    ```powershell
-   # Windows (PowerShell)
-   <ISAACSIM_ROOT>\isaac-sim.bat --ext-folder $HOME\mcp-servers\isaacsim\extension --enable isaac.sim.mcp_extension
+   C:\isaacsim\isaac-sim.bat --ext-folder $HOME\mcp-servers\isaacsim\extension --enable isaac.sim.mcp_extension
    ```
 
-   On Linux, [`grippers/demo/mcp_bridge/launch_isaac_with_mcp.sh`](../grippers/demo/mcp_bridge/launch_isaac_with_mcp.sh)
+   Or use the extension's launcher, which adds these flags and picks the
+   physics engine (`physx` or `newton`):
+
+   ```powershell
+   & $HOME\mcp-servers\isaacsim\extension\scripts\run_isaac_sim.ps1 -Engine physx
+   ```
+
+   </details>
+
+   [`grippers/demo/mcp_bridge/launch_isaac_with_mcp.sh`](../grippers/demo/mcp_bridge/launch_isaac_with_mcp.sh)
    adds these flags for you. It looks for the extension in its own folder by
    default, so set `MCP_EXT_ROOT=~/mcp-servers/isaacsim/extension` first.
 
@@ -108,7 +127,7 @@ Everything goes in one folder in your home directory:
 
 Two gotchas:
 
-- **Linux: launch Isaac from a clean shell.** Do *not* `source /opt/ros/humble`
+- **Launch Isaac Sim from a clean shell.** Do *not* `source /opt/ros/humble`
   first, or Humble's Python 3.10 shadows Isaac's 3.11/3.12 and the extension
   refuses to load. Source ROS only in the consumer terminals.
 - **`get_isaac_logs` is the best diagnostic.** Many graph and physics errors
