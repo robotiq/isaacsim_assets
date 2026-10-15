@@ -184,3 +184,6 @@ longer starts in its home pose. Set them back to the home pose when you are done
 
 </details>
 
+---
+
+**Next:** [Do a pick and place](3-Do_a_pick_and_place.md): pick up the cube with a script.
