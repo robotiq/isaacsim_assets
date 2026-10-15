@@ -382,7 +382,7 @@ the `finger_joint` drive:
 
 | Attribute | From | To |
 |---|---|---|
-| `drive:angular:physics:stiffness` | 3 (asset default 0.17) | **50** |
+| `drive:angular:physics:stiffness` | 3 (parallel grip; 0.5 on the 2F-85 compliant) | **50** |
 | `drive:angular:physics:damping` | 0.0002 | **3.0** |
 
 Low risk because `restOffset = 0.5 mm` still prevents penetration. (Cranking
