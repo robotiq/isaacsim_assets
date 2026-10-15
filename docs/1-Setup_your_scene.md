@@ -113,8 +113,10 @@ robot.
    this step with PhysX. Under Newton, the whole robot runs on Newton, not
    only the gripper.
 
-   > **Warning: robot control under Newton is limited for now.** Isaac Sim
-   > robot assets, the UR5e included, are tuned for PhysX: their joint
+   > **Warning: robot control under Newton is limited for now.** NVIDIA
+   > describes the Newton integration in Isaac Sim 6.1 as experimental (see
+   > the [Isaac Sim 6.1 release notes](https://docs.isaacsim.omniverse.nvidia.com/6.1.0/overview/release_notes.html),
+   > *PhysX and Newton*). Isaac Sim robot assets, the UR5e included, are tuned for PhysX: their joint
    > drives are very stiff and have almost no damping, which MuJoCo, the
    > solver behind Newton, doesn't handle well. Out of the box, the arm
    > vibrates when it should hold still. The settings below are a rough
