@@ -35,6 +35,23 @@ def Xform "Robotiq_2F_140" (
         # root_joint and PhysicsArticulationRootAPI are the shared neutral defs in
         # ./Robotiq_2F_140_kinematics_physics.usda; this layer adds the PhysX articulation API.
 
+        # Fingertip pad friction (PhysX), static = dynamic; combine mode "max" so it holds
+        # against any object whose own material is softer (the default "average" would
+        # drag it down). Bound to the tip colliders below. The Newton variants author
+        # their own GripMaterial.
+        def Scope "Physics"
+        {
+            def Material "GripMaterial" (
+                prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+            )
+            {
+                float physics:dynamicFriction = 1
+                float physics:staticFriction = 1
+                float physics:restitution = 0
+                token physxMaterial:frictionCombineMode = "max"
+            }
+        }
+
         # Finger joint velocity cap (deg/s): the one value shared by both PhysX grip
         # variants, so they cannot drift apart. Armature and the other drive tuning stay
         # in each variant payload.
@@ -173,44 +190,48 @@ over "Meshes"
         over "tip_flat"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
 
         over "tip_silicone"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
 
         over "tip_vgroove"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
 
         over "tip_tsf140"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
     }
@@ -220,44 +241,48 @@ over "Meshes"
         over "tip_flat"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
 
         over "tip_silicone"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
 
         over "tip_vgroove"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
 
         over "tip_tsf140"
         {
             over "mesh_0" (
-                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
             )
             {
                 uniform token physics:approximation = "convexHull"
                 bool physics:collisionEnabled = 1
+                rel material:binding:physics = </Robotiq_2F_140/Robotiq_2F_140/Physics/GripMaterial>
             }
         }
     }
