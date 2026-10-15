@@ -57,19 +57,6 @@ to set up a scene, then open your gripper's guide from
 [`grippers/README.md`](grippers/README.md) for its variants and specific
 settings.
 
-## Getting the assets
-
-The heavy asset files (`.usd`, `.png`) are stored with
-[Git LFS](https://git-lfs.com). Install it before cloning so the real files are
-fetched instead of pointer stubs:
-
-```bash
-git lfs install
-git clone https://github.com/robotiq/isaacsim_assets.git
-```
-
-`.usda` files are plain-text USD and are kept diffable (not in LFS).
-
 ## License
 
 Original work in this repository (documentation, scripts, and Robotiq-authored
