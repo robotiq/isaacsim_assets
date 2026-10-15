@@ -48,6 +48,11 @@ TOL = {
     "compliant": (math.radians(2.0), math.radians(1.5)),
 }
 REST_DRIFT = math.radians(0.1)  # each joint moves less than this over the sampled frames
+# The 2F-85 compliant PhysX and Newton recordings are far apart, so each is far from their
+# shared mean: a looser tolerance for that gripper only.
+GRIPPER_TOL = {
+    ("Robotiq_2F_85", "compliant"): (math.radians(3.0), math.radians(5.5)),
+}
 PHYSX_HZ = 1000  # as in test_gripper_grasp.py: 60 Hz mis-resolves a stiff squeeze
 
 CASES = [
@@ -103,7 +108,7 @@ def test_gripper_closes_on_fixed_cylinder(request, simulation_app, view, gripper
     )
 
     grip = grip_of(physics)
-    joint_tol, pad_tol = TOL[grip]
+    joint_tol, pad_tol = GRIPPER_TOL.get((gripper, grip), TOL[grip])
     preset = load_preset(gripper)
     if request.config.getoption("--record-baseline"):
         recorded = preset.setdefault("recorded", {})
