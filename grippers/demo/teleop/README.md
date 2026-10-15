@@ -180,7 +180,7 @@ device-side assert) if the articulation changes under it.
 cannot be persisted in USD (`opt.impratio` and the finger loop-closure
 equality `solref`); run `apply_gripper_tuning.py` from the Script Editor
 or MCP bridge once after each Stop→Play, or the fingers go floppy. See
-[the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
+[the 2F gripper guide](../../docs/2F/README.md) for the
 Newton tuning details.
 
 The articulation we drive contains the UR5e arm and the Robotiq 2F-85
