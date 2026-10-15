@@ -42,6 +42,7 @@ Robotiq_<model>/
 - [Do a pick and place](../docs/2-Do_a_pick_and_place.md)
 - [Control from ROS](../docs/3-Control_from_ROS.md)
 - [Connect an AI agent to Isaac Sim](../docs/4-Connect_AI_agent_to_Isaac_Sim.md)
+- [Tune physics for grasping](../docs/5-Tune_physics_for_grasping.md): object mass, friction and contact settings, for any gripper.
 
 **Demo**
 

@@ -68,7 +68,7 @@ way you run Isaac Sim must match it:
 | **Finger drive** | Soft by default. To hold objects while the arm moves, raise its stiffness and damping: see [Tuning → PhysX variants](#physx-variants) | Already tuned in the asset |
 | **After every Play** | Nothing | Run [`Robotiq_2F_85/newton/apply_gripper_tuning.py`](../../Robotiq_2F_85/newton/apply_gripper_tuning.py) from **Window → Script Editor**, or the fingers go floppy |
 | **Robot arm** | Nothing | The arm runs on Newton too and needs its own settings: see step 5 of [Setup the robot](../../../docs/1-Setup_a_scene.md#universal-robot-ure5) |
-| **Objects to grasp** | Mass, collider and friction, plus PhysX contact settings: see [Tuning](#tuning) | Mass, collider and friction, plus MuJoCo contact settings: see [Tuning](#tuning) |
+| **Objects to grasp** | Mass, collider and friction, plus PhysX contact settings: see [Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#physx) | Mass, collider and friction, plus MuJoCo contact settings: see [Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#newton) |
 | **ROS 2 joint states** | The standard **Joint States** graph works | On Isaac Sim 6.1, the standard **Joint States** graph crashes Isaac Sim at Play, because it asks Newton for joint efforts: see [Control from ROS](../../../docs/3-Control_from_ROS.md) |
 | **Isaac Sim version** | 6.x | 6.1. On 6.0.1, the bundled Newton needs a fix: see the box in [§5.2](#52-why-newton-is-better-for-the-compliant-variant) |
 
@@ -83,29 +83,12 @@ of the above.
 
 ## Tuning
 
-How the gripper holds an object depends on more than the asset: the object
-and a few settings in your scene matter too. If a grasp fails, look up the
-symptom below: first in **All engines**, then in the section for the engine
-your gripper variant uses.
-
-### All engines
-
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| The gripper doesn't move, or doesn't close | The gripper variant doesn't match the engine Isaac Sim runs. A `Newton_*` variant under PhysX loads, but doesn't close | Use a `Physx_*` variant with the regular app (`isaac-sim.bat` / `isaac-sim.sh`), and a `Newton_*` variant with the Newton app (`isaac-sim.newton.bat` / `isaac-sim.newton.sh`). |
-| The fingers move oddly or fight each other | Targets are sent to the passive finger joints | Command **only `finger_joint`**. The other finger joints follow it through the linkage. |
-| The fingers close through the object as if it weren't there | The object has no collider | Add one: **Add → Physics → Collider** on the object. |
-| The fingers pass through the object, or it flies away on contact | The object has no mass: primitive shapes often come with mass 0 and density 0 | Give the object a mass, for example `physics:mass = 0.1` kg. |
-| The object slides out of the closed fingers | Too little friction between pads and object | Bind a physics material to the object, with friction, for example `physics:staticFriction = 1` and `physics:dynamicFriction = 0.9` (the demo's values). |
-
-![The 2F-85 closing on a small cube](img/mimic-grasp-setup.png)
-
-*Test setup (PhysX): the 2F-85 closing on a small cube.*
-
-| Before | After |
-|---|---|
-| ![Fingers passing through the cube](img/mimic-passthrough-before.png) | ![Stable grasp after the fix](img/mimic-grasp-after.png) |
-| Cube with mass 0: the fingers pass straight through it. | With mass, contact offsets and a capped grip force: the cube is held. |
+Start with the general guide,
+[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md): the
+object (mass, collider, friction) and the scene settings matter as much as
+the gripper. This section covers the settings specific to the 2F-85 and
+2F-140. Command **only `finger_joint`** with every variant: the other finger
+joints follow it.
 
 ### PhysX variants
 
@@ -115,80 +98,36 @@ any scene where the robot moves while gripping.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| The fingers press into the object | Contact distances too small for a small object | On the object, set `physxCollision:contactOffset = 0.002` and `physxCollision:restOffset = 0.0005` (metres). |
 | The object slips or drops while the arm moves | The finger drive is too soft | On `finger_joint`, raise `drive:angular:physics:stiffness` to 50 and `drive:angular:physics:damping` to 3. |
 | The fingers crush through the object | Grip force too high | Lower `finger_joint` `drive:angular:physics:maxForce`. The demo uses 1 N·m. |
-| The object vibrates in the grip | No damping on the object, or too few solver iterations | On the object, set `physxRigidBody:linearDamping = 0.1` and `physxRigidBody:solverVelocityIterationCount = 4`. On the articulation root, raise `physxArticulation:solverVelocityIterationCount` (the demo uses 8). |
 | `Physx_compliant`: the finger linkage wobbles or goes unstable | The closed linkage needs more solver iterations | On the four finger bodies (`{left,right}_{outer,inner}_finger`), set `physxRigidBody:solverPositionIterationCount = 64` and `solverVelocityIterationCount = 8`. On `/PhysicsScene`, set `physxScene:enableStabilization = True`. If it stays unstable, use `Newton_compliant`. |
-| Objects pass through the fingers only during fast moves | The object moves further than its thickness in one physics step | On that object only, turn on `physxRigidBody:enableSpeculativeCCD`. |
 
 ### Newton variants
 
 For `Newton_parallel_grip` and `Newton_compliant`. The gripper side is
 already tuned in the asset: finger drive gains, joint armature and damping,
-the linkage constraints, and stiffer contacts on the finger pads. Newton
-ignores the `physx*` settings of the PhysX section.
+the linkage constraints, and stiffer contacts on the finger pads
+(`mjc:solref = [0.004, 2]`, `mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]`; the
+demo leaves its objects at the MuJoCo defaults, not tuned).
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | The fingers go floppy, or the object slips although friction is set | Two gripper settings can't be saved in USD and are lost at every Play | After **every** Play, run [`Robotiq_2F_85/newton/apply_gripper_tuning.py`](../../Robotiq_2F_85/newton/apply_gripper_tuning.py) from **Window → Script Editor**. It sets MuJoCo's anti-slip option (`impratio = 10`) and stiffens the coupling between the two fingers. |
-| The object sinks into the pads, or the grip feels spongy | The object's contact is softer than the pads' | On the object's collider, set MuJoCo's contact settings `mjc:solref` and `mjc:solimp` (explained below). The pads use `mjc:solref = [0.004, 2]` and `mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]`. The demo leaves its objects at the MuJoCo defaults (`[0.02, 1]` and `[0.9, 0.95, 0.001, 0.5, 2]`); object values haven't been tuned. |
-| The simulation runs much slower than real time | Newton's cost is mostly the number of physics steps | Lower `newton:timeStepsPerSecond` on `/PhysicsScene`. The demo uses 1000; 500 nearly doubled the speed in our tests. Fewer steps also limit how stiff contacts can be (see below). |
-
-What `mjc:solref` and `mjc:solimp` mean:
-
-- **`solref = [time constant, damping ratio]`** is the contact's
-  spring-damper. A smaller time constant gives a stiffer contact (the
-  stiffness grows as 1 / time constant²), but it must stay at least twice
-  the physics step: 0.002 s at 1000 steps per second. A damping ratio of 1
-  is critically damped; above 1 removes chatter but feels slower; below 1
-  bounces.
-- **`solimp`** sets how firmly the no-penetration force is applied as the
-  contact goes deeper.
-
-In short, `solref` sets how springy the contact is, and `solimp` how firmly
-it's enforced.
 
 ### Where to find these settings in Isaac Sim
 
-The tables above use the settings' USD names. The Isaac Sim GUI shows them
-under different labels. To change one, select the prim in the **Stage**
-panel, then find its label in the **Property** panel. Labels marked
-*(Advanced)* are in the collapsed **Advanced** part of their section.
+Select the prim in the **Stage** panel, then find its label in the
+**Property** panel. Object and scene settings are in the
+[general guide](../../../docs/5-Tune_physics_for_grasping.md#where-to-find-these-settings-in-isaac-sim).
 
 | Setting | Prim to select | Property panel label |
 |---|---|---|
-| `physics:mass` | The object | **Mass** |
-| `physics:staticFriction`, `physics:dynamicFriction` | The physics material bound to the object | **Static Friction**, **Dynamic Friction** |
-| `physxCollision:contactOffset` | The object | **Contact Offset** *(Advanced)* |
-| `physxCollision:restOffset` | The object | **Rest Offset** *(Advanced)* |
-| `physxRigidBody:linearDamping` | The object | **Linear Damping** |
-| `physxRigidBody:solverVelocityIterationCount` | The object, or a finger body | **Solver Velocity Iteration Count** *(Advanced)* |
-| `physxRigidBody:solverPositionIterationCount` | A finger body | **Solver Position Iteration Count** *(Advanced)* |
-| `physxRigidBody:enableSpeculativeCCD` | The object | **Enable Speculative CCD** *(Advanced)* |
 | `drive:angular:physics:stiffness`, `damping`, `maxForce` | `finger_joint`, in the gripper's `Joints` folder | **Stiffness**, **Damping**, **Max Force**, in the angular drive section |
-| `physxArticulation:solverVelocityIterationCount` | The prim with the robot's articulation root (`root_joint` on the UR5e) | **Solver Velocity Iteration Count** |
+| `physxRigidBody:solverPositionIterationCount`, `solverVelocityIterationCount` | A finger body | **Solver Position / Velocity Iteration Count** *(Advanced)* |
 | `physxScene:enableStabilization` | `/PhysicsScene` | **Enable Stabilization** *(Advanced)* |
-| `mjc:solref` | The object's collider | **SolMix**: Isaac Sim 6.1 gives it the wrong label. Check the USD name in **Raw USD Properties** |
-| `mjc:solimp` | The object's collider | **SolImp** |
-| `newton:timeStepsPerSecond` | `/PhysicsScene` | No label defined: look for `newton:timeStepsPerSecond` |
-
-Two shortcuts:
-
-- Type the label, for example "contact offset", in the **search box** at
-  the top of the Property panel.
-- The **Raw USD Properties** section, at the bottom of the Property panel,
-  lists every setting under its USD name, as written in the tables above.
-
-If a setting isn't shown at all, the prim lacks the physics property that
-adds it. Add it with **Add → Physics** at the top of the Property panel,
-for example **Rigid Body**, **Collider** or **Mass**. A cube made with
-**Create → Shape** has no mass and no rigid-body settings until you do.
 
 Reference reading: NVIDIA's
-[rigging closed-loop structures](https://docs.isaacsim.omniverse.nvidia.com/6.0.0/robot_setup_tutorials/rig_closed_loop_structures.html),
-[gripper tuning example](https://docs.omniverse.nvidia.com/kit/docs/omni_physics/107.3/dev_guide/guides/gripper_tuning_example.html),
-and [joint tuning](https://docs.isaacsim.omniverse.nvidia.com/6.0.0/robot_setup_tutorials/joint_tuning.html).
+[rigging closed-loop structures](https://docs.isaacsim.omniverse.nvidia.com/6.0.0/robot_setup_tutorials/rig_closed_loop_structures.html).
 
 ---
 
@@ -356,8 +295,9 @@ to close.
 **Tuning:** the gripper side is tuned in the asset, except two settings
 that must be re-applied after every Play with
 [`newton/apply_gripper_tuning.py`](../../Robotiq_2F_85/newton/apply_gripper_tuning.py).
-See [Tuning → Newton variants](#newton-variants) for that step and for the
-contact settings of the objects you grasp.
+See [Tuning → Newton variants](#newton-variants) for that step, and
+[Tune physics for grasping](../../../docs/5-Tune_physics_for_grasping.md#newton)
+for the contact settings of the objects you grasp.
 
 **Performance note:** the UR5 + gripper Newton sim is **physics-bound**. The real
 speed lever is the **timestep** (`newton:timeStepsPerSecond`), not solver
