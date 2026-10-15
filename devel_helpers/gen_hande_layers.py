@@ -824,6 +824,9 @@ over "Meshes"
 ''')
 
 
+TIP_SOLREF = "[0.002, 2]"  # Newton fingertip contact solref [timeconst, dampratio]: stiffer than the body links'
+
+
 def gen_newton():
     link_mjc = lambda i, name: f'''{i}over "{name}" (
 {i}    prepend apiSchemas = ["MjcCollisionAPI"]
@@ -853,7 +856,7 @@ def gen_newton():
 {i}    uniform int mjc:group = 3
 {i}    uniform int mjc:priority = 1
 {i}    uniform double[] mjc:solimp = {SOLIMP}
-{i}    uniform double[] mjc:solref = [0.004, 2]
+{i}    uniform double[] mjc:solref = {TIP_SOLREF}
 {i}}}
 '''
     cols = _newton_over("base_link", base_mjc) + "\n"
