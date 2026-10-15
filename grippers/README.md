@@ -32,7 +32,6 @@ Robotiq_<model>/
 **Gripper guides**
 
 - [2F-85 / 2F-140 guide](docs/2F/README.md): variants, physics engines, tuning, the physics of the mechanism, Newton.
-- [2F linkage and joint setup](docs/2F/Linkage_and_joint_setup.md): how each PhysX variant models the finger linkage, joint by joint.
 - [Hand-E](docs/HandE/README.md): variants, joints, source specifications and finger force per fingertip.
 - Newton tuning: [2F-85](Robotiq_2F_85/newton/README.md), [2F-140](Robotiq_2F_140/newton/README.md).
 
