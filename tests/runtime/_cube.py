@@ -38,7 +38,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics, Vt
+from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 
 CUBES_DIR = Path(__file__).resolve().parent / "cubes"
 FIXED_CUBES_DIR = Path(__file__).resolve().parent / "fixed_cubes"
@@ -123,6 +123,21 @@ def _local_trs(prim: Usd.Prim) -> tuple[list[float], list[float], bool]:
     t = Gf.Transform(UsdGeom.Xformable(prim).GetLocalTransformation())
     rotated = abs(t.GetRotation().GetAngle()) > 1e-4
     return [float(v) for v in t.GetTranslation()], [float(v) for v in t.GetScale()], rotated
+
+
+def set_holder_friction(stage: Usd.Stage, friction: float) -> None:
+    """PhysX only: give the holder a physics material with static = dynamic friction
+    ``friction`` and combine mode "min" (it beats the cube's default "average"), so the
+    cube-holder contact has that coefficient as long as the cube's own is higher.
+    MuJoCo takes the larger coefficient of the two, so this does not lower it on Newton."""
+    material = UsdShade.Material.Define(stage, "/World/Looks/HolderFriction")
+    api = UsdPhysics.MaterialAPI.Apply(material.GetPrim())
+    api.CreateStaticFrictionAttr().Set(friction)
+    api.CreateDynamicFrictionAttr().Set(friction)
+    api.CreateRestitutionAttr().Set(0.0)
+    PhysxSchema.PhysxMaterialAPI.Apply(material.GetPrim()).CreateFrictionCombineModeAttr().Set("min")
+    UsdShade.MaterialBindingAPI.Apply(stage.GetPrimAtPath(HOLDER_PATH)).Bind(
+        material, UsdShade.Tokens.weakerThanDescendants, "physics")
 
 
 def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
