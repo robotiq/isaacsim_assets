@@ -807,8 +807,8 @@ over "{N}"
                 prepend apiSchemas = ["PhysicsMaterialAPI", "NewtonMaterialAPI"]
             )
             {{
-                float physics:dynamicFriction = 0.7
-                float physics:staticFriction = 0.7
+                float physics:dynamicFriction = {GRIP_FRICTION:g}
+                float physics:staticFriction = {GRIP_FRICTION:g}
                 float newton:rollingFriction = 0.0001
                 float newton:torsionalFriction = 0.005
             }}
