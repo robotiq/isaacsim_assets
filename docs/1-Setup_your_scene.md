@@ -1,24 +1,24 @@
 # Setup your scene
 
-Here are some instructions to build a basic Isaac Sim scene, with a robot arm and a cube to pick,
+This page shows how to build a basic Isaac Sim scene with a robot arm and a cube to pick,
 ready for a Robotiq gripper. Once it is ready, attach the gripper with
 [Get started](2-Get_started.md).
 
-For more information about Isaac Sim, check related documentation:
+For more information about Isaac Sim, see the Isaac Sim documentation:
 
 https://docs.isaacsim.omniverse.nvidia.com/latest/index.html
 
-- Start a new Isaac Sim file and create an environment
+- Start a new Isaac Sim file and create an environment:
 **Create → Environments → Simple Room**
    
-![Select a Robot](img/2-add%20environment.png)
+![Add the Simple Room environment](img/2-add%20environment.png)
 
 The Simple Room comes with a low table at the centre of the room, its top at
 about height `0`.
 
 ## Add a cube to manipulate
 
-Let's add a 5 cm cube on the table, in reach of the robot so that we can play
+Add a 5 cm cube on the table, within reach of the robot, so that you can play
 with it.
 
 1. **Create the cube.** **Create → Shape → Cube**. It appears as
@@ -44,8 +44,8 @@ than the 85 mm opening of the 2F-85.
 
 ## Setup the robot
 
-In this documentation, we present 2 simple robot setup with UR5e and Franka
-Panda. Refere to [Isaac Sim documentation](https://docs.isaacsim.omniverse.nvidia.com/6.0.1/index.html) to learn more about how to setup a
+This documentation presents two simple robot setups: a UR5e and a Franka
+Panda. Refer to the [Isaac Sim documentation](https://docs.isaacsim.omniverse.nvidia.com/6.0.1/index.html) to learn more about how to set up a
 robot.
 
 ### Universal Robots UR5e
@@ -55,15 +55,15 @@ robot.
    in the **Stage** panel. It appears as `/World/ur5e`; the paths below assume
    that name.
 
-   ![Select a Robot](img/Add_ur5e.png)
+   ![Add the UR5e from the asset browser](img/Add_ur5e.png)
 
-3. Place select `/World/ur5e`, then selcet UR5e in the stage tree and set the
-   `Transfom → Translate` property inside the property panel to `0, 0, 0`
+3. Select `/World/ur5e` in the **Stage** panel, then in **Property → Transform**
+   set **Translate** to `0, 0, 0`.
 
-   ![Select a Robot](img/UR5e%20positioning.png)
+   ![Set the UR5e position](img/UR5e%20positioning.png)
 
 4. **Give the arm a starting pose above the ground.** The default pose of the
-   UR5e robot makes it collide with the ground scene. Give it the UR *home*
+   UR5e robot makes it collide with the ground. Give it the UR *home*
    pose instead:
 
    | Joint | `shoulder_pan` | `shoulder_lift` | `elbow` | `wrist_1` | `wrist_2` | `wrist_3` |
@@ -183,7 +183,7 @@ does **not** remove it.
    `Robotiq_2F_85` there: that is the Isaac Sim gripper asset, not the
    Robotiq one from this repository.
 
-   ![Remove Franka Panda Defaut gripper](img/Franka_panda_None_gripper.png)
+   ![Remove the Franka Panda default gripper](img/Franka_panda_None_gripper.png)
 
 #### Remove the Franka hand and set the home pose
 
@@ -251,7 +251,7 @@ for i, angle in enumerate(home, start=1):
 
 </details>
 
-![Franka Panda Home Position](img/franka%20panda%20home.png)
+![Franka Panda home position](img/franka%20panda%20home.png)
 
 <!-- docs-site:exclude -->
 

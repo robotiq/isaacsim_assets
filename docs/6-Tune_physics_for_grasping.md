@@ -13,11 +13,11 @@ in the section for the engine your gripper variant uses (`PhysX` or
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| The gripper doesn't move, or doesn't close | The gripper variant doesn't match the engine Isaac Sim runs. A Newton variant under PhysX loads, but doesn't close | Use a PhysX variant with the regular app (`isaac-sim.bat` / `isaac-sim.sh`), and a Newton variant with the Newton app (`isaac-sim.newton.bat` / `isaac-sim.newton.sh`). |
+| The gripper doesn't move, or doesn't close | The gripper variant doesn't match the engine Isaac Sim runs. A Newton variant under PhysX loads but doesn't close | Use a PhysX variant with the regular app (`isaac-sim.bat` / `isaac-sim.sh`), and a Newton variant with the Newton app (`isaac-sim.newton.bat` / `isaac-sim.newton.sh`). |
 | The fingers move oddly or fight each other | Targets are sent to joints that follow the driven one | Command only the gripper's driven joint. Its guide names it. |
 | The fingers close through the object as if it weren't there | The object has no collider | Add one: **Add → Physics → Collider** on the object. |
 | The fingers pass through the object, or it flies away on contact | The object has no mass: primitive shapes often come with mass 0 and density 0 | Give the object a mass, for example `physics:mass = 0.1` kg. |
-| The object slides out of the closed fingers | Too little friction between pads and object | Bind a physics material to the object, with friction, for example `physics:staticFriction = 1` and `physics:dynamicFriction = 0.9` (the demo's values). |
+| The object slides out of the closed fingers | Too little friction between pads and object | Bind a physics material with friction to the object, for example `physics:staticFriction = 1` and `physics:dynamicFriction = 0.9` (the demo's values). |
 
 ![A 2F-85 closing on a small cube](img/mimic-grasp-setup.png)
 
@@ -43,7 +43,7 @@ Newton ignores the `physx*` settings of the PhysX section.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | The object sinks into the pads, or the grip feels spongy | The object's contact is softer than the pads' | On the object's collider, set MuJoCo's contact settings `mjc:solref` and `mjc:solimp` (explained below), close to the pads' values given in the gripper's guide. The MuJoCo defaults are `[0.02, 1]` and `[0.9, 0.95, 0.001, 0.5, 2]`. |
-| The simulation runs much slower than real time | Newton's cost is mostly the number of physics steps | Lower `newton:timeStepsPerSecond` on `/PhysicsScene`. The demo uses 1000; 500 nearly doubled the speed in our tests. Fewer steps also limit how stiff contacts can be (see below). |
+| The simulation runs much slower than real time | Newton's cost depends mostly on the number of physics steps | Lower `newton:timeStepsPerSecond` on `/PhysicsScene`. The demo uses 1000; 500 nearly doubled the speed in our tests. Fewer steps also limit how stiff contacts can be (see below). |
 
 What `mjc:solref` and `mjc:solimp` mean:
 
@@ -51,13 +51,13 @@ What `mjc:solref` and `mjc:solimp` mean:
   spring-damper. A smaller time constant gives a stiffer contact (the
   stiffness grows as 1 / time constant²), but it must stay at least twice
   the physics step: 0.002 s at 1000 steps per second. A damping ratio of 1
-  is critically damped; above 1 removes chatter but feels slower; below 1
-  bounces.
+  gives critical damping; above 1, it removes chatter but feels slower;
+  below 1, the contact bounces.
 - **`solimp`** sets how firmly the no-penetration force is applied as the
   contact goes deeper.
 
 In short, `solref` sets how springy the contact is, and `solimp` how firmly
-it's enforced.
+it is enforced.
 
 ## Where to find these settings in Isaac Sim
 
@@ -92,6 +92,6 @@ adds it. Add it with **Add → Physics** at the top of the Property panel,
 for example **Rigid Body**, **Collider** or **Mass**. A cube made with
 **Create → Shape** has no mass and no rigid-body settings until you do.
 
-Reference reading: NVIDIA's
+Further reading: NVIDIA's
 [gripper tuning example](https://docs.omniverse.nvidia.com/kit/docs/omni_physics/107.3/dev_guide/guides/gripper_tuning_example.html)
 and [joint tuning](https://docs.isaacsim.omniverse.nvidia.com/6.0.0/robot_setup_tutorials/joint_tuning.html).

@@ -12,15 +12,15 @@ The 2F-85 exposes two **independent** variant sets on its root prim
   - `Tactile_TSF85`
 - **`Physics`** — how the finger linkage is simulated
   - `None` (kinematic only)
-  - `Physx_parallel_grip`: Fingers stay parallel. Physic simulation is done
-    with Physx engine
-  - `Physx_compliant`: The gripper can close in encompassing mode, having its
-    fingers surround objects. Physic simulation is done
-    with Physx engine
-  - `Newton_parallel_grip`: Fingers stay parallel. Physic simulation is done
+  - `Physx_parallel_grip`: The fingers stay parallel. Physics is simulated
+    with PhysX.
+  - `Physx_compliant`: The gripper can close in encompassing mode, with its
+    fingers wrapping around objects. Physics is simulated
+    with PhysX.
+  - `Newton_parallel_grip`: The fingers stay parallel. Physics is simulated
     with Newton.
-  - `Newton_compliant`: The gripper can close in encompassing mode, having its
-    fingers surround objects. Physic simulation is done
+  - `Newton_compliant`: The gripper can close in encompassing mode, with its
+    fingers wrapping around objects. Physics is simulated
     with Newton.
 
 The 2F-140 (`/World/Robotiq_2F_140`) exposes the same `Physics` variants; its
@@ -43,17 +43,17 @@ and `Physx_compliant`. Newton variants never sublayer it and author their own co
 
 ## Physics engines
 
-Gripper variant let you choose `Physx` or `Newton` to simulate physics.
+The gripper variants let you choose `Physx` or `Newton` to simulate physics.
 
 | | `Physx` | `Newton` |
 |---|---|---|
 | Description | Isaac Sim's default engine | Isaac Sim's newer engine, built on MuJoCo-Warp |
-| Recommended usage | Gripper use in parallel mode | Gripper use encompassing mode |
+| Recommended usage | Gripper use in parallel mode | Gripper use in encompassing mode |
 | Compute footprint  | Low | High |
 
 | | `Parallel` | `Compliant` |
 |---|---|---|
-| Behavious | Fingers stays parallel | The gripper can encompass objects.  |
+| Behavior | The fingers stay parallel | The gripper can encompass objects.  |
 | Linkage modelled | Mimic joints and joint drives couple the finger joints to `finger_joint` | The closed finger linkage is modelled natively, as MuJoCo equality constraints |
 
 ## What a Physics variant needs besides selecting it
@@ -172,10 +172,10 @@ On the real hardware there is a **torsional spring at the inner-finger joint**:
 
 - **Pre-loaded by 90°**
 - **Spring constant ≈ 0.0004 N·m/deg** (2F-85), **≈ 0.00068 N·m/deg** (2F-140)
-- In the open (parallel-finger) configuration this gives a **≈ 37 N·mm** (2F-85), **≈ 61 N·mm** (2F-140)
+- In the open (parallel-finger) configuration, this gives a **≈ 37 N·mm** (2F-85), **≈ 61 N·mm** (2F-140)
   restoring moment.
 
-Modelling this spring is what keeps the simulated fingertips parallel. It is accomplished by setting a drive with the aforementioned stiffness and target position.
+Modelling this spring is what keeps the simulated fingertips parallel. This is done with a joint drive that uses this stiffness and target position.
 
 The spring on the real hardware: its free and pre-constrained positions on
 the finger, and its drawing.
@@ -194,8 +194,8 @@ diameter.*
 
 Spec: **2F-85 grip force is adjustable from 20 to 235 N.**
 
-The transmission from the driving joint to fingertip linear position is close to
-linear. Estimating the ratio as the full-span average: the driving joint moves
+The transmission from the driving joint to the fingertip linear position is close to
+linear. We estimate the ratio as the full-span average: the driving joint moves
 **49°** to drive the fingers their full **85 mm** span. Per finger:
 
 ```
@@ -215,7 +215,7 @@ finger, `t = (0.996, 11.70) N·m` per finger. The joint drives **two** fingers, 
 driving-joint theoretical torque range ≈ (2, 23.4) N·m
 ```
 
-**Tuning the drive `maxForce`:** using sensors for the contact forces at the fingertips, we can tune the drive max force to fit the desired max force for our application. This gives us an effective range of roughly **[2, 21.5] N·m**, which fits the theoretical range of (2, 23.4) N·m.
+**Tuning the drive `maxForce`:** with sensors that measure the contact forces at the fingertips, we can tune the drive max force to match the grip force needed by the application. This gives us an effective range of roughly **[2, 21.5] N·m**, which fits the theoretical range of (2, 23.4) N·m.
 
 ### 4.4 Motor properties
 
@@ -246,8 +246,8 @@ motor:
 | Max (no-load) speed | ≈ 5 000 rpm (datasheet-scaled; ~2240 rpm is the gripper's actual operating figure) |
 | Rotor inertia | 181 g·cm² (mechanical — unchanged) |
 
-The gear ratio between the motor and the Isaac Sim driven joint varies between [26 – 32],
-depending on the gripper position. This means the motor has to move by ~30 degrees for the driven joint (out_knuckle) to move by 1 degree, on average.
+The gear ratio between the motor and the Isaac Sim driven joint varies between 26 and 32,
+depending on the gripper position. On average, the motor has to turn by ~30 degrees for the driven joint (out_knuckle) to move by 1 degree.
 
 ### 4.5 Drive max speed
 
@@ -261,7 +261,7 @@ rate via the same 85 mm ↔ 49° mapping:
 ### 4.6 How joint-drive force is evaluated (why more stiffness ≠ more force)
 
 PhysX uses an **implicit** spring/damper formulation for joint drives. The upside
-is it prevents excessively large forces even with a poorly chosen timestep, so
+is that it prevents excessively large forces even with a poorly chosen timestep, so
 the sim is far less likely to explode. The counter-intuitive downside: **beyond a
 point, increasing stiffness gives *less* force, not more** (and likewise for
 damping). Roughly, the implicit spring force is the explicit force `s·dx` divided
@@ -386,7 +386,7 @@ Newton (see [§5](#5-using-isaac-with-newton-and-why-its-better-for-the-complian
 ### 5.1 How to use Isaac with Newton
 
 **Newton** is Isaac Sim's newer physics backend, built on **MuJoCo-Warp**. Isaac
-Sim 6 ships it bundled. You select the Newton backend on the physics scene; the
+Sim 6 includes it. You select the Newton backend on the physics scene; the
 gripper asset is authored with Newton-specific (`mjc:`) attributes and MuJoCo
 contact tuning rather than PhysX ones.
 
@@ -394,8 +394,8 @@ The Newton 2F-85 comes as two variants of the unified asset
 ([`Robotiq_2F_85/`](../../Robotiq_2F_85/)): `Newton_compliant`, where the coupler
 (`outer_finger_joint`) stays live so the fingers wrap around the object, and
 `Newton_parallel_grip`, where the coupler is welded so the fingers stay parallel.
-Select `Physics = Newton_compliant` or `Newton_parallel_grip`, drop it in a scene
-with a `PhysicsScene`, and play. The 2F-140 has the same two Newton variants
+Select `Physics = Newton_compliant` or `Newton_parallel_grip`, add the gripper to a scene
+with a `PhysicsScene`, and press Play. The 2F-140 has the same two Newton variants
 ([`Robotiq_2F_140/newton/`](../../Robotiq_2F_140/newton/)). It is **open by default**
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
@@ -407,11 +407,11 @@ See [Tuning → Newton variants](#newton-variants) for that step, and
 [Tune physics for grasping](../../../docs/6-Tune_physics_for_grasping.md#newton)
 for the contact settings of the objects you grasp.
 
-**Performance note:** the UR5 + gripper Newton sim is **physics-bound**. The real
+**Performance note:** the UR5e + gripper Newton simulation is **physics-bound**. The real
 speed lever is the **timestep** (`newton:timeStepsPerSecond`), not solver
-iterations. Dropping 1000 Hz → 500 Hz nearly doubled real-time factor (0.16× →
-0.27×) by doing ~half the substeps, while render stayed flat (~8.5 ms). Further
-levers to try are `use_mujoco_cpu` (kills GPU kernel-launch latency on this tiny
+iterations. Going from 1000 Hz to 500 Hz nearly doubled the real-time factor (0.16× →
+0.27×) by doing ~half the substeps, while render time stayed flat (~8.5 ms). Other
+levers to try are `use_mujoco_cpu` (removes the GPU kernel-launch latency on this tiny
 model) and `cone=pyramidal` (cheaper friction) — *not* more iterations.
 
 ### 5.2 Why Newton is better for the compliant variant
@@ -429,7 +429,7 @@ The loop (five-bar) variant is where Newton earns its place:
 - **The parallel-grip spring holds** thanks to a deliberately inflated link
   inertia: `physics:diagonalInertia = (0.001, 0.001, 0.001)` is **~100× the
   physical value, on purpose** — it stabilizes the soft loop-closure equalities so
-  the weak parallel-grip spring holds. With physically-small inertias the linkage
+  the weak parallel-grip spring holds. With physically small inertias the linkage
   goes floppy and the fingertips sag ~20° out of parallel. Treat it like the
   `mjc:armature`/`damping` tuning: **do not** replace it with CAD
   inertias without re-tuning the loop-closure `solref`.
