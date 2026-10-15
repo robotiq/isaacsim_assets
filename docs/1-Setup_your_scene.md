@@ -119,10 +119,8 @@ robot.
    > solver behind Newton, doesn't handle well. Out of the box, the arm
    > vibrates when it should hold still. The settings below are a rough
    > adjustment, not a proper tuning: they stop the vibration, but the arm
-   > still follows its targets loosely and can swing or drift. We don't have
-   > a good solution yet (see
-   > [issue #131](https://github.com/robotiq/isaacsim_assets/issues/131)).
-   > If you need precise arm control, use PhysX.
+   > still follows its targets loosely and can swing or drift. For precise
+   > arm control, use PhysX.
 
    The rough adjustment:
 
