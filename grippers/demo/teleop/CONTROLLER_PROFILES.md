@@ -33,7 +33,7 @@ happened:
 
 | Console line | Meaning |
 |---|---|
-| `input: gamepad '<name>' with profile 'elecom', plus keyboard` | Your gamepad was found and matched the `elecom` profile. |
+| `input: gamepad '<name>' with profile 'elecom', plus keyboard and mouse` | Your gamepad was found and matched the `elecom` profile. |
 | `input: gamepad '<name>' with profile 'dualsense', ...` and the buttons do the wrong things | No profile matched your gamepad's name, so the default (`dualsense`) was used. Write a profile (step 2). |
 | `no gamepad (no gamepad found)` | Isaac Sim doesn't see a gamepad: check the cable, WSL (above), or try the probe (step 2). |
 | `no gamepad (No module named 'pygame')` | `pygame` isn't installed in Isaac Sim's Python (see Before you start). |
@@ -108,7 +108,7 @@ Open [`controller_profiles.py`](controller_profiles.py), copy one entry of
 | `help` | show the control list | a "start" / "options" button |
 
 Leave out any action you don't need; it simply stays unmapped. The keyboard
-works at the same time, so nothing is lost.
+and mouse work at the same time, so nothing is lost.
 
 ### How to write a source
 
