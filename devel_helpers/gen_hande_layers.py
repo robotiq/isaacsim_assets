@@ -76,8 +76,8 @@ def tip_z_offset(key):
 # ---- Finger drive ----
 # Only left_finger_joint is driven; right_finger_joint follows it through a rigid coupling (PhysX mimic /
 # Newton joint equality), so the left drive force is SHARED between the two fingers: each pad presses
-# on the object with half of it (measured live: a 130 N drive cap gave ~65 N per pad). The spec-sheet
-# force is a force at the pad, so the drive cap is twice the graph value.
+# on the object with half of it (measured live: a 130 N drive cap gave ~65 N per pad). The force at the
+# pad is the spec-sheet value plus EXTRA_TIP_FORCE_FOR_SIM (below), so the drive cap is twice that.
 DRIVE_TO_PAD = 2.0
 # The drive is a position spring toward the closed target: force = stiffness x remaining stroke, clipped
 # at the cap. With the old 5000 N/m an object leaving ~10 mm of stroke only got ~50 N and the cap was
@@ -88,11 +88,22 @@ DRIVE_DAMPING = 200.0      # N.s/m
 
 
 def tip_drive_force(key):
-    """Drive force cap (N) that gives the tip's spec-sheet force at each pad."""
     return tip_max_force(key) * DRIVE_TO_PAD
 
 
+# Extra force (N at each pad) added on top of the spec-sheet curve value of EVERY tip, for the simulation only:
+# it brings the default tip up to the datasheet's maximum grip force. A deliberate choice for the runtime
+# lift test, above the payload graph's recommended fingertip limit.
+EXTRA_TIP_FORCE_FOR_SIM = 30.0
+
+
 def tip_max_force(key):
+    """Max force (N) at each pad: the spec-sheet curve of the tip's mounting at its Z offset, plus
+    EXTRA_TIP_FORCE_FOR_SIM."""
+    return round(_spec_tip_force(key) + EXTRA_TIP_FORCE_FOR_SIM, 1)
+
+
+def _spec_tip_force(key):
     """Max force (N) the spec-sheet curve of the tip's mounting allows at its Z offset."""
     z, pts = tip_z_offset(key), CURVES[TIP_MOUNT[key]]
     if z <= pts[0][0]:
@@ -336,8 +347,6 @@ over "Meshes"
 {t.rstrip()}
 }}
 
-# Drive force cap for this tip: twice the spec-sheet force at the pad (the two fingers share the
-# left joint's drive force), see CURVES / DRIVE_TO_PAD in the generator.
 over "{N}"
 {{
     over "{N}"
@@ -531,16 +540,28 @@ def Xform "{N}"
 ''')
 
 
-COLLIDER_APIS = '["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]'
+COLLIDER_APIS = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
 
 
-def _px_block(i, name):
+GRIP_FRICTION = 1.0  # fingertip pad friction (static = dynamic), PhysX and Newton; PhysX combine mode "max", see gen_physx_common
+
+
+def _usd_list(names):
+    """['A', 'B'] -> '["A", "B"]' (a USDA string array)."""
+    return "[" + ", ".join(f'"{n}"' for n in names) + "]"
+
+
+def _px_block(i, name, material=None):
+    """`over` block putting the PhysX convex-hull collider on <name>; with ``material`` (a prim path) the
+    physics material is bound to it too (the fingertip pads)."""
+    apis = COLLIDER_APIS + (["MaterialBindingAPI"] if material else [])
+    binding = f"\n{i}    rel material:binding:physics = <{material}>" if material else ""
     return f'''{i}over "{name}" (
-{i}    prepend apiSchemas = {COLLIDER_APIS}
+{i}    prepend apiSchemas = {_usd_list(apis)}
 {i})
 {i}{{
 {i}    uniform token physics:approximation = "convexHull"
-{i}    bool physics:collisionEnabled = 1
+{i}    bool physics:collisionEnabled = 1{binding}
 {i}}}
 '''
 
@@ -580,7 +601,7 @@ def gen_physx_common():
     colliders = "".join(_collider(l) + "\n" for l in BODY_LINKS)
     colliders += "    # Tip colliders for every Fingertip variant (derived from TIPS; authored here, not in the\n"
     colliders += '    # variant payloads, so no tip collider ever composes under Physics = "None").\n'
-    colliders += _tip_hull_blocks(_px_block)
+    colliders += _tip_hull_blocks(lambda i, name: _px_block(i, name, GRIP_MATERIAL))  # the pads carry the friction material
     w(f"payloads/{N}_physx_common_physics.usda", HDR + f'''(
     # PhysX-only physics for the Hand-E: the articulation root + root_joint (fixed base), the
     # collision-group plumbing, and every PhysX convex-hull collider -- the body-link
@@ -617,6 +638,22 @@ def Xform "{N}" (
             quatf physics:localRot0 = {IDQ}
             quatf physics:localRot1 = {IDQ}
         }}
+
+        # Fingertip pad friction (PhysX): static = dynamic {GRIP_FRICTION:g}; combine mode "max" so it holds
+        # against any object whose own material is softer (the default "average" would drag it down).
+        # Bound to every tip collider below. The Newton variants author their own pad material.
+        def Scope "Physics"
+        {{
+            def Material "GripMaterial" (
+                prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+            )
+            {{
+                float physics:dynamicFriction = {GRIP_FRICTION:g}
+                float physics:staticFriction = {GRIP_FRICTION:g}
+                float physics:restitution = 0
+                token physxMaterial:frictionCombineMode = "max"
+            }}
+        }}
     }}
 }}
 
@@ -648,10 +685,7 @@ def gen_physx():
     # frame -> both fingers close symmetrically). Shared neutral joint frames/limits live in
     # ./{N}_kinematics_physics.usda (sublayered below).
     #
-    # Drive: the force cap is twice the spec-sheet payload-vs-Z-offset force of the default tip
-    # ({tip_max_force(TIPS[0][0]):g} N at each pad -> {tip_drive_force(TIPS[0][0]):g} N on the driven joint, because the
-    # rigidly coupled right finger shares it; each Fingertip variant overrides the cap for its own tip),
-    # maxJointVelocity 0.15 m/s = 150 mm/s, the upper end of the datasheet's finger speed (20 to 150 mm/s,
+    # Drive: maxJointVelocity 0.15 m/s = 150 mm/s, the upper end of the datasheet's finger speed (20 to 150 mm/s,
     # Hand-E Specifications table). Stiffness {DRIVE_STIFFNESS:g} N/m saturates the cap for
     # any object, damping {DRIVE_DAMPING:g}; both were checked live on PhysX and on Newton.
     # GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand.
@@ -779,8 +813,8 @@ over "{N}"
                 prepend apiSchemas = ["PhysicsMaterialAPI", "NewtonMaterialAPI"]
             )
             {{
-                float physics:dynamicFriction = 0.7
-                float physics:staticFriction = 0.7
+                float physics:dynamicFriction = {GRIP_FRICTION:g}
+                float physics:staticFriction = {GRIP_FRICTION:g}
                 float newton:rollingFriction = 0.0001
                 float newton:torsionalFriction = 0.005
             }}
@@ -794,6 +828,9 @@ over "Meshes"
 {cols.rstrip()}
 }}
 ''')
+
+
+TIP_SOLREF = "[0.002, 2]"  # Newton fingertip contact solref [timeconst, dampratio]: stiffer than the body links'
 
 
 def gen_newton():
@@ -825,7 +862,7 @@ def gen_newton():
 {i}    uniform int mjc:group = 3
 {i}    uniform int mjc:priority = 1
 {i}    uniform double[] mjc:solimp = {SOLIMP}
-{i}    uniform double[] mjc:solref = [0.004, 2]
+{i}    uniform double[] mjc:solref = {TIP_SOLREF}
 {i}}}
 '''
     cols = _newton_over("base_link", base_mjc) + "\n"

@@ -61,8 +61,8 @@ over "Robotiq_2F_140"
             )
             {
                 float drive:angular:physics:damping = 2.7576203
-                float drive:angular:physics:maxForce = 15
-                float drive:angular:physics:stiffness = 24.993114
+                float drive:angular:physics:maxForce = 25
+                float drive:angular:physics:stiffness = 35
                 float drive:angular:physics:targetPosition = 0
                 uniform double mjc:armature = 0.3
                 uniform double mjc:damping = 0.1

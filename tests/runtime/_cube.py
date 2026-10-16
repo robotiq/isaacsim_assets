@@ -38,7 +38,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics, Vt
+from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics, UsdShade, Vt
 
 CUBES_DIR = Path(__file__).resolve().parent / "cubes"
 FIXED_CUBES_DIR = Path(__file__).resolve().parent / "fixed_cubes"
@@ -125,24 +125,64 @@ def _local_trs(prim: Usd.Prim) -> tuple[list[float], list[float], bool]:
     return [float(v) for v in t.GetTranslation()], [float(v) for v in t.GetScale()], rotated
 
 
-def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
-    preset = load_preset(gripper)
+def _add_holder(stage: Usd.Stage, size: list[float], centre: list[float]) -> UsdGeom.Mesh:
+    """The static plate the cube rests on: a collider only (no rigid body)."""
+    mesh = _unit_box_mesh(stage, HOLDER_PATH)
+    xf = UsdGeom.XformCommonAPI(mesh.GetPrim())
+    xf.SetTranslate(Gf.Vec3d(*centre))
+    xf.SetScale(Gf.Vec3f(*size))
+    UsdPhysics.CollisionAPI.Apply(mesh.GetPrim())
+    UsdPhysics.MeshCollisionAPI.Apply(mesh.GetPrim()).CreateApproximationAttr().Set(UsdPhysics.Tokens.convexHull)
+    mesh.GetDisplayColorAttr().Set([Gf.Vec3f(0.3, 0.3, 0.35)])
+    return mesh
+
+
+def _add_dynamic_cube(stage: Usd.Stage, preset: dict) -> UsdGeom.Cube:
     cube = _define_cube(stage, preset)
     prim = cube.GetPrim()
     UsdPhysics.RigidBodyAPI.Apply(prim)
     UsdPhysics.MassAPI.Apply(prim).CreateMassAttr().Set(float(preset.get("mass", DEFAULT_MASS)))
     PhysxSchema.PhysxRigidBodyAPI.Apply(prim).CreateSleepThresholdAttr().Set(0.0)  # keep reporting contacts
     cube.GetDisplayColorAttr().Set([Gf.Vec3f(0.85, 0.35, 0.1)])
-
-    hsize, hpos = holder_layout(preset)
-    mesh = _unit_box_mesh(stage, HOLDER_PATH)
-    xf = UsdGeom.XformCommonAPI(mesh.GetPrim())
-    xf.SetTranslate(Gf.Vec3d(*hpos))
-    xf.SetScale(Gf.Vec3f(*hsize))
-    UsdPhysics.CollisionAPI.Apply(mesh.GetPrim())  # collider only: static
-    UsdPhysics.MeshCollisionAPI.Apply(mesh.GetPrim()).CreateApproximationAttr().Set(UsdPhysics.Tokens.convexHull)
-    mesh.GetDisplayColorAttr().Set([Gf.Vec3f(0.3, 0.3, 0.35)])
     return cube
+
+
+def set_holder_friction(stage: Usd.Stage, friction: float) -> None:
+    """PhysX only: give the holder a physics material with static = dynamic friction
+    ``friction`` and combine mode "min" (it beats the cube's default "average"), so the
+    cube-holder contact has that coefficient as long as the cube's own is higher.
+    MuJoCo takes the larger coefficient of the two, so this does not lower it on Newton."""
+    material = UsdShade.Material.Define(stage, "/World/Looks/HolderFriction")
+    api = UsdPhysics.MaterialAPI.Apply(material.GetPrim())
+    api.CreateStaticFrictionAttr().Set(friction)
+    api.CreateDynamicFrictionAttr().Set(friction)
+    api.CreateRestitutionAttr().Set(0.0)
+    PhysxSchema.PhysxMaterialAPI.Apply(material.GetPrim()).CreateFrictionCombineModeAttr().Set("min")
+    UsdShade.MaterialBindingAPI.Apply(stage.GetPrimAtPath(HOLDER_PATH)).Bind(
+        material, UsdShade.Tokens.weakerThanDescendants, "physics")
+
+
+def add_cube(stage: Usd.Stage, gripper: str) -> UsdGeom.Cube:
+    preset = load_preset(gripper)
+    cube = _add_dynamic_cube(stage, preset)
+    hsize, hpos = holder_layout(preset)
+    _add_holder(stage, hsize, hpos)
+    return cube
+
+
+def add_hanging_cube(stage: Usd.Stage, gripper: str, base_height: float) -> None:
+    """The preset's cube and holder for a gripper hung upside down (rotated 180 deg
+    about X, fingers pointing down) with its base at world height ``base_height``:
+    the preset's gripper-frame layout mirrored through that flip, so the cube sits
+    between the pads exactly as in the upright tests, resting on the holder, which
+    now lies below it."""
+    preset = load_preset(gripper)
+    x, y, z = (float(v) for v in preset["position"])
+    flipped = dict(preset, position=[x, -y, base_height - z])
+    _add_dynamic_cube(stage, flipped)
+    hsize, (hx, hy, _hz) = holder_layout(preset)
+    s = float(preset["size"])
+    _add_holder(stage, hsize, [hx, -hy, flipped["position"][2] - s / 2.0 - hsize[2] / 2.0])
 
 
 def save_cube(stage: Usd.Stage, gripper: str, fixed: bool = False) -> Path:
