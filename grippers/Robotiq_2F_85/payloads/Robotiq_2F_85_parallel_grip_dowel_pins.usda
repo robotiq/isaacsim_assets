@@ -25,9 +25,9 @@ def Xform "Robotiq_2F_85" (
                 prepend references = @../parts/Robotiq_2F_85_dowel_pin.usda@
             )
             {
-                quatd xformOp:orient = (1, 0, 0, 0)
-                float3 xformOp:scale = (1, 1, 1)
-                double3 xformOp:translate = (0, 0, 0)
+                quatd xformOp:orient = (0.7071067811865476, 0, 0.7071067811865475, 0)
+                float3 xformOp:scale = (2, 2, 2.3204338550567627)
+                double3 xformOp:translate = (0, -0.05365795569703331, 0.05585638761791646)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
             }
         }
@@ -40,9 +40,9 @@ def Xform "Robotiq_2F_85" (
                 prepend references = @../parts/Robotiq_2F_85_dowel_pin.usda@
             )
             {
-                quatd xformOp:orient = (1, 0, 0, 0)
-                float3 xformOp:scale = (1, 1, 1)
-                double3 xformOp:translate = (0, 0, 0)
+                quatd xformOp:orient = (0.7071067811865476, 0, 0.7071067811865475, 0)
+                float3 xformOp:scale = (2, 2, 2.3204338550567627)
+                double3 xformOp:translate = (0, 0.05365795569703331, 0.05585638761791646)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
             }
         }
