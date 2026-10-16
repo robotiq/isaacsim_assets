@@ -9,21 +9,6 @@ For gripper physics tuning, see [PHYSICS_TUNING.md](PHYSICS_TUNING.md).
 
 ## Quick start
 
-### Windows
-
-From PowerShell:
-
-```powershell
-$env:TELEOP_GRIPPER = "2F85"              # 2F85, 2F140 or HandE
-$env:TELEOP_PHYSICS = "Physx_compliant"   # see Gripper and Physics variants
-C:\isaacsim\isaac-sim.bat --exec "C:\path\to\grippers\demo\teleop\open_scene.py"
-```
-
-For a `Newton_*` physics, use `isaac-sim.newton.bat` instead of
-`isaac-sim.bat`.
-
-### Linux
-
 From a shell:
 
 ```bash
@@ -32,8 +17,30 @@ TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_compliant ./run_demo.sh
 ```
 
 `run_demo.sh` picks the right Isaac Sim launcher for the physics, and with a
-DualSense also starts the haptics (see [Haptics](#haptics-linux-dualsense)).
+DualSense also starts the haptics (see [Haptics](#haptics-dualsense)).
 `./run_demo.sh --help` lists its options.
+
+<details>
+<summary>Windows</summary>
+
+`run_demo.sh` is Linux only. On Windows, set the variables and start Isaac Sim
+with `open_scene.py` yourself, from PowerShell:
+
+```powershell
+$env:TELEOP_GRIPPER = "2F85"              # 2F85, 2F140 or HandE
+$env:TELEOP_PHYSICS = "Physx_compliant"   # see Gripper and Physics variants
+C:\isaacsim\isaac-sim.bat --exec "C:\path\to\grippers\demo\teleop\open_scene.py"
+```
+
+For a `Newton_*` physics, use `isaac-sim.newton.bat` instead of
+`isaac-sim.bat`. The other [settings](#settings) are set the same way, with
+`$env:NAME = "value"`, except `TELEOP_HAPTICS`, `ISAACSIM_ROOT` and
+`ISAACSIM_LAUNCHER`, which only `run_demo.sh` reads.
+
+On Windows the teleop uses the keyboard: the DualSense is read from Linux's
+`/dev/input/js0`, so the gamepad and the haptics aren't available.
+
+</details>
 
 ### What happens
 
@@ -59,16 +66,19 @@ C:\isaacsim\python.bat -m pip install pygame        # Windows
 | `TELEOP_CONTROLLER` | picked from the gamepad's name | Force a gamepad profile (see [CONTROLLER_PROFILES.md](CONTROLLER_PROFILES.md)). |
 | `TELEOP_RENDER` | `RealTimePathTracing`, `keep` | Renderer; `keep` leaves the scene's own. |
 | `TELEOP_KEEP_VIEW` | `0`, `1` | `1` keeps the camera pose saved in the scene. |
-| `TELEOP_HAPTICS` | `1`, `0` | Linux only: `0` drops the contact-force plot and R2 rumble. |
-| `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim` / derived from physics | Linux only: Isaac install and launcher override. |
+| `TELEOP_INPUT` | `auto`, `keyboard` | `auto` uses a DualSense when one is plugged in, else the keyboard. `keyboard` always uses the keyboard (same as `./run_demo.sh --keyboard`). |
+| `TELEOP_HAPTICS` | `1`, `0` | `0` drops the contact-force plot and R2 rumble. |
+| `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim` / derived from physics | Isaac Sim install and launcher override. |
 
 ## Controls
 
-Gamepad, keyboard and mouse all work at the same time. Speed starts at its
-maximum (250 mm/s and 57°/s); each faster/slower press changes it by 1.25×,
-ten presses down to 27 mm/s for fine work. Moves are **relative to the
-view**: away from you on screen is away from you, whatever the camera does.
-Up and down are always world vertical. Rotations pivot about the tool tip.
+Gamepad, keyboard and mouse all work at the same time. The speed controls set how fast the **robot** moves and rotates; the gripper
+always opens and closes at the same rate. Robot speed starts at its maximum
+(250 mm/s and 57°/s); each faster/slower press
+changes it by 1.25×, ten presses down to 27 mm/s for fine work. Moves are
+**relative to the view**: away from you on screen is away from you, whatever
+the camera does. Up and down are always world vertical. Rotations pivot
+about the tool tip.
 
 ### Keyboard
 
@@ -80,12 +90,15 @@ Up and down are always world vertical. Rotations pivot about the tool tip.
 | Arrow keys | roll / pitch |
 | Z / C | yaw − / yaw + |
 | Space (hold) | close the gripper |
-| R / F | faster / slower |
+| R / F | robot faster / slower |
 | T | point the tool down |
 | Backspace | restart the simulation |
 | M | mouse mode on / off |
 
 Isaac Sim's own shortcuts keep working; the teleop doesn't block keys.
+
+The keyboard is used when no gamepad is found. To use it with a DualSense
+plugged in, run `./run_demo.sh --keyboard` (or set `TELEOP_INPUT=keyboard`).
 
 ### Mouse
 
@@ -126,7 +139,7 @@ drawn on the controller):
 | left stick | roll / pitch |
 | `L1` / `R1` | yaw − / yaw + |
 | `R2` | close the gripper (analog) |
-| Triangle / Square | faster / slower |
+| Triangle / Square | robot faster / slower |
 | Cross | point the tool down |
 | Create | restart the simulation |
 | Options | show the controls |
@@ -162,9 +175,9 @@ follows), instead of `finger_joint` over 0.78 rad.
 
 | `Physics` | Launch with | After every Stop → Play |
 | --------- | ----------- | ----------------------- |
-| `Physx_compliant` *(default)* | normal Isaac Sim (`isaac-sim.sh` / `isaac-sim.bat`) | nothing |
+| `Physx_compliant` *(default)* | normal Isaac Sim (`isaac-sim.sh`) | nothing |
 | `Physx_parallel_grip` | normal Isaac Sim | nothing |
-| `Newton_compliant` | **Newton experience** (`isaac-sim.newton.sh` / `isaac-sim.newton.bat`) | run the gripper's `newton/apply_gripper_tuning.py` |
+| `Newton_compliant` | **Newton experience** (`isaac-sim.newton.sh`) | run the gripper's `newton/apply_gripper_tuning.py` |
 | `Newton_parallel_grip` | **Newton experience** | run the gripper's `newton/apply_gripper_tuning.py` |
 
 `Gripper` payloads the gripper's unified asset under `wrist_3_link`, deletes
@@ -194,9 +207,9 @@ Stop → Play, or the fingers go floppy. The Hand-E needs no tuning. See
 [the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
 details.
 
-## Haptics (Linux, DualSense)
+## Haptics (DualSense)
 
-With a DualSense on Linux, `run_demo.sh` also starts the haptic loop: a
+With a DualSense, `run_demo.sh` also starts the haptic loop: a
 contact-force plot of the two finger pads in the viewport, and resistance on
 the `R2` trigger proportional to the grip force. It needs:
 
@@ -220,8 +233,8 @@ Without them the teleop still runs; only the plot and the rumble are missing.
 | `controller_profiles.py` | Gamepad profiles. |
 | `controller_probe.py` | Prints what each control of a gamepad reports, to write a profile. |
 | [CONTROLLER_PROFILES.md](CONTROLLER_PROFILES.md) | How to check or add a gamepad profile. |
-| `run_demo.sh` | Linux launcher: Isaac Sim plus the haptics. |
-| `trigger_force_feedback.py` | DualSense `R2` resistance from the pad forces (Linux). |
+| `run_demo.sh` | Launcher: Isaac Sim plus the haptics. |
+| `trigger_force_feedback.py` | DualSense `R2` resistance from the pad forces. |
 | `add_props.py` | Adds the graspable props to the scene. |
 | `make_controls_diagram.py` | Regenerates `controls.png`. |
 | [PHYSICS_TUNING.md](PHYSICS_TUNING.md) | The gripper and object physics values and why. |

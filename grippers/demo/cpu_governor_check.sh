@@ -4,10 +4,8 @@
 # WHY THIS IS WORTH A WARNING
 # ---------------------------
 # Both demos are CPU-bound, and measurably so. On the PhysX teleop, measured on
-# an RTX A4000 laptop: Isaac at 518% CPU with the GPU at 13%, RTF 0.454, and
-# /clock + /joint_states ticking at only 18.8 Hz wall. MoveIt Servo publishes on
-# the WALL clock at 250 Hz, so at that tick rate its feedback is ~13 control
-# periods stale and the arm moves in visible steps.
+# an RTX A4000 laptop: Isaac at 518% CPU with the GPU at 13% and RTF 0.454, so
+# the sim runs at under half real-time speed.
 #
 # The trap is that Ubuntu's "Performance" power mode does NOT set this. On
 # intel_pstate, power-profiles-daemon steers energy_performance_preference and
