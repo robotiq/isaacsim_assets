@@ -202,7 +202,8 @@ SPEED_HUD_SECONDS = 1.6
 JS = _struct.Struct("IhBB")
 
 KEYBOARD_HELP = ("W/S=x  A/D=y  Q/E=z  arrows=roll/pitch  Z/C=yaw  "
-                 "SPACE=close gripper  R/F=robot speed  T=tool down  M=mouse mode")
+                 "SPACE=close gripper  R/F=robot speed  T=tool down  BACKSPACE=restart  "
+                 "M=mouse mode")
 
 # Mouse mode, toggled with M. While it is on, the pointer is hidden and locked
 # to the window (it never stops at the screen edge), motion comes from its move
@@ -389,8 +390,12 @@ class Keyboard:
     # went nowhere once the tick controller stopped reading it, and F was
     # wired to Cross -- so pressing "slower" pointed the tool at the floor.
     BUTTON_KEYS = {"C": BTN_R1, "Z": BTN_L1, "R": BTN_TRI, "F": BTN_SQUARE,
-                   "T": BTN_X}
+                   "T": BTN_X, "BACKSPACE": RESTART_BTN}
     GRIP_KEY = "SPACE"
+    # Keys that only count while the viewport has the focus (or in mouse mode,
+    # where the keys can't be going to a text field): Backspace in a Kit text
+    # field must delete a character, not restart the simulation.
+    VIEWPORT_ONLY_KEYS = ("BACKSPACE",)
 
     def __init__(self):
         import carb.input
@@ -437,6 +442,8 @@ class Keyboard:
                 if name == MOUSE_KEY and name not in self._down \
                         and (self._mouse_on or _viewport_focused()):
                     self._set_mouse_mode(not self._mouse_on)
+                if name in self.VIEWPORT_ONLY_KEYS and not (self._mouse_on or _viewport_focused()):
+                    return False
                 self._down.add(name)
             elif event.type == T.KEY_RELEASE:
                 self._down.discard(name)
@@ -809,14 +816,18 @@ class Teleop:
                           dtype=float).ravel()
 
     def _jac(self, eps=1e-5):
+        # Linear rows at the TOOL TIP (TCP), not the flange: a pure rotation
+        # command then pivots about the TCP instead of swinging it around.
+        tip = np.array([0.0, 0.0, self.tool_len])
         F0 = self.armbase @ fk(self.q)[5]
-        p0, R0 = F0[0:3, 3], F0[0:3, 0:3]
+        R0 = F0[0:3, 0:3]
+        p0 = F0[0:3, 3] + R0 @ tip
         J = np.zeros((6, 6))
         for i in range(6):
             qp = list(self.q)
             qp[i] += eps
             F1 = self.armbase @ fk(qp)[5]
-            J[0:3, i] = (F1[0:3, 3] - p0) / eps
+            J[0:3, i] = (F1[0:3, 3] + F1[0:3, 0:3] @ tip - p0) / eps
             W = (F1[0:3, 0:3] @ R0.T - np.eye(3)) / eps
             J[3:6, i] = [W[2, 1], W[0, 2], W[1, 0]]
         return J, R0
