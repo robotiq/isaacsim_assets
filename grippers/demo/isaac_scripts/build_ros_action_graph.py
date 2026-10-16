@@ -8,6 +8,9 @@ Two ways to run this:
      saving this file hot-reloads the script -> on_init rebuilds the graph.
 
 Topics: /joint_command (in), /joint_states (out), /clock (out)
+
+To drive just a 2F gripper from the robotiq/ros stack (sim_topic_based:=true), use
+grippers/ros2/build_gripper_graph.py instead.
 """
 import omni.graph.core as og
 import omni.usd

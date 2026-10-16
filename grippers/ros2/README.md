@@ -23,9 +23,11 @@ What the graph exposes is what a real gripper gives: **one joint, the driven one
 | `2f_85` | `robotiq_85_left_knuckle_joint` | `finger_joint` |
 | `2f_140` | `finger_joint` | `finger_joint` |
 
-The rest of the four-bar linkage is the simulator's business. The plugin also sends the mimic
-joints of the URDF; the graph ignores them (Isaac would otherwise drop the *whole* command for
-naming a joint the asset does not have).
+The rest of the four-bar linkage is the simulator's business. The plugin's command names the
+mimic joints of the URDF too, with a position only for the driven joint, so its arrays differ in
+length. The graph reads it with Isaac's generic `ROS2Subscriber` (the dedicated
+`ROS2SubscribeJointState` node discards such a message) and keeps only the driven joint (the
+articulation controller drops a *whole* command that names a joint the asset does not have).
 
 ## Walkthrough
 
@@ -35,7 +37,7 @@ naming a joint the asset does not have).
    Stop → Play, as for any Newton run.
 2. **Build the graph.** In the Script Editor (Window → Script Editor) open `build_gripper_graph.py`
    and run it: that builds the graph for a 2F-85. For a 2F-140 call the function instead, in the
-   Script Editor (the arguments of the options table below are its keyword arguments):
+   Script Editor (its keyword arguments are the options below, with `_` for `-`):
 
    ```python
    import runpy
@@ -53,13 +55,22 @@ naming a joint the asset does not have).
    ros2 launch robotiq_description robotiq_control.launch.py gripper_model:=2f_85 sim_topic_based:=true
    ```
 
-   There is no ROS 2 on your machine? [`tests/ros2/Dockerfile`](../../tests/ros2/Dockerfile) builds
-   the stack in a container: `docker build -t robotiq-ros-humble tests/ros2`, then
-   `docker run --rm -it --network host robotiq-ros-humble bash -c "source /ws/install/setup.bash && ros2 launch ..."`.
+   No `robotiq/ros` on your machine? [`tests/ros2/Dockerfile`](../../tests/ros2/Dockerfile) builds
+   the stack (Humble) in a container. Run it with the UDP-only FastDDS profile next to it, or the
+   container discovers Isaac Sim but its messages never arrive (shared memory / data sharing
+   between a container and the host):
+
+   ```bash
+   docker build -t robotiq-ros-humble tests/ros2
+   docker run --rm -it --network host \
+     -e FASTRTPS_DEFAULT_PROFILES_FILE=/fastdds_udp.xml -v $PWD/tests/ros2/fastdds_udp.xml:/fastdds_udp.xml \
+     robotiq-ros-humble bash -c "source /ws/install/setup.bash && \
+     ros2 launch robotiq_description robotiq_control.launch.py gripper_model:=2f_85 sim_topic_based:=true"
+   ```
 5. **Check it.**
 
    ```bash
-   ros2 topic echo /joint_states --once                # finger joint, position and velocity
+   ros2 topic echo /joint_states --once                # the finger joint, plus the mimic joints at 0
    ros2 action send_goal /robotiq_gripper_controller/gripper_cmd \
      control_msgs/action/GripperCommand "{command: {position: 0.5, max_effort: 50.0}}"
    ros2 action send_goal /robotiq_gripper_controller/gripper_cmd \
