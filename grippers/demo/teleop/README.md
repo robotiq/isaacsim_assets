@@ -1,7 +1,7 @@
 # Teleoperation demo — UR5e + Robotiq grippers in Isaac Sim
 
 Drive a UR5e fitted with a Robotiq 2F-85, 2F-140 or Hand-E with a
-**DualSense** gamepad, the **keyboard** or the **mouse**. Everything runs inside
+**gamepad**, the **keyboard** or the **mouse**, on Linux or Windows. Everything runs inside
 Isaac Sim: no ROS, no extra process. `physx_tick_teleop.py` reads the input
 and moves the arm on Isaac Sim's own update tick.
 
@@ -37,8 +37,14 @@ For a `Newton_*` physics, use `isaac-sim.newton.bat` instead of
 `$env:NAME = "value"`, except `TELEOP_HAPTICS`, `ISAACSIM_ROOT` and
 `ISAACSIM_LAUNCHER`, which only `run_demo.sh` reads.
 
-On Windows the teleop uses the keyboard and the mouse: the DualSense is read
-from Linux's `/dev/input/js0`, so the gamepad and the haptics aren't available.
+A gamepad works on Windows through pygame (see [Gamepad](#gamepad)); install it
+into Isaac Sim's Python once:
+
+```powershell
+C:\isaacsim\python.bat -m pip install pygame
+```
+
+The haptics (R2 force feedback and the contact-force plot) are Linux only.
 
 </details>
 
@@ -49,21 +55,30 @@ Play and starts the teleop. Wait for **`[physx-autostart] ready.`** in the
 console; Isaac Sim's first start takes 1–3 minutes. Then click in the
 viewport and drive (see [Controls](#controls)).
 
+To use a gamepad other than a DualSense, install `pygame` into Isaac Sim's
+Python once:
+
+```bash
+~/isaacsim/python.sh -m pip install pygame
+```
+
 ### Settings
 
 | Variable | Values (default first) | Effect |
 |---|---|---|
 | `TELEOP_GRIPPER` | `2F85`, `2F140`, `HandE` | Gripper variant. |
 | `TELEOP_PHYSICS` | `Physx_compliant`, `Physx_parallel_grip`, `Newton_compliant`, `Newton_parallel_grip` | Physics variant. `Newton_*` needs Isaac Sim's Newton launcher. The Hand-E has one PhysX and one Newton variant. |
+| `TELEOP_CONTROLLER` | picked from the gamepad's name | Force a gamepad profile (see [CONTROLLER_PROFILES.md](CONTROLLER_PROFILES.md)). |
 | `TELEOP_RENDER` | `RealTimePathTracing`, `keep` | Renderer; `keep` leaves the scene's own. |
 | `TELEOP_KEEP_VIEW` | `0`, `1` | `1` keeps the camera pose saved in the scene. |
-| `TELEOP_INPUT` | `auto`, `keyboard` | `auto` uses a DualSense when one is plugged in, else the keyboard. `keyboard` always uses the keyboard (same as `./run_demo.sh --keyboard`). |
+| `TELEOP_INPUT` | `auto`, `keyboard` | `auto` uses a gamepad when one is plugged in, together with the keyboard and the mouse. `keyboard` uses the keyboard and the mouse only (same as `./run_demo.sh --keyboard`). |
 | `TELEOP_HAPTICS` | `1`, `0` | `0` drops the contact-force plot and R2 rumble. |
 | `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim` / derived from physics | Isaac Sim install and launcher override. |
 
 ## Controls
 
-The speed controls set how fast the **robot** moves and rotates; the gripper
+A gamepad read through pygame, the keyboard and the mouse work at the same
+time. The speed controls set how fast the **robot** moves and rotates; the gripper
 always opens and closes at the same rate. Robot speed starts at its maximum
 (250 mm/s and 57°/s); each faster/slower press
 changes it by 1.25×, ten presses down to 27 mm/s for fine work. Moves are
@@ -88,8 +103,8 @@ the tool tip.
 
 Isaac Sim's own shortcuts keep working; the teleop doesn't block keys.
 
-The keyboard is used when no gamepad is found. To use it with a DualSense
-plugged in, run `./run_demo.sh --keyboard` (or set `TELEOP_INPUT=keyboard`).
+To use the keyboard and the mouse alone with a gamepad plugged in, run
+`./run_demo.sh --keyboard` (or set `TELEOP_INPUT=keyboard`).
 
 ### Mouse
 
@@ -110,10 +125,16 @@ also switches off when Isaac Sim loses the focus, for example on Alt-Tab.
 Sensitivity is set by `MOUSE_FULL_PX` and `SCROLL_TICKS_PER_NOTCH` at the top of
 `physx_tick_teleop.py`.
 
-### DualSense
+### Gamepad
 
-The DualSense is read directly from `/dev/input/js0`. Press
-**Options** for the diagram below, drawn on the controller:
+Any gamepad works, through a **profile** that maps its buttons and sticks to
+the robot actions. Profiles ship for the DualSense and the Elecom wired
+gamepad; to check yours or write a profile for it, follow
+**[CONTROLLER_PROFILES.md](CONTROLLER_PROFILES.md)**. On Linux, a DualSense is
+read directly from `/dev/input/js0` instead, without a profile.
+
+The actions, shown on a DualSense (press **Options** for the diagram below,
+drawn on the controller):
 
 ![controller map](controls.png)
 
@@ -142,7 +163,7 @@ a binding.
 
 ### Restarting
 
-**Backspace**, the DualSense's **Create** button, or **Stop → Play** in Isaac Sim's toolbar
+**Backspace**, the gamepad's **Create** button, or **Stop → Play** in Isaac Sim's toolbar
 resets the robot and objects to their starting state. The teleop re-attaches
 by itself; the arm can't be driven for about a second.
 
@@ -219,7 +240,10 @@ Without them the teleop still runs; only the plot and the rumble are missing.
 |---|---|
 | `ur5robot_with_2F-85.usda` | The scene: UR5e, gripper and physics variants, props. Shipped as USD ASCII so tuning changes diff in reviews. |
 | `open_scene.py` | Run by Isaac Sim at start (`--exec`): opens the scene, selects variants, presses Play, starts the teleop. |
-| `physx_tick_teleop.py` | The teleop: input (DualSense, keyboard, mouse), inverse kinematics, joint targets. |
+| `physx_tick_teleop.py` | The teleop: input (gamepad, keyboard, mouse), inverse kinematics, joint targets. |
+| `controller_profiles.py` | Gamepad profiles. |
+| `controller_probe.py` | Prints what each control of a gamepad reports, to write a profile. |
+| [CONTROLLER_PROFILES.md](CONTROLLER_PROFILES.md) | How to check or add a gamepad profile. |
 | `run_demo.sh` | Launcher: Isaac Sim plus the haptics. |
 | `trigger_force_feedback.py` | DualSense `R2` resistance from the pad forces. |
 | `add_props.py` | Adds the graspable props to the scene. |

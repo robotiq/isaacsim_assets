@@ -430,6 +430,7 @@ class Keyboard:
         self._scroll_left = 0.0
         self._left = False
         self._right = False
+        self.gamepad = None     # a PygamePad, set by _acquire_input()
 
     def _on_key(self, event, *_):
         try:
@@ -603,6 +604,11 @@ class Keyboard:
         for k, i in self.BUTTON_KEYS.items():
             if k in self._down:
                 self.buttons[i] = 1
+        if self.gamepad is not None:
+            try:
+                self.gamepad.fill(self.axes, self.buttons)
+            except Exception:
+                pass    # an unplugged gamepad must not stop the keyboard
         self.edges = [1 if (self.buttons[i] and not prev[i]) else 0
                       for i in range(16)]
 
@@ -639,18 +645,116 @@ def _viewport_focused():
         return True     # cannot tell: behave as before rather than lock the key out
 
 
+def _teleop_dir():
+    """This folder. exec() from the Script Editor has no __file__; the open
+    scene sits in the same folder, so its path works as well."""
+    if "__file__" in globals():
+        return os.path.dirname(os.path.abspath(__file__))
+    import omni.usd
+
+    return os.path.dirname(omni.usd.get_context().get_stage().GetRootLayer().realPath)
+
+
+class PygamePad:
+    """Any gamepad, on Windows or Linux, read with pygame through a profile
+    (controller_profiles.py). Adds to the keyboard's axes and buttons, so the
+    keyboard and the mouse keep working alongside it."""
+
+    def __init__(self):
+        os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+        # The gamepad must keep working while the Isaac Sim window, not
+        # pygame, has the focus.
+        os.environ.setdefault("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1")
+        import runpy
+
+        import pygame
+
+        self._pg = pygame
+        pygame.joystick.init()
+        if not pygame.joystick.get_count():
+            pygame.joystick.quit()
+            raise RuntimeError("no gamepad found")
+        pygame.display.init()       # pygame's event pump needs it; no window opens
+        self._js = pygame.joystick.Joystick(0)
+        profiles = runpy.run_path(os.path.join(_teleop_dir(), "controller_profiles.py"))
+        self.profile_name = profiles["pick"](self._js.get_name(),
+                                             os.environ.get("TELEOP_CONTROLLER"))
+        self.profile = profiles["PROFILES"][self.profile_name]
+        self.name = self._js.get_name()
+        # Triggers whose axis has moved. Some SDL drivers report 0 on a trigger
+        # until it first moves, which reads as half pressed; a trigger counts
+        # as released until then.
+        self._live_triggers = set()
+
+    def _read(self, action):
+        """The action's value: -1..1 for a stick, 0..1 for anything else."""
+        src = self.profile.get(action)
+        if src is None:
+            return 0.0
+        kind, i = src[0], src[1]
+        try:
+            if kind == "axis":
+                return src[2] * self._js.get_axis(i)
+            if kind == "trigger":
+                v = self._js.get_axis(i)
+                if i not in self._live_triggers:
+                    if v == 0.0:
+                        return 0.0
+                    self._live_triggers.add(i)
+                return (v + 1.0) / 2.0
+            if kind == "button":
+                return float(self._js.get_button(i))
+            if kind == "hat":
+                return 1.0 if self._js.get_hat(i) == tuple(src[2]) else 0.0
+        except Exception:
+            pass
+        return 0.0
+
+    def fill(self, axes, buttons):
+        self._pg.event.pump()
+
+        def add(index, value):
+            axes[index] = max(-1.0, min(1.0, axes[index] + value))
+
+        add(AXIS_RX, self._read("move_x"))
+        add(AXIS_RY, self._read("move_y"))
+        add(AXIS_LX, self._read("roll"))
+        add(AXIS_LY, self._read("pitch"))
+        add(AXIS_DY, self._read("down") - self._read("up"))
+        add(AXIS_DX, self._read("zoom_out") - self._read("zoom_in"))
+        # The teleop reads the grip like the DualSense R2: +1 released, -1 pressed.
+        axes[AXIS_R2] = min(axes[AXIS_R2], 1.0 - 2.0 * self._read("grip"))
+        for action, index in (("yaw_left", BTN_L1), ("yaw_right", BTN_R1),
+                              ("faster", FASTER_BTN), ("slower", SLOWER_BTN),
+                              ("tool_down", TOOL_DOWN_BTN), ("restart", RESTART_BTN),
+                              ("help", HELP_BTN)):
+            if self._read(action) > 0.5:
+                buttons[index] = 1
+
+
 def _acquire_input():
     if os.environ.get("TELEOP_INPUT", "auto") == "keyboard":
         print("[physx_teleop] input: KEYBOARD (TELEOP_INPUT=keyboard) -- " + KEYBOARD_HELP)
         return Keyboard()
+    # Linux with a DualSense keeps the original /dev/input path (the haptics
+    # are built around it). Anything else goes through pygame and a profile.
+    controller = os.environ.get("TELEOP_CONTROLLER", "")
+    if os.name != "nt" and controller in ("", "dualsense"):
+        try:
+            p = Pad()
+            print("[physx_teleop] input: DualSense on /dev/input/js0")
+            return p
+        except Exception as exc:
+            print("[physx_teleop] no /dev/input gamepad (%s)" % exc)
+    kb = Keyboard()
     try:
-        p = Pad()
-        print("[physx_teleop] input: DualSense on /dev/input/js0")
-        return p
+        kb.gamepad = PygamePad()
+        print("[physx_teleop] input: gamepad %r with profile %r, plus keyboard and mouse"
+              % (kb.gamepad.name, kb.gamepad.profile_name))
     except Exception as exc:
         print("[physx_teleop] no gamepad (%s)" % exc)
-        print("[physx_teleop] input: KEYBOARD -- " + KEYBOARD_HELP)
-        return Keyboard()
+    print("[physx_teleop] input: KEYBOARD -- " + KEYBOARD_HELP)
+    return kb
 
 
 def _align_tensor_backend():
