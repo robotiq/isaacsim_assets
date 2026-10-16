@@ -332,7 +332,7 @@ def install():
                 if state["frames"] < _SETTLE_FRAMES:
                     return
                 if _start_tick_teleop(d):
-                    _done("teleop running (tick-paced, no Servo)")
+                    _done("teleop running (tick-paced)")
                 else:
                     _done("teleop did NOT start -- see the ERR traceback above",
                           ok=False)

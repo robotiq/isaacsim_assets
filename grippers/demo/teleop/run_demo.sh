@@ -7,6 +7,7 @@
 # trigger force feedback.
 #
 #   ./run_demo.sh                 # start everything
+#   ./run_demo.sh --keyboard      # drive with the keyboard even with a gamepad plugged in
 #   ./run_demo.sh --no-isaac      # attach the haptics to an Isaac already running
 #
 #   TELEOP_GRIPPER=2F140 ./run_demo.sh                 # the 2F-140 (default 2F85)
@@ -14,6 +15,7 @@
 #   TELEOP_PHYSICS=Newton_compliant ./run_demo.sh      # the Newton gripper
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 #   TELEOP_HAPTICS=0 ./run_demo.sh                     # no plot, no R2 rumble
+#   TELEOP_INPUT=keyboard ./run_demo.sh                # same as --keyboard
 #
 # TELEOP_GRIPPER picks the scene's Gripper variant (2F85 | 2F140 | HandE) and
 # TELEOP_PHYSICS its Physics variant (Physx_compliant | Physx_parallel_grip |
@@ -64,10 +66,15 @@ LAUNCHER="$ISAACSIM_ROOT/$ISAACSIM_LAUNCHER"
 # The haptics inject the gripper contact-force plot through the MCP extension's
 # TCP socket on 8766, and THAT injection is what starts the UDP 8770 force
 # broadcast the R2 rumble reads. So without the extension there is no plot AND
-# no rumble -- Isaac has to be launched with it, not plain.
+# no rumble -- Isaac has to be launched with it, not plain. The extension is
+# loaded whenever it is present, haptics or not: AI agents and scripts use the
+# same socket.
 MCP_BRIDGE="$SCRIPT_DIR/../mcp_bridge"
 MCP_EXT_ROOT="${MCP_EXT_ROOT:-$MCP_BRIDGE/isaacsim-mcp-server}"
 HAPTICS="${TELEOP_HAPTICS:-1}"
+# auto: DualSense if one is plugged in, else the keyboard. keyboard: always the
+# keyboard. Read by physx_tick_teleop.py inside Isaac.
+TELEOP_INPUT="${TELEOP_INPUT:-auto}"
 
 ISAAC_LOG="${ISAAC_LOG:-/tmp/physx_teleop_isaac.log}"
 READY_TIMEOUT="${READY_TIMEOUT:-240}"       # Isaac's first boot is ~90-150s
@@ -76,8 +83,9 @@ START_ISAAC=1
 ISAAC_EXTRA=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --keyboard)    TELEOP_INPUT=keyboard; shift ;;
     --no-isaac)    START_ISAAC=0; shift ;;
-    -h|--help)     sed -n '2,16p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help)     sed -n '2,18p' "${BASH_SOURCE[0]}"; exit 0 ;;
     --)            shift; ISAAC_EXTRA=("$@"); break ;;
     # Kit settings all look like --/path/to/key=value, so they are unambiguous.
     --/*)          ISAAC_EXTRA+=("$1"); shift ;;
@@ -115,7 +123,8 @@ trap cleanup EXIT INT TERM
 echo "Isaac Sim:  $LAUNCHER  ($LAUNCHER_SRC)"
 echo "Gripper:    $TELEOP_GRIPPER"
 echo "Physics:    $TELEOP_PHYSICS"
-echo "Scene:      $SCRIPT_DIR/ur5robot_with_2F-85.usda"
+echo "Input:      $TELEOP_INPUT"
+echo "Scene:     $SCRIPT_DIR/ur5robot_with_2F-85.usda"
 if [[ "$TELEOP_PHYSICS" == Newton_* && "$ISAACSIM_LAUNCHER" != *newton* ]]; then
   echo "Note:       Physics '$TELEOP_PHYSICS' with a launcher that is not the Newton"
   echo "               experience -- the gripper will not simulate."
@@ -125,7 +134,7 @@ fi
 source "$SCRIPT_DIR/../cpu_governor_check.sh"
 
 if [[ "$START_ISAAC" == "1" ]]; then
-  if [[ "$HAPTICS" != "0" && -d "$MCP_EXT_ROOT/isaac.sim.mcp_extension" ]]; then
+  if [[ -d "$MCP_EXT_ROOT/isaac.sim.mcp_extension" ]]; then
     ISAAC_CMD=("$MCP_BRIDGE/launch_isaac_with_mcp.sh")
     echo "MCP ext:    $MCP_EXT_ROOT"
   else
@@ -141,7 +150,7 @@ if [[ "$START_ISAAC" == "1" ]]; then
   echo "Starting Isaac (log: $ISAAC_LOG) -- first boot takes ~90-150s..."
   (
     export TELEOP_DIR="$SCRIPT_DIR" TELEOP_TICK=1
-    export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER TELEOP_GRIPPER TELEOP_PHYSICS
+    export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER TELEOP_GRIPPER TELEOP_PHYSICS TELEOP_INPUT
     # --exec is greedy, so it goes last. launch_isaac_with_mcp.sh forwards
     # trailing arguments to the Isaac launcher unchanged.
     exec "${ISAAC_CMD[@]}" "${ISAAC_EXTRA[@]}" --exec "$SCRIPT_DIR/open_scene.py"
@@ -182,8 +191,35 @@ fi
 # stream), then drive the DualSense R2 from that stream. Neither stops the demo
 # when it fails -- the teleop runs inside Isaac regardless.
 echo "Teleop runs inside Isaac; starting haptics (plot + R2 rumble). Ctrl-C stops everything."
-python3 "$MCP_BRIDGE/make_contact_plot.py" \
-  || echo "WARNING: contact-force plot not injected (is the MCP socket on 8766 up?)" >&2
-python3 "$SCRIPT_DIR/trigger_force_feedback.py" --full-force-N "${TELEOP_FULL_FORCE_N:-200}" \
-  || echo "WARNING: R2 force feedback stopped (needs a DualSense, pydualsense and hidapi)." >&2
+
+# "ready." comes from open_scene.py, not from the extension, so the socket can
+# still be coming up. Without it the plot is not injected and the UDP force
+# stream never starts, so warn rather than fail silently.
+echo -n "Waiting for the MCP socket on 8766 "
+MCP_UP=0
+for _ in $(seq 30); do
+  if (exec 3<>/dev/tcp/127.0.0.1/8766) 2>/dev/null; then
+    MCP_UP=1; break
+  fi
+  echo -n "."
+  sleep 1
+done
+if [[ "$MCP_UP" == "1" ]]; then
+  echo " ok"
+  python3 "$MCP_BRIDGE/make_contact_plot.py" \
+    || echo "WARNING: contact-force plot not injected; see $ISAAC_LOG." >&2
+else
+  echo " NOT UP"
+  echo "WARNING: no MCP socket on 8766 -- the contact-force plot will not be" >&2
+  echo "         injected and the R2 rumble will stay silent. Check" >&2
+  echo "         $ISAAC_LOG for isaac.sim.mcp_extension errors." >&2
+fi
+
+# Ctrl-C ends this with status 130; that is the user stopping the demo, not a
+# failure, so it gets no warning.
+st=0
+python3 "$SCRIPT_DIR/trigger_force_feedback.py" --full-force-N "${TELEOP_FULL_FORCE_N:-200}" || st=$?
+if (( st != 0 && st != 130 )); then
+  echo "WARNING: R2 force feedback stopped (needs a DualSense, pydualsense and hidapi)." >&2
+fi
 while true; do sleep 3600; done
