@@ -1,9 +1,10 @@
 """ROS 2 side of test_gripper_ros2.py: run by the test in a clean shell with the system ROS
 sourced (never inside Isaac, whose Python cannot load the system rclpy).
 
-Publishes what topic_based_ros2_control sends to a simulator (the driven joint plus
-mimic joints the asset does not have), for `--seconds`, and prints one JSON line with
-the last JointState it received back.
+Publishes what topic_based_ros2_control sends to a simulator, for `--seconds`, and prints
+one JSON line with the last JointState it received back. That message names the driven joint
+plus the mimic joints (which the asset does not have) but carries a position only for the
+driven one, so its arrays differ in length; Isaac's ROS2SubscribeJointState rejects it.
 """
 import argparse
 import json
@@ -30,7 +31,7 @@ node.create_subscription(JointState, args.state_topic, received.append, 10)
 
 command = JointState()
 command.name = [args.joint, *args.mimic]
-command.position = [args.target] + [-args.target] * len(args.mimic)
+command.position = [args.target]
 end = time.time() + args.seconds
 while time.time() < end:
     pub.publish(command)
