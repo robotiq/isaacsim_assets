@@ -68,7 +68,8 @@ always opens and closes at the same rate. Robot speed starts at its maximum
 (250 mm/s and 57°/s); each faster/slower press
 changes it by 1.25×, ten presses down to 27 mm/s for fine work. Moves are
 **relative to the view**: away from you on screen is away from you, whatever
-the camera does. Up and down are always world vertical.
+the camera does. Up and down are always world vertical. Rotations pivot about
+the tool tip.
 
 ### Keyboard
 
@@ -82,6 +83,7 @@ the camera does. Up and down are always world vertical.
 | Space (hold) | close the gripper |
 | R / F | robot faster / slower |
 | T | point the tool down |
+| Backspace | restart the simulation (only while the viewport has the focus, or in mouse mode) |
 | M | mouse mode on / off (see [Mouse](#mouse)) |
 
 Isaac Sim's own shortcuts keep working; the teleop doesn't block keys.
@@ -140,7 +142,7 @@ a binding.
 
 ### Restarting
 
-The DualSense's **Create** button, or **Stop → Play** in Isaac Sim's toolbar,
+**Backspace**, the DualSense's **Create** button, or **Stop → Play** in Isaac Sim's toolbar
 resets the robot and objects to their starting state. The teleop re-attaches
 by itself; the arm can't be driven for about a second.
 
