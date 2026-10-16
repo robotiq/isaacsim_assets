@@ -323,6 +323,12 @@ a gripper that won't drive or behaves erratically.
 *The `Articulation Root` block in the Physics panel — delete this API from the
 gripper when mounting it on a robot.*
 
+### 2.5 Driving the gripper from ROS 2
+
+The 2F grippers answer the [`robotiq/ros`](https://github.com/robotiq/ros/tree/main/grippers) stack
+like the real gripper (`sim_topic_based:=true`), on PhysX and Newton alike. Build the graph with
+[`ros2/build_gripper_graph.py`](ros2/README.md), which also has the walkthrough and the check.
+
 ---
 
 ## 3. Troubleshooting
