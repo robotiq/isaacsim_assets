@@ -1,20 +1,22 @@
 """
-Re-apply ONLY the two 2F-85 gripper settings that cannot be saved in the USD.
+Isaac Sim 6.0.1 ONLY (Newton 1.2.1): re-apply the two gripper settings that
+1.2.1 cannot load from USD. Not needed on Isaac Sim 6.1+ (Newton 1.5.0), which
+reads both from USD -- there, author `mjc:option:impratio = 10` on your
+PhysicsScene once instead (the coupling is already authored in the asset).
 
 Everything else (finger drive gains, armature, damping, spring stiffness,
 maxForce, and the stiff coupler limits) is baked into the Newton_compliant
-variant of ../Robotiq_2F_85.usda and rebuilds natively on load.
+variant and rebuilds natively on load.
 
-These two can't live in USD and must be re-applied at runtime after each
-stop -> play:
-  1. opt.impratio = 10   -- global solver option; the build ignores authored
+Must be re-applied at runtime after each stop -> play on 6.0.1:
+  1. opt.impratio = 10   -- global solver option; Newton 1.2.1 ignores authored
                             MjcSceneAPI options (authored iterations=200 ran as 100).
-  2. rigid driver coupling -- the finger-coupling joint-equality has no USD prim
-                            (it's synthesized during model build), so its
-                            near-rigid solref=[0.002,1] can't be authored. The
-                            row is located by eq_type == mjEQ_JOINT (not a hard-
-                            coded index), so it stays correct if the asset is
-                            loaded alongside an arm or a second gripper.
+  2. rigid driver coupling -- Newton 1.2.1 builds the finger-coupling
+                            joint-equality from the mimic joint, so its near-rigid
+                            solref=[0.002,1] can't be authored. The row is located
+                            by eq_type == mjEQ_JOINT (not a hard-coded index), so it
+                            stays correct if the asset is loaded alongside an arm
+                            or a second gripper.
 
 Run after the sim is playing (Script Editor or MCP bridge). Idempotent.
 """
