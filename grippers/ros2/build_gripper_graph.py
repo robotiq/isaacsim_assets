@@ -51,11 +51,17 @@ import omni.graph.core as og
 
 def compute(db):
     sub = "{graph}/Sub"
-    names = [str(n) for n in og.Controller.attribute(sub + ".outputs:jointNames").get()]
-    positions = og.Controller.attribute(sub + ".outputs:positionCommand").get()
-    if "{urdf}" not in names or positions is None or len(positions) != len(names):
+    names = [str(n) for n in og.Controller.attribute(sub + ".outputs:name").get()]
+    positions = og.Controller.attribute(sub + ".outputs:position").get()
+    if "{urdf}" not in names or positions is None:
         return False
     i = names.index("{urdf}")
+    # topic_based_ros2_control names every joint but fills in positions only for the ones it
+    # commands, so the array can be shorter than the names; the driven joint comes first.
+    # (Isaac's ROS2SubscribeJointState discards such a message, which is why this graph
+    # reads the JointState through the generic ROS2Subscriber.)
+    if i >= len(positions):
+        return False
     art = "{graph}/Art"
     og.Controller.attribute(art + ".inputs:jointNames").set(["{asset}"])
     og.Controller.attribute(art + ".inputs:positionCommand").set([float(positions[i])])
@@ -65,6 +71,7 @@ def compute(db):
 
 _STATE_SCRIPT = '''
 import omni.graph.core as og
+import omni.timeline
 
 def compute(db):
     read = "{graph}/ReadState"
@@ -76,7 +83,7 @@ def compute(db):
         values = og.Controller.attribute(read + ".outputs:" + attr).get()
         return [float(values[i])] if values is not None and len(values) > i else []
     pub = "{graph}/Pub"
-    t = float(og.Controller.attribute("{graph}/SimTime.outputs:simulationTime").get())
+    t = float(omni.timeline.get_timeline_interface().get_current_time())
     sec = int(t)
     og.Controller.attribute(pub + ".inputs:header:stamp:sec").set(sec)
     og.Controller.attribute(pub + ".inputs:header:stamp:nanosec").set(int((t - sec) * 1e9))
@@ -163,9 +170,8 @@ def build_graph(
         {
             keys.CREATE_NODES: [
                 ("Tick", "omni.graph.action.OnPlaybackTick"),
-                ("SimTime", "isaacsim.core.nodes.IsaacReadSimulationTime"),
                 # command path: ROS -> filter -> articulation
-                ("Sub", "isaacsim.ros2.bridge.ROS2SubscribeJointState"),
+                ("Sub", "isaacsim.ros2.bridge.ROS2Subscriber"),
                 ("PickCommand", "omni.graph.scriptnode.ScriptNode"),
                 ("Art", "isaacsim.core.nodes.IsaacArticulationController"),
                 # state path: articulation -> pick the driven joint -> ROS
@@ -183,6 +189,9 @@ def build_graph(
             ],
             keys.SET_VALUES: [
                 ("Sub.inputs:topicName", command_topic),
+                ("Sub.inputs:messagePackage", "sensor_msgs"),
+                ("Sub.inputs:messageSubfolder", "msg"),
+                ("Sub.inputs:messageName", "JointState"),
                 ("PickCommand.inputs:script", command_script),
                 ("Art.inputs:targetPrim", [root]),
                 ("ReadState.inputs:prim", [root]),
