@@ -77,11 +77,11 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
 
 ## Factorized Tactile Representation and Control for Sim-to-Real Manipulation (Shang, Aumann, Brady, Migdal, Padır, Amazon / UT Austin, 2026)
 
-- **Link:** [arXiv:2610.10510](https://arxiv.org/abs/2610.10510)
+- **Link:** [arXiv:2610.10510](https://arxiv.org/pdf/2610.10510)
 - **Gripper(s):** Robotiq 2F-85 on a UR5e, with two TSF-85 capacitive tactile pads
 - **Variant:** not stated (presumably parallel grip, as the tactile pads are used for flat-face and object grasps)
 - **Simulator / physics engine:** Isaac Sim 5.1.0 and Isaac Lab 2.3.2 (PPO with an LSTM actor, 4096 environments per A100, 10 Hz policy with 12 physics steps per policy step). The physics engine is not named.
-- **Asset source:** not stated. The paper does not say it uses this repo's asset.
+- **Asset source:** per Robotiq, the work uses the TSF-85 and the ÉTS Isaac Sim digital twin. The paper itself does not say this. It cites the ÉTS TSF-85 digital twin as [10] (De la Cruz Sánchez and Roberge, [Applied Sciences 16(15):7708, 2026](https://www.mdpi.com/2076-3417/16/15/7708)) but says its own approach avoids reconstructing a deformation field, and it does not say which 2F-85 asset it used.
 
 ### How the gripper was used
 - Three sim-to-real RL tasks, transferred zero-shot to hardware: Tactile Alignment (hold an 80 mm cylinder and align it in-hand), Grasp-Force Regulation, and Adversarial Peg Insertion.
@@ -98,4 +98,5 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
 ### Findings / feedback for us
 - Real users drive the gripper through the **0-255 position register**. A sim asset that exposes the same command (position setpoint, about 3.42 mrad per tick) and a realistic command latency would remove the need to patch these in the training environment.
 - The 100 ms command latency is a measured number we could document or offer as an optional delay in the asset or demo.
+- Follow up on the ÉTS digital twin: how it relates to the pad contact model used in this paper, and whether it builds on our 2F-85 asset.
 - Open questions: which 2F-85 asset they used, the gripper-dynamics and friction ranges they randomized, and how the TSF-85 pads were attached to the asset.
