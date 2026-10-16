@@ -9,7 +9,7 @@ UDP-broadcasts the two inner-finger pad forces as an ASCII "fL fR" datagram to
 Rigid resistance proportional to the AVERAGE of the two forces, so squeezing an
 object in sim makes the trigger physically stiffen under the finger.
 
-Pairs naturally with gamepad_teleop.py, where R2 also *commands* the gripper:
+Pairs naturally with physx_tick_teleop.py, where R2 also *commands* the gripper:
 press R2 to close -> fingers contact the object -> R2 pushes back.
 
 Prerequisites:
