@@ -1,6 +1,6 @@
 """
 Build the ROS 2 Action Graph that lets a Robotiq 2F gripper in Isaac Sim be driven
-by the `robotiq/ros` stack exactly like the real gripper.
+by the `robotiq/ros` stack like the real gripper.
 
     ros2 launch robotiq_description robotiq_control.launch.py sim_topic_based:=true
 
@@ -8,31 +8,38 @@ The ros2_control plugin that launch selects (topic_based_ros2_control) exchanges
 sensor_msgs/JointState topics with the simulator. This script builds the simulator end
 of them, for the PhysX and the Newton physics variants alike.
 
-What it exposes mimics what the real gripper gives: ONE joint, the driven one, under its
-URDF name.
-  * commands: the driven joint is picked out of every JointState the plugin sends (it
-    also sends the mimic joints, which the asset does not have under those names; Isaac
-    drops a whole command that names an unknown joint) and handed to the articulation
-    controller under the asset's own name.
+What it exposes is what the real gripper reports, one position: ONE joint, the driven
+one, under its URDF name (#88, option 2: the asset keeps `finger_joint`, the graph remaps).
+  * commands: the driven joint is picked out of every JointState the plugin sends and
+    handed to the articulation controller under the asset's own name.
   * state:    the driven joint's position, velocity and effort are published under its
     URDF name.
 
-Run it from the Script Editor (Window > Script Editor > Open > Run) with the gripper
-stage open, or standalone/headless:
+This one-joint contract is the intended one, and it depends on robotiq/ros#118 being fixed
+on the ros side (declare the URDF mimic joints for Gazebo only). Until a ros release carries
+that fix (ros <= 1.3), under sim_topic_based:
+  * the plugin's command also names the five mimic joints, with a position for the driven
+    one only. Isaac's ROS2SubscribeJointState discards such a message (its arrays differ in
+    length), so this graph reads it with the generic ROS2Subscriber and filters it. Once
+    ros#118 is fixed the command carries the driven joint alone and the filter can go.
+  * /joint_states shows the mimic joints at 0, since nothing publishes them; RViz shows
+    the fingers frozen while the knuckle moves (#89). A known limitation of those ros
+    releases, not of this graph.
 
-    python build_gripper_graph.py --model 2f_85 [--articulation-root PRIM] [--prefix P]
-                                  [--command-topic T] [--state-topic T]
+Run it from the Script Editor (Window > Script Editor > Open > Run) in a stage that
+references the gripper: that builds the graph for a 2F-85. For anything else, call
+`build_graph` with keyword arguments:
+
+    import runpy
+    runpy.run_path(".../grippers/ros2/build_gripper_graph.py")["build_graph"](model="2f_140")
 
 Running it again replaces the graph, so it is safe to re-run after switching the
-Physics variant. Defaults (the model below, the topics of robotiq_control.launch.py, the
-articulation root found in the stage) work for the stock assets with no arguments.
+Physics variant.
 """
-import argparse
-import sys
 
 # model -> (driven joint in the URDF of robotiq/ros, driven joint in the Isaac asset).
 # The 2F-85 URDF names its driven joint robotiq_85_left_knuckle_joint; the asset follows
-# the 2F-140 naming. `--prefix` is the URDF's `prefix` xacro argument.
+# the 2F-140 naming. `prefix` is the URDF's `prefix` xacro argument.
 DRIVEN_JOINTS = {
     "2f_85": ("robotiq_85_left_knuckle_joint", "finger_joint"),
     "2f_140": ("finger_joint", "finger_joint"),
@@ -44,78 +51,98 @@ STATE_TOPIC = "/sim/joint_states"
 
 GRAPH_PATH = "/World/Robotiq_ROS2"
 
-# Script-node bodies. {graph}, {urdf} and {asset} are filled in when the graph is built.
-# They run inside Kit, once per tick, and talk to their neighbours through attributes.
+# Script-node bodies, filled in when the graph is built. Their inputs and outputs are
+# dynamic attributes connected to the neighbouring nodes (see build_graph).
 _COMMAND_SCRIPT = '''
+import carb
 import omni.graph.core as og
 
 def compute(db):
-    sub = "{graph}/Sub"
-    names = [str(n) for n in og.Controller.attribute(sub + ".outputs:name").get()]
-    positions = og.Controller.attribute(sub + ".outputs:position").get()
-    if "{urdf}" not in names or positions is None:
+    names = [str(n) for n in db.inputs.name]
+    if "{urdf}" not in names:
+        # Once, not every tick: a --model or --prefix that does not match the launch's
+        # gripper_model / prefix otherwise leaves the gripper motionless with no hint.
+        if not getattr(db.per_instance_state, "warned", False):
+            db.per_instance_state.warned = True
+            carb.log_warn(
+                "[robotiq-ros2] commands on {topic} name " + repr(names) + ", not '{urdf}': "
+                "check the graph's model and prefix against the launch's gripper_model and prefix"
+            )
         return False
     i = names.index("{urdf}")
-    # topic_based_ros2_control names every joint but fills in positions only for the ones it
-    # commands, so the array can be shorter than the names; the driven joint comes first.
-    # (Isaac's ROS2SubscribeJointState discards such a message, which is why this graph
-    # reads the JointState through the generic ROS2Subscriber.)
+    positions = db.inputs.position
+    # ros <= 1.3 (robotiq/ros#118): the plugin names the mimic joints too but fills in a
+    # position for the driven joint only, which comes first.
     if i >= len(positions):
         return False
-    art = "{graph}/Art"
-    og.Controller.attribute(art + ".inputs:jointNames").set(["{asset}"])
-    og.Controller.attribute(art + ".inputs:positionCommand").set([float(positions[i])])
+    db.outputs.jointNames = ["{asset}"]
+    db.outputs.positionCommand = [float(positions[i])]
     db.outputs.execOut = og.ExecutionAttributeState.ENABLED
     return True
 '''
 
 _STATE_SCRIPT = '''
 import omni.graph.core as og
-import omni.timeline
 
 def compute(db):
-    read = "{graph}/ReadState"
-    names = [str(n) for n in og.Controller.attribute(read + ".outputs:jointNames").get()]
+    names = [str(n) for n in db.inputs.jointNames]
     if "{asset}" not in names:
         return False
     i = names.index("{asset}")
-    def pick(attr):
-        values = og.Controller.attribute(read + ".outputs:" + attr).get()
-        return [float(values[i])] if values is not None and len(values) > i else []
-    pub = "{graph}/Pub"
-    t = float(omni.timeline.get_timeline_interface().get_current_time())
-    sec = int(t)
-    og.Controller.attribute(pub + ".inputs:header:stamp:sec").set(sec)
-    og.Controller.attribute(pub + ".inputs:header:stamp:nanosec").set(int((t - sec) * 1e9))
-    og.Controller.attribute(pub + ".inputs:name").set(["{urdf}"])
-    og.Controller.attribute(pub + ".inputs:position").set(pick("jointPositions"))
-    og.Controller.attribute(pub + ".inputs:velocity").set(pick("jointVelocities"))
-    og.Controller.attribute(pub + ".inputs:effort").set(pick("jointEfforts"))
+    def pick(values):
+        return [float(values[i])] if len(values) > i else []
+    t = float(db.inputs.sensorTime)
+    db.outputs.sec = int(t)
+    db.outputs.nanosec = int((t - int(t)) * 1e9)
+    db.outputs.name = ["{urdf}"]
+    db.outputs.position = pick(db.inputs.jointPositions)
+    db.outputs.velocity = pick(db.inputs.jointVelocities)
+    db.outputs.effort = pick(db.inputs.jointEfforts)
     db.outputs.execOut = og.ExecutionAttributeState.ENABLED
     return True
 '''
 
+# Dynamic attributes of the two script nodes: (name, type).
+_COMMAND_ATTRIBUTES = [
+    ("inputs:name", "token[]"),
+    ("inputs:position", "double[]"),
+    ("outputs:jointNames", "token[]"),
+    ("outputs:positionCommand", "double[]"),
+]
+_STATE_ATTRIBUTES = [
+    ("inputs:jointNames", "token[]"),
+    ("inputs:jointPositions", "double[]"),
+    ("inputs:jointVelocities", "double[]"),
+    ("inputs:jointEfforts", "double[]"),
+    ("inputs:sensorTime", "float"),
+    ("outputs:sec", "int"),
+    ("outputs:nanosec", "uint"),
+    ("outputs:name", "token[]"),
+    ("outputs:position", "double[]"),
+    ("outputs:velocity", "double[]"),
+    ("outputs:effort", "double[]"),
+]
+
 
 def find_articulation_root(stage, asset_joint):
-    """The articulation root whose subtree holds `asset_joint`."""
-    from pxr import UsdPhysics
+    """The one articulation root whose subtree holds `asset_joint`, or None."""
+    from pxr import Usd, UsdPhysics
 
+    found = []
     for prim in stage.Traverse():
         if not prim.HasAPI(UsdPhysics.ArticulationRootAPI):
             continue
         # A root can sit on a joint (a PhysicsFixedJoint such as /World/ur5e/root_joint) and
         # then own its parent's subtree.
         owner = prim.GetParent() if prim.IsA(UsdPhysics.Joint) else prim
-        for child in _descendants(owner):
-            if child.GetName() == asset_joint and child.IsA(UsdPhysics.Joint):
-                return prim.GetPath()
-    return None
-
-
-def _descendants(prim):
-    from pxr import Usd
-
-    return Usd.PrimRange(prim)
+        if any(p.GetName() == asset_joint and p.IsA(UsdPhysics.Joint) for p in Usd.PrimRange(owner)):
+            found.append(prim.GetPath())
+    if len(found) > 1:
+        raise RuntimeError(
+            f"several articulations have a joint named {asset_joint!r}: "
+            f"{', '.join(map(str, found))}; pass articulation_root"
+        )
+    return found[0] if found else None
 
 
 def build_graph(
@@ -146,13 +173,12 @@ def build_graph(
         raise RuntimeError("no stage is open")
 
     if articulation_root is None:
-        found = find_articulation_root(stage, asset_joint)
-        if found is None:
+        root = find_articulation_root(stage, asset_joint)
+        if root is None:
             raise RuntimeError(
                 f"no articulation with a joint named {asset_joint!r} in the stage; "
-                "pass --articulation-root (and check --model)"
+                "pass articulation_root (and check model)"
             )
-        root = found
     else:
         root = Sdf.Path(articulation_root)
         if not stage.GetPrimAtPath(root):
@@ -161,16 +187,16 @@ def build_graph(
     if stage.GetPrimAtPath(graph_path):
         stage.RemovePrim(graph_path)
 
-    command_script = _COMMAND_SCRIPT.format(graph=graph_path, urdf=urdf_joint, asset=asset_joint)
-    state_script = _STATE_SCRIPT.format(graph=graph_path, urdf=urdf_joint, asset=asset_joint)
-
+    fill = {"urdf": urdf_joint, "asset": asset_joint, "topic": command_topic}
     keys = og.Controller.Keys
-    og.Controller.edit(
+    # The ROS2Subscriber / ROS2Publisher attributes for the message fields only appear once
+    # the message type is set, so the nodes are configured first and wired in a second edit.
+    graph, _, _, _ = og.Controller.edit(
         {"graph_path": graph_path, "evaluator_name": "execution"},
         {
             keys.CREATE_NODES: [
                 ("Tick", "omni.graph.action.OnPlaybackTick"),
-                # command path: ROS -> filter -> articulation
+                # command path: ROS -> pick the driven joint -> articulation
                 ("Sub", "isaacsim.ros2.bridge.ROS2Subscriber"),
                 ("PickCommand", "omni.graph.scriptnode.ScriptNode"),
                 ("Art", "isaacsim.core.nodes.IsaacArticulationController"),
@@ -179,23 +205,17 @@ def build_graph(
                 ("PickState", "omni.graph.scriptnode.ScriptNode"),
                 ("Pub", "isaacsim.ros2.bridge.ROS2Publisher"),
             ],
-            keys.CONNECT: [
-                ("Tick.outputs:tick", "Sub.inputs:execIn"),
-                ("Sub.outputs:execOut", "PickCommand.inputs:execIn"),
-                ("PickCommand.outputs:execOut", "Art.inputs:execIn"),
-                ("Tick.outputs:tick", "ReadState.inputs:execIn"),
-                ("ReadState.outputs:execOut", "PickState.inputs:execIn"),
-                ("PickState.outputs:execOut", "Pub.inputs:execIn"),
-            ],
+            keys.CREATE_ATTRIBUTES: [(f"PickCommand.{n}", t) for n, t in _COMMAND_ATTRIBUTES]
+            + [(f"PickState.{n}", t) for n, t in _STATE_ATTRIBUTES],
             keys.SET_VALUES: [
                 ("Sub.inputs:topicName", command_topic),
                 ("Sub.inputs:messagePackage", "sensor_msgs"),
                 ("Sub.inputs:messageSubfolder", "msg"),
                 ("Sub.inputs:messageName", "JointState"),
-                ("PickCommand.inputs:script", command_script),
+                ("PickCommand.inputs:script", _COMMAND_SCRIPT.format(**fill)),
                 ("Art.inputs:targetPrim", [root]),
                 ("ReadState.inputs:prim", [root]),
-                ("PickState.inputs:script", state_script),
+                ("PickState.inputs:script", _STATE_SCRIPT.format(**fill)),
                 ("Pub.inputs:topicName", state_topic),
                 ("Pub.inputs:messagePackage", "sensor_msgs"),
                 ("Pub.inputs:messageSubfolder", "msg"),
@@ -203,13 +223,40 @@ def build_graph(
             ],
         },
     )
+    connections = [
+        ("Tick.outputs:tick", "Sub.inputs:execIn"),
+        ("Sub.outputs:execOut", "PickCommand.inputs:execIn"),
+        ("Sub.outputs:name", "PickCommand.inputs:name"),
+        ("Sub.outputs:position", "PickCommand.inputs:position"),
+        ("PickCommand.outputs:execOut", "Art.inputs:execIn"),
+        ("PickCommand.outputs:jointNames", "Art.inputs:jointNames"),
+        ("PickCommand.outputs:positionCommand", "Art.inputs:positionCommand"),
+        ("Tick.outputs:tick", "ReadState.inputs:execIn"),
+        ("ReadState.outputs:execOut", "PickState.inputs:execIn"),
+        ("ReadState.outputs:jointNames", "PickState.inputs:jointNames"),
+        ("ReadState.outputs:jointPositions", "PickState.inputs:jointPositions"),
+        ("ReadState.outputs:jointVelocities", "PickState.inputs:jointVelocities"),
+        ("ReadState.outputs:jointEfforts", "PickState.inputs:jointEfforts"),
+        ("ReadState.outputs:sensorTime", "PickState.inputs:sensorTime"),
+        ("PickState.outputs:execOut", "Pub.inputs:execIn"),
+        ("PickState.outputs:sec", "Pub.inputs:header:stamp:sec"),
+        ("PickState.outputs:nanosec", "Pub.inputs:header:stamp:nanosec"),
+        ("PickState.outputs:name", "Pub.inputs:name"),
+        ("PickState.outputs:position", "Pub.inputs:position"),
+        ("PickState.outputs:velocity", "Pub.inputs:velocity"),
+        ("PickState.outputs:effort", "Pub.inputs:effort"),
+    ]
+    # A second edit resolves "Node.attr" against the stage root, not the graph: use full paths.
+    og.Controller.edit(
+        graph,
+        {keys.CONNECT: [(f"{graph_path}/{src}", f"{graph_path}/{dst}") for src, dst in connections]},
+    )
 
     # The silent failures this graph exists to rule out: a target that is not the prim we
-    # meant, or joint names Isaac reads differently from what we typed. The panel shows a
-    # wrong value exactly like a right one, so compare the stored values, not the display.
+    # meant, or values Isaac reads differently from what we typed. The panel shows a wrong
+    # value exactly like a right one, so compare the stored values, not the display.
     expect_root = [str(root)]
-    for node in ("Art", "ReadState"):
-        attr = "inputs:targetPrim" if node == "Art" else "inputs:prim"
+    for node, attr in (("Art", "inputs:targetPrim"), ("ReadState", "inputs:prim")):
         stored = [str(p) for p in og.Controller.attribute(f"{graph_path}/{node}.{attr}").get()]
         if stored != expect_root:
             raise RuntimeError(f"{node}.{attr} is {stored!r}, expected {expect_root!r}")
@@ -225,23 +272,7 @@ def build_graph(
     return graph_path
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--model", choices=sorted(DRIVEN_JOINTS), default="2f_85")
-    parser.add_argument("--articulation-root", help="default: the root holding the driven joint")
-    parser.add_argument("--prefix", default="", help="the URDF's `prefix` xacro argument")
-    parser.add_argument("--command-topic", default=COMMAND_TOPIC)
-    parser.add_argument("--state-topic", default=STATE_TOPIC)
-    # Kit's own arguments are in sys.argv when this runs from the Script Editor.
-    args, _ = parser.parse_known_args(argv if argv is not None else sys.argv[1:])
-    return build_graph(
-        model=args.model,
-        articulation_root=args.articulation_root,
-        prefix=args.prefix,
-        command_topic=args.command_topic,
-        state_topic=args.state_topic,
-    )
-
-
+# The Script Editor runs a file as __main__; runpy.run_path does not, so importing the
+# function from another script builds nothing by itself.
 if __name__ == "__main__":
-    main()
+    build_graph()
