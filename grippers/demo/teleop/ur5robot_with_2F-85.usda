@@ -44,6 +44,9 @@
     endTimeCode = 1000000
     metersPerUnit = 1
     startTimeCode = 0
+    subLayers = [
+        @../../scene/Robotiq_Newton_scene_physics.usda@
+    ]
     timeCodesPerSecond = 60
     upAxis = "Z"
 )

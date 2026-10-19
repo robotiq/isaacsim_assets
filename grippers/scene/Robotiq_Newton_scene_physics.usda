@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    doc = """Scene-level Newton setting the Robotiq grippers need on Isaac Sim 6.1+.
+Sublayer this into the stage that holds a gripper (it only adds opinions on /PhysicsScene,
+so it merges with a PhysicsScene you already have). See GRIPPER_SIMULATION_GUIDE.md section 5.3."""
+)
+
+def PhysicsScene "PhysicsScene" (
+    prepend apiSchemas = ["MjcSceneAPI"]
+)
+{
+    # Elliptic friction cone: what Isaac Sim 6.0.1 forced, and 6.1+ no longer does.
+    # The gripper pad material's negative newton:contactFrictionGain relies on it.
+    uniform token mjc:option:cone = "elliptic"
+}

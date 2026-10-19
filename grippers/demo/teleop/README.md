@@ -181,7 +181,9 @@ engine's tuning: arm-joint drive damping (plus `mjc:armature` on Newton), and
 on PhysX the finger solver iterations and `finger_joint` drive (authored once
 per gripper in the `_TeleopPhysxGripperTuning_*` classes, which the PhysX
 variants inherit). The scene's `/PhysicsScene` carries `MjcSceneAPI` (inert
-under PhysX), so no scene edit is needed when switching.
+under PhysX), so no scene edit is needed when switching. The scene also sublayers
+[`grippers/scene/Robotiq_Newton_scene_physics.usda`](../../scene/Robotiq_Newton_scene_physics.usda),
+which sets the elliptic friction cone Newton needs on Isaac Sim 6.1+.
 
 `Physics` is listed **before** `Gripper` on purpose: the asset's `Physics`
 variant set comes in through the payload inside the `Gripper` variant, and USD

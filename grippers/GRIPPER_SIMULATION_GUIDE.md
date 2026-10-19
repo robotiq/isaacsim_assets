@@ -724,12 +724,13 @@ The loop (five-bar) variant is where Newton earns its place:
 - **What changed between 6.0 and 6.1:**
   - 6.0.1 (Newton 1.2.1) built the solver with fixed options, so it always ran an **elliptic** cone, and had no `kf` mapping.
   - 6.1 and 6.2 (Newton 1.5.0 / 1.6.1) read the options from USD scene attributes or Newton's defaults, so the cone is **pyramidal** unless authored, which grips worse here (2F slip 2.6 to 11 mm against a 2 mm limit).
-  - Author `mjc:option:cone = "elliptic"` (with `MjcSceneAPI`) on the physics scene; the runtime tests do this in `tests/runtime/_scene.py`.
+  - The cone is a scene option (a solver option on the `PhysicsScene`), and the gripper asset has no scene, so the scene must provide it. Use the shared layer below.
   - With an elliptic cone, 6.1 turns on the `kf` mapping, and with the default `kf` of 1000 the held object is lost.
 - **Why `newton:contactFrictionGain = -1000000000` on `GripMaterial`:**
   - A negative gain skips the mapping, which is the 6.0.1 behaviour.
   - The mixed value must stay negative against the other shape's default `+1000`: `-1` would give `0.5*(-1) + 0.5*1000 = +499.5`. A large magnitude keeps it negative for any `mix` and any plausible partner gain, and it is only compared with zero, so the size costs nothing.
   - Large positive gains (1e5 to 1e7) also hold the lift tests, but then `test_gripper_closes_on_fixed_cylinder[Robotiq_2F_85-Newton_compliant]` fails marginally (`finger_joint still moving: 0.281 deg` against 0.25 deg); the negative gain passes every test.
+- **The shared scene layer, [`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda):** it holds `mjc:option:cone = "elliptic"` on `/PhysicsScene` (with `MjcSceneAPI`). **Add it as a sublayer of any stage that holds a Newton gripper on Isaac Sim 6.1+**, or set the same attribute by hand. It only adds opinions to `/PhysicsScene`, so it merges with a scene you already have (use the same prim path) and is harmless on PhysX and on Isaac Sim 6.0.1. The runtime tests and the teleop demo scene both use it.
 - **Caveats:** relying on a negative value is Newton 1.5 behaviour, not a documented API (checked on Newton 1.5.0 and 1.6.1; 1.2.1 ignores the attribute). It only applies where the pad material is involved; a partner with a huge positive `kf` could flip the sign (untested).
 
 ### 5.4 Where to find the asset
