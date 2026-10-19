@@ -43,4 +43,5 @@ print(json.dumps({
     "name": list(last.name) if last else [],
     "position": list(last.position) if last else [],
     "velocity": list(last.velocity) if last else [],
+    "stamp": last.header.stamp.sec + last.header.stamp.nanosec * 1e-9 if last else 0.0,
 }))
