@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FastDDS over UDP only, with data sharing off. A container that shares the host network
+     but not its memory discovers Isaac Sim's nodes yet its messages never arrive when
+     FastDDS picks shared memory or data sharing for a "same host" peer. Use it with
+       -e FASTRTPS_DEFAULT_PROFILES_FILE=/fastdds_udp.xml -v $PWD/tests/ros2/fastdds_udp.xml:/fastdds_udp.xml -->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+    <transport_descriptors>
+        <transport_descriptor>
+            <transport_id>udp</transport_id>
+            <type>UDPv4</type>
+        </transport_descriptor>
+    </transport_descriptors>
+    <participant profile_name="udp_only" is_default_profile="true">
+        <rtps>
+            <userTransports><transport_id>udp</transport_id></userTransports>
+            <useBuiltinTransports>false</useBuiltinTransports>
+        </rtps>
+    </participant>
+    <data_writer profile_name="no_data_sharing" is_default_profile="true">
+        <qos><data_sharing><kind>OFF</kind></data_sharing></qos>
+    </data_writer>
+    <data_reader profile_name="no_data_sharing" is_default_profile="true">
+        <qos><data_sharing><kind>OFF</kind></data_sharing></qos>
+    </data_reader>
+</profiles>
