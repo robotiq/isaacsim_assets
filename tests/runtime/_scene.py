@@ -12,7 +12,7 @@ import omni.timeline
 from isaacsim.core.experimental.prims import Articulation
 from isaacsim.core.experimental.utils import stage as stage_utils
 from isaacsim.core.simulation_manager import SimulationManager
-from pxr import UsdPhysics
+from pxr import Sdf, UsdPhysics
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -51,7 +51,11 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     stage = stage_utils.create_new_stage()
-    UsdPhysics.Scene.Define(stage, "/physicsScene")
+    scene_prim = UsdPhysics.Scene.Define(stage, "/physicsScene").GetPrim()
+    # Isaac Sim 6.0 forced an elliptic cone through the solver config; 6.1+ reads
+    # it from the scene, so author it (harmless on 6.0, which overrides it).
+    scene_prim.AddAppliedSchema("MjcSceneAPI")
+    scene_prim.CreateAttribute("mjc:option:cone", Sdf.ValueTypeNames.Token, custom=False).Set("elliptic")
     stage_utils.add_reference_to_stage(
         usd_path=str(REPO / "grippers" / gripper / f"{gripper}.usda"),
         path="/World/Gripper",

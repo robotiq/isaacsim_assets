@@ -30,6 +30,7 @@ over "Robotiq_Hand_E"
                 float physics:staticFriction = 1
                 float newton:rollingFriction = 0.0001
                 float newton:torsionalFriction = 0.005
+                float newton:contactFrictionGain = -1000000000
             }
         }
     }
