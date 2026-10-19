@@ -97,7 +97,9 @@ def test_gripper_pusher(request, simulation_app, view, gripper: str, physics: st
     plate = RigidPrim(PUSHER_PATH)
     pads = RigidPrim([f"{scene.root}/{p}" for p in PADS])
     step(simulation_app, SETTLE_FRAMES)
-    assert pusher.num_dofs == 1, f"the plate's prismatic joint did not load: {pusher.dof_names}"
+    # Isaac Sim 6.1+ lists loop-closure joints as extra DOFs; drive only the slide.
+    slide = [i for i, name in enumerate(pusher.dof_names) if "loop_closure" not in name]
+    assert len(slide) == 1, f"the plate's prismatic joint did not load: {pusher.dof_names}"
     dofs = [scene.dof(j) for j in JOINTS]
     q_open = robot.get_dof_positions().numpy()[0][dofs].copy()
     pads_open = pads.get_world_poses()[1].numpy().copy()
@@ -111,7 +113,7 @@ def test_gripper_pusher(request, simulation_app, view, gripper: str, physics: st
         """Ramp the plate's target from offset a to offset b over ``frames`` frames."""
         for i in range(1, frames + 1):
             target = a + (b - a) * i / frames
-            pusher.set_dof_position_targets([[target]])
+            pusher.set_dof_position_targets([[target]], dof_indices=slide)
             simulation_app.update()
             if sum(c.force for c in reader.read().values()) < NO_CONTACT:
                 z = float(plate.get_world_poses()[0].numpy()[0][2])
