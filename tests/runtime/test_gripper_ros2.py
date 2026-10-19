@@ -78,7 +78,11 @@ def test_gripper_ros2(simulation_app, view, tmp_path, gripper: str, physics: str
 
     # The builder is a script for Isaac's Script Editor: run it as one.
     namespace = runpy.run_path(str(BUILDER))
-    namespace["build_graph"](model=model)
+    try:
+        namespace["build_graph"](model=model)
+    except namespace["Ros2BridgeUnavailable"] as error:
+        # Without it Isaac segfaults on the first ROS2 node, which kills the whole session.
+        pytest.skip(str(error))
     step(simulation_app, 10)
 
     # Output to files, not pipes: nothing reads a pipe while the app is stepped, and a full
