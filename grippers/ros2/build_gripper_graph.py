@@ -145,6 +145,32 @@ def find_articulation_root(stage, asset_joint):
     return found[0] if found else None
 
 
+class Ros2BridgeUnavailable(RuntimeError):
+    """Isaac was started without the ROS 2 libraries its bridge needs."""
+
+
+def check_ros2_libraries():
+    """Fail cleanly when Isaac's ROS 2 bridge cannot load.
+
+    The bridge dlopens librosidl_runtime_c.so from the library path Isaac was started with. When
+    it is missing the bridge only logs "ROS2 Bridge startup failed", and the first ROS2Subscriber
+    / ROS2Publisher whose message type is then set dereferences the missing plugin: a native
+    segfault that takes the whole Isaac process down. The path cannot be fixed from inside the
+    running process, so say what to do before touching a node.
+    """
+    import ctypes
+
+    try:
+        ctypes.CDLL("librosidl_runtime_c.so")
+    except OSError as error:
+        raise Ros2BridgeUnavailable(
+            "Isaac's ROS 2 bridge cannot load (librosidl_runtime_c.so is not on LD_LIBRARY_PATH), "
+            "and building the graph would crash Isaac. Start Isaac with its ROS environment: "
+            "`source <isaac-sim>/setup_ros_env.sh` (or source a system ROS 2) before launching it. "
+            f"({error})"
+        ) from error
+
+
 def build_graph(
     model="2f_85",
     articulation_root=None,
@@ -163,6 +189,8 @@ def build_graph(
         raise ValueError(f"unknown model {model!r}, expected one of {sorted(DRIVEN_JOINTS)}")
     urdf_joint, asset_joint = DRIVEN_JOINTS[model]
     urdf_joint = prefix + urdf_joint
+
+    check_ros2_libraries()
 
     extensions = omni.kit.app.get_app().get_extension_manager()
     for ext in ("isaacsim.ros2.bridge", "isaacsim.sensors.physics.nodes"):
