@@ -6,10 +6,10 @@ Isaac Sim 6 process directly: build Action Graphs, inspect prims, step
 physics, read/write joint state, save the stage, and so on, all from
 inside a conversation without pasting Python into the Script Editor.
 
-**You do not need this to run the teleop.** The teleop stack in
-`../teleop/` runs entirely from ROS. This directory only matters if you
-want an AI agent to programmatically edit or introspect the stage while
-you're using it.
+**You need this only for the DualSense haptics and for AI agents.** The
+teleop in `../teleop/` runs inside Isaac Sim without it. The haptics use
+the extension's socket to inject the contact-force plot, and an AI agent
+uses it to edit or inspect the stage while you're using it.
 
 ## Architecture
 

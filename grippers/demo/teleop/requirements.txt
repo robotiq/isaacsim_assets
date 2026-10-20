@@ -1,6 +1,6 @@
 # Host-side Python deps for the DualSense trigger force-feedback node
-# (trigger_force_feedback.py). The ROS launch runs these scripts with the
-# system python3, so install into that interpreter's user site:
+# (trigger_force_feedback.py). run_demo.sh runs it with the system python3,
+# so install into that interpreter's user site:
 #
 #   python3 -m pip install --user -r requirements.txt
 #
