@@ -6,9 +6,10 @@
     # OVERLAYS only the PhysX engine physics -- drive gains, the right_outer_knuckle
     # mimic, and the closed five-bar loop (loop-closing excludeFromArticulation
     # inner_finger_joint + a weak compliance spring). All 10 revolute joints are
-    # used. Drive gains/mimic are the 85's; only the joint positions (in the
-    # kinematics layer) are the 2F-140's. Masses are shared from
-    # ./Robotiq_2F_140_body_mass_physics.usda.
+    # used. The mimic and the passive-joint gains are the 85's, but the
+    # finger_joint drive is tuned for the 2F-140 (the lift test relies on it): do
+    # not re-sync it with the 85's. The joint positions are in the kinematics
+    # layer. Masses are shared from ./Robotiq_2F_140_body_mass_physics.usda.
     defaultPrim = "Robotiq_2F_140"
     metersPerUnit = 1
     upAxis = "Z"
@@ -38,11 +39,12 @@ def Xform "Robotiq_2F_140" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysicsDriveAPI:angular"]
             )
             {
-                float drive:angular:physics:damping = 0.0002
+                float drive:angular:physics:damping = 0.03
                 float drive:angular:physics:maxForce = 16.5
-                float drive:angular:physics:stiffness = 0.17
+                float drive:angular:physics:stiffness = 1
                 float drive:angular:physics:targetPosition = 0
                 float drive:angular:physics:targetVelocity = 0
+                float physxJoint:armature = 0.0001
             }
 
             over "right_outer_knuckle_joint" (
@@ -50,9 +52,7 @@ def Xform "Robotiq_2F_140" (
                 prepend apiSchemas = ["PhysxJointAPI", "PhysxMimicJointAPI:rotZ"]
             )
             {
-                float drive:angular:physics:damping = 5000
-                float drive:angular:physics:maxForce = 5
-                float drive:angular:physics:stiffness = 0
+                float physxJoint:armature = 0.0001
                 float physxJoint:maxJointVelocity = 10000
                 float physxMimicJoint:rotZ:dampingRatio = 0.01
                 float physxMimicJoint:rotZ:gearing = -1

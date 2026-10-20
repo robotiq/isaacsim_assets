@@ -181,7 +181,10 @@ def Xform "Robotiq_2F_85" (
             customData = {
                 string[] variantPrimPaths = ["."]
             }
-            prepend payload = @./payloads/Robotiq_2F_85_parallel_grip_physics.usda@
+            prepend payload = [
+                @./payloads/Robotiq_2F_85_parallel_grip_physics.usda@,
+                @./payloads/Robotiq_2F_85_parallel_grip_dowel_pins.usda@
+            ]
         ) {
 
         }
@@ -197,7 +200,10 @@ def Xform "Robotiq_2F_85" (
             customData = {
                 string[] variantPrimPaths = ["."]
             }
-            prepend payload = @./payloads/Robotiq_2F_85_newton_parallel_grip_physics.usda@
+            prepend payload = [
+                @./payloads/Robotiq_2F_85_newton_parallel_grip_physics.usda@,
+                @./payloads/Robotiq_2F_85_parallel_grip_dowel_pins.usda@
+            ]
         ) {
 
         }

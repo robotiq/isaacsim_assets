@@ -28,7 +28,7 @@ from isaacsim.core.experimental.prims import RigidPrim
 from pxr import PhysxSchema, UsdPhysics
 
 from _contacts import ContactReader
-from _cube import CUBE_PATH, add_cube
+from _cube import CUBE_PATH, add_cube, set_holder_friction
 from _scene import engine_for, load_gripper, move_to, step
 
 PADS = ("left_fingertip", "right_fingertip")
@@ -41,10 +41,9 @@ MAX_PENETRATION = 1.0e-3  # m
 MIN_FORCE = 1.0  # N per fingertip
 MAX_FORCE = 1000.0  # N per fingertip; sanity cap until measured bounds are set
 BALANCE_TOL = 0.20  # |F_left - F_right| / mean
-# The compliant variants grip softly (low finger_joint drive stiffness, ~30 N per pad
-# here), do not lift the cube off its holder, and the holder's friction takes the
-# left / right difference (~26 % on the 2F-85, ~38 % on the 2F-140). Accepted for now; revisit with the
-# compliant drive tuning.
+# The compliant variants grip softly and do not lift the cube off its holder, so the
+# holder's friction takes part of the left / right difference (HOLDER_FRICTION lowers it
+# on PhysX): they get a looser balance limit.
 BALANCE_TOL_COMPLIANT = 0.40
 PARALLEL_TOL = math.radians(2.0)
 # PhysX steps the test scene at 60 Hz by default; that is too coarse for a stiff
@@ -52,6 +51,7 @@ PARALLEL_TOL = math.radians(2.0)
 # counts the push-out impulse, reading ~380 N instead of ~240 N). The Newton
 # variants already run at 1000 Hz from the asset's Newton scene settings.
 PHYSX_HZ = 1000
+HOLDER_FRICTION = 0.1  # PhysX: friction coefficient between the cube and its holder
 
 
 @dataclass(frozen=True)
@@ -101,6 +101,7 @@ def test_gripper_grasps_cube(simulation_app, view, gripper: str, physics: str) -
         add_cube(stage, gripper)
         reader.prepare(stage)
         if engine_for(physics) == "physx":
+            set_holder_friction(stage, HOLDER_FRICTION)
             scene_prim = next(p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene))
             PhysxSchema.PhysxSceneAPI.Apply(scene_prim).CreateTimeStepsPerSecondAttr().Set(PHYSX_HZ)
 

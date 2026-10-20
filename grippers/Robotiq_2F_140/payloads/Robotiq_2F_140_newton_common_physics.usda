@@ -97,8 +97,8 @@ over "Robotiq_2F_140"
                 prepend apiSchemas = ["PhysicsMaterialAPI", "NewtonMaterialAPI"]
             )
             {
-                float physics:dynamicFriction = 0.7
-                float physics:staticFriction = 0.7
+                float physics:dynamicFriction = 1
+                float physics:staticFriction = 1
                 float newton:rollingFriction = 0.0001
                 float newton:torsionalFriction = 0.005
             }

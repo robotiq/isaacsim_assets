@@ -29,10 +29,10 @@
       "right_fingertip_rotation_deg": 0.148
     },
     "Newton_compliant": {
-      "finger_joint_deg": 42.38,
-      "right_outer_knuckle_joint_deg": 42.379,
-      "left_fingertip_rotation_deg": 38.695,
-      "right_fingertip_rotation_deg": 38.757
+      "finger_joint_deg": 43.002,
+      "right_outer_knuckle_joint_deg": 43.002,
+      "left_fingertip_rotation_deg": 39.046,
+      "right_fingertip_rotation_deg": 39.104
     }
   },
   "expected": {
@@ -43,10 +43,10 @@
       "right_fingertip_rotation_deg": 0.094
     },
     "compliant": {
-      "finger_joint_deg": 40.858,
-      "right_outer_knuckle_joint_deg": 40.817,
-      "left_fingertip_rotation_deg": 37.516,
-      "right_fingertip_rotation_deg": 37.812
+      "finger_joint_deg": 41.169,
+      "right_outer_knuckle_joint_deg": 41.129,
+      "left_fingertip_rotation_deg": 37.692,
+      "right_fingertip_rotation_deg": 37.986
     }
   }
 }

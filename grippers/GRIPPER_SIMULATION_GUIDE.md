@@ -323,6 +323,12 @@ a gripper that won't drive or behaves erratically.
 *The `Articulation Root` block in the Physics panel — delete this API from the
 gripper when mounting it on a robot.*
 
+### 2.5 Driving the gripper from ROS 2
+
+The 2F grippers answer the [`robotiq/ros`](https://github.com/robotiq/ros/tree/main/grippers) stack
+like the real gripper (`sim_topic_based:=true`), on PhysX and Newton alike. Build the graph with
+[`ros2/build_gripper_graph.py`](ros2/README.md), which also has the walkthrough and the check.
+
 ---
 
 ## 3. Troubleshooting
@@ -382,8 +388,8 @@ the `finger_joint` drive:
 
 | Attribute | From | To |
 |---|---|---|
-| `drive:angular:physics:stiffness` | 3 (asset default 0.17) | **50** |
-| `drive:angular:physics:damping` | 0.0002 | **3.0** |
+| `drive:angular:physics:stiffness` | 3 (parallel grip; lower on the compliant variants) | **50** |
+| `drive:angular:physics:damping` | 0.0002 (higher on the 2F-140 compliant) | **3.0** |
 
 Low risk because `restOffset = 0.5 mm` still prevents penetration. (Cranking
 stiffness *far* higher was tried and reverted — it transferred vibration into the
