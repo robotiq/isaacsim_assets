@@ -16,6 +16,12 @@
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 #   TELEOP_HAPTICS=0 ./run_demo.sh                     # no plot, no R2 rumble
 #   TELEOP_INPUT=keyboard ./run_demo.sh                # same as --keyboard
+#   TELEOP_FULL_FORCE_N=100 ./run_demo.sh              # R2 at full stiffness from 100 N (default 200)
+#   READY_TIMEOUT=600 ./run_demo.sh                    # wait longer for Isaac (default 240 s)
+#   MCP_EXT_ROOT=/path/to/isaacsim-mcp-server ./run_demo.sh   # MCP extension elsewhere
+#
+# READY_TIMEOUT counts from the launch, including any time the launcher spends
+# before Isaac starts. MCP_EXT_ROOT defaults to ../mcp_bridge/isaacsim-mcp-server.
 #
 # TELEOP_GRIPPER picks the scene's Gripper variant (2F85 | 2F140 | HandE) and
 # TELEOP_PHYSICS its Physics variant (Physx_compliant | Physx_parallel_grip |
@@ -85,7 +91,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --keyboard)    TELEOP_INPUT=keyboard; shift ;;
     --no-isaac)    START_ISAAC=0; shift ;;
-    -h|--help)     sed -n '2,18p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help)     sed -n '2,/^[^#]/{/^#/s/^# \{0,1\}//p}' "${BASH_SOURCE[0]}"; exit 0 ;;
     --)            shift; ISAAC_EXTRA=("$@"); break ;;
     # Kit settings all look like --/path/to/key=value, so they are unambiguous.
     --/*)          ISAAC_EXTRA+=("$1"); shift ;;
@@ -98,6 +104,13 @@ done
 if [[ "$START_ISAAC" == "1" && ! -x "$LAUNCHER" ]]; then
   echo "Error: Isaac Sim launcher not found at: $LAUNCHER" >&2
   exit 1
+fi
+# The input is chosen inside Isaac when the teleop starts, so it can't be
+# changed for an Isaac that is already running.
+if [[ "$START_ISAAC" == "0" && "$TELEOP_INPUT" == "keyboard" ]]; then
+  echo "Note:       --keyboard / TELEOP_INPUT=keyboard has no effect with --no-isaac;"
+  echo "            the running Isaac keeps the input it picked at start."
+  TELEOP_INPUT=auto
 fi
 
 PIDS=()
@@ -124,7 +137,7 @@ echo "Isaac Sim:  $LAUNCHER  ($LAUNCHER_SRC)"
 echo "Gripper:    $TELEOP_GRIPPER"
 echo "Physics:    $TELEOP_PHYSICS"
 echo "Input:      $TELEOP_INPUT"
-echo "Scene:     $SCRIPT_DIR/ur5robot_with_2F-85.usda"
+echo "Scene:      $SCRIPT_DIR/ur5robot_with_2F-85.usda"
 if [[ "$TELEOP_PHYSICS" == Newton_* && "$ISAACSIM_LAUNCHER" != *newton* ]]; then
   echo "Note:       Physics '$TELEOP_PHYSICS' with a launcher that is not the Newton"
   echo "               experience -- the gripper will not simulate."
@@ -148,6 +161,10 @@ if [[ "$START_ISAAC" == "1" ]]; then
     fi
   fi
   echo "Starting Isaac (log: $ISAAC_LOG) -- first boot takes ~90-150s..."
+  # Empty the log HERE, before the wait below starts reading it: the subshell
+  # only truncates it when it starts, so a "ready." from the previous run
+  # could otherwise be matched.
+  : >"$ISAAC_LOG"
   (
     export TELEOP_DIR="$SCRIPT_DIR" TELEOP_TICK=1
     export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER TELEOP_GRIPPER TELEOP_PHYSICS TELEOP_INPUT
@@ -168,14 +185,19 @@ if [[ "$START_ISAAC" == "1" ]]; then
     fi
     if (( SECONDS > deadline )); then
       echo; echo "Error: the scene was not ready after ${READY_TIMEOUT}s; see $ISAAC_LOG." >&2
-      exit 1
+      echo "Isaac is left running (READY_TIMEOUT sets the wait). Ctrl-C stops it." >&2
+      while true; do sleep 3600; done
     fi
     echo -n "."
     sleep 2
   done
+  # On a failed start, keep Isaac open: the error is on screen and the teleop
+  # can be retried from the Script Editor.
   if ! grep -q "\[physx-autostart\] ready\." "$ISAAC_LOG"; then
     echo; echo "Error: the scene did not start. Last lines of $ISAAC_LOG:" >&2
-    tail -20 "$ISAAC_LOG" >&2; exit 1
+    tail -20 "$ISAAC_LOG" >&2
+    echo "Isaac is left running so you can read the error. Ctrl-C stops it." >&2
+    while true; do sleep 3600; done
   fi
   echo " ok"
 else
@@ -215,11 +237,17 @@ else
   echo "         $ISAAC_LOG for isaac.sim.mcp_extension errors." >&2
 fi
 
-# Ctrl-C ends this with status 130; that is the user stopping the demo, not a
-# failure, so it gets no warning.
+# With the keyboard, R2 doesn't drive the gripper, so it gets no resistance
+# either; the plot stays.
+if [[ "$TELEOP_INPUT" == "keyboard" ]]; then
+  echo "Keyboard input: no R2 force feedback."
+  while true; do sleep 3600; done
+fi
+# Ctrl-C (130) or a SIGTERM (143) is the user stopping the demo, not a failure,
+# so it gets no warning.
 st=0
 python3 "$SCRIPT_DIR/trigger_force_feedback.py" --full-force-N "${TELEOP_FULL_FORCE_N:-200}" || st=$?
-if (( st != 0 && st != 130 )); then
+if (( st != 0 && st != 130 && st != 143 )); then
   echo "WARNING: R2 force feedback stopped (needs a DualSense, pydualsense and hidapi)." >&2
 fi
 while true; do sleep 3600; done

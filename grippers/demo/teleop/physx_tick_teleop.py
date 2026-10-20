@@ -423,7 +423,10 @@ class Keyboard:
 
 
 def _acquire_input():
-    if os.environ.get("TELEOP_INPUT", "auto") == "keyboard":
+    mode = os.environ.get("TELEOP_INPUT", "auto").strip().lower()
+    if mode not in ("auto", "keyboard"):
+        print("[physx_teleop] TELEOP_INPUT=%r not recognised; using auto" % mode)
+    if mode == "keyboard":
         print("[physx_teleop] input: KEYBOARD (TELEOP_INPUT=keyboard) -- " + KEYBOARD_HELP)
         return Keyboard()
     try:

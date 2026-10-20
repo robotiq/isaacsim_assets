@@ -3,7 +3,7 @@
 #
 # WHY THIS IS WORTH A WARNING
 # ---------------------------
-# Both demos are CPU-bound, and measurably so. On the PhysX teleop, measured on
+# The teleop demo is CPU-bound, and measurably so. On PhysX, measured on
 # an RTX A4000 laptop: Isaac at 518% CPU with the GPU at 13% and RTF 0.454, so
 # the sim runs at under half real-time speed.
 #
@@ -21,7 +21,7 @@ if [[ -r "$_gov_file" ]] && [[ "$(cat "$_gov_file")" != "performance" ]]; then
   echo "  ############################################################"
   echo "  #  WARNING: CPU governor is '$(cat "$_gov_file")', not 'performance'."
   echo "  #"
-  echo "  #  These demos are CPU-bound; this costs real-time factor,"
+  echo "  #  The teleop demo is CPU-bound; this costs real-time factor,"
   echo "  #  which shows up as staggered/stepped arm motion."
   echo "  #"
   echo "  #  Fix it (reverts on reboot):"

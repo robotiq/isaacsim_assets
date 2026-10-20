@@ -59,6 +59,9 @@ viewport and drive (see [Controls](#controls)).
 | `TELEOP_KEEP_VIEW` | `0`, `1` | `1` keeps the camera pose saved in the scene. |
 | `TELEOP_INPUT` | `auto`, `keyboard` | `auto` uses a DualSense when one is plugged in, else the keyboard. `keyboard` always uses the keyboard (same as `./run_demo.sh --keyboard`). |
 | `TELEOP_HAPTICS` | `1`, `0` | `0` drops the contact-force plot and R2 rumble. |
+| `TELEOP_FULL_FORCE_N` | `200` | Average pad force (N) at which R2 reaches full stiffness. |
+| `READY_TIMEOUT` | `240` | Seconds `run_demo.sh` waits for the scene, counted from the launch. |
+| `MCP_EXT_ROOT` | `../mcp_bridge/isaacsim-mcp-server` | Where the Isaac Sim MCP extension is (needed for the haptics). |
 | `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim` / derived from physics | Isaac Sim install and launcher override. |
 
 ## Controls
