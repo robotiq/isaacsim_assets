@@ -170,6 +170,11 @@ Switch variants by relaunching, not live in a running scene: grippers and
 grips have different DOF counts (e.g. compliant 8 vs parallel 6), and the
 teleop crashes (CUDA device-side assert) if the articulation changes under it.
 
+**Newton is experimental in this demo.** Straight moves work, but the arm
+can drift away from its target after some moves, because its joint drives
+are tuned for PhysX ([#144](https://github.com/robotiq/isaacsim_assets/issues/144)).
+Use a `Physx_*` physics for a reliable demo.
+
 **The Newton runtime step is not optional** for the 2F grippers. Two
 Newton/MuJoCo settings can't be saved in USD (`opt.impratio` and the finger
 loop-closure equality `solref`); run the gripper's
