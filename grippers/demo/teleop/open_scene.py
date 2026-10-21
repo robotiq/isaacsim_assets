@@ -40,7 +40,7 @@ TCPS = os.environ.get("TELEOP_TCPS")
 PHYSX_HZ = os.environ.get("TELEOP_PHYSX_HZ")
 
 # Start the in-Isaac tick-paced teleop once physics is stepping. Set
-# TELEOP_TICK=0 to leave it out (e.g. to drive the arm from your own code).
+# TELEOP_TICK=0 to leave it out (e.g. when driving through MoveIt Servo).
 TICK_TELEOP = os.environ.get("TELEOP_TICK", "1") != "0"
 
 # Renderer. The scene opens in MinimalRendering, which does simplified lighting
@@ -332,7 +332,7 @@ def install():
                 if state["frames"] < _SETTLE_FRAMES:
                     return
                 if _start_tick_teleop(d):
-                    _done("teleop running (tick-paced)")
+                    _done("teleop running (tick-paced, no Servo)")
                 else:
                     _done("teleop did NOT start -- see the ERR traceback above",
                           ok=False)
