@@ -10,9 +10,9 @@ from isaaclab_tasks.contrib.lift.lift_env_cfg import LiftEnvCfg
 from ..assets import UR5E_2F85_CFG
 from . import mdp
 
-# Distance from wrist_3_link to the point between the fingertips, along the tool axis.
-# ESTIMATE: measure it in the composed stage (pad centre in the wrist_3_link frame) before training.
-TCP_OFFSET = (0.0, 0.0, 0.17)
+# Point between the fingertip pads in the wrist_3_link frame. The gripper base is welded with an identity
+# transform, its tool axis is +z and the jaws close along y; the pads span z = 0.110 .. 0.148 m (2F-85 geometry).
+TCP_OFFSET = (0.0, 0.0, 0.13)
 
 # 2F-85 driver joint: 0 = open, ~0.8 rad = closed
 FINGER_OPEN, FINGER_CLOSED = 0.0, 0.8
