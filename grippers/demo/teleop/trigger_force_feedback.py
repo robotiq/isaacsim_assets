@@ -9,7 +9,7 @@ UDP-broadcasts the two inner-finger pad forces as an ASCII "fL fR" datagram to
 Rigid resistance proportional to the AVERAGE of the two forces, so squeezing an
 object in sim makes the trigger physically stiffen under the finger.
 
-Pairs naturally with gamepad_teleop.py, where R2 also *commands* the gripper:
+Pairs naturally with physx_tick_teleop.py, where R2 also *commands* the gripper:
 press R2 to close -> fingers contact the object -> R2 pushes back.
 
 Prerequisites:
@@ -27,9 +27,14 @@ tune it empirically against the forces you see in the plot for a firm grasp.
 """
 import argparse
 import socket
+import sys
 import time
 
-from pydualsense import pydualsense, TriggerModes
+try:
+    from pydualsense import pydualsense, TriggerModes
+except ImportError as exc:
+    sys.exit("[haptic] pydualsense is not installed (%s); "
+             "pip install -r requirements.txt" % exc)
 
 TRIGGER_MAX = 255  # DualSense force parameter range is 0..255
 
@@ -51,7 +56,12 @@ def main():
     sock.settimeout(0.2)
 
     ds = pydualsense()
-    ds.init()
+    try:
+        ds.init()
+    except Exception as exc:
+        # No DualSense, or no access to its hidraw node: one line, not a
+        # traceback -- the teleop runs regardless.
+        sys.exit("[haptic] no DualSense found (%s); R2 force feedback is off." % exc)
     ds.triggerR.setMode(TriggerModes.Rigid)
     print("[haptic] R2 stiffness <- avg gripper pad force | "
           "full=%.1f N  deadband=%.1f N  port=%d"
