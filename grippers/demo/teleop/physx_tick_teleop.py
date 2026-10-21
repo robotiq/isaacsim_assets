@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tick-paced Cartesian teleop for the UR5e + Robotiq gripper (2F-85, 2F-140, Hand-E).
+"""Tick-paced Cartesian teleop for the UR5e + 2F-85 on the PhysX backend.
 
 Runs INSIDE Isaac. Start it from the Script Editor:
 
@@ -9,29 +9,40 @@ Stop it with:
 
     import carb; carb._physx_tick_teleop["stop"]()
 
-WHY IT RUNS ON THE UPDATE TICK
-------------------------------
-The controller runs on Kit's update tick, so controller, physics and clock
-share one timebase. A controller paced by the wall clock keeps commanding at
-its own rate however slowly the sim runs (RTF ~0.45 here), sees stale
-feedback and overshoots: the arm oscillates.
+WHY THIS EXISTS -- IT REPLACES MoveIt Servo
+-------------------------------------------
+Servo drove the arm with a ~3.7 Hz limit cycle: the arm shook roughly three
+times harder than it advanced. Measured from screen capture, power in the
+3-5 Hz band, same scene and same frame rate:
+
+    gamepad through Servo   1.9% of motion energy at 3-5 Hz
+    keyboard_jog (no Servo) 0.0%
+
+The cause is a timebase mismatch, not a gain. Servo's control loop is paced by
+a WALL-clock rate, so it keeps emitting commands at its configured rate however
+slowly the sim runs -- here RTF ~0.45, so it commands roughly twice the motion
+per simulated second that the sim can deliver, sees stale feedback, and
+overshoots. No gain change removes it: publish_period,
+override_velocity_scaling_factor, command magnitude and use_smoothing were all
+tried. use_sim_time does not help either -- it fixes message STAMPS, not the
+loop's pacing.
+
+This runs on Kit's update tick instead, so controller, physics and clock share
+one timebase and the oscillation cannot occur.
 
 HOW IT DRIVES THE ARM
 ---------------------
-The arm is a real articulation (PhysX or Newton), so this writes joint position
-TARGETS and lets the drives track them, rather than posing links directly. Less
-code, and contact behaves.
+The arm is a real PhysX articulation, so this writes joint position TARGETS and
+lets the drives track them, rather than posing links directly. Less code, and
+contact behaves.
 
 The jog integrates its own target open-loop rather than servoing to measured
 positions. That is deliberate: closing the loop on measured state at this frame
 rate is what produces the overshoot in the first place. The drives do the
 closing, in the physics step, where the feedback is not stale.
 
-INPUT
------
-Reads a DualSense from /dev/input/js0 directly (Linux), and falls back to the
-keyboard when there is no gamepad. TELEOP_INPUT=keyboard forces the keyboard
-even with a gamepad plugged in.
+Reads /dev/input/js0 directly. No ROS: Isaac's bundled Python and rclpy are
+different interpreters, which is also why the launcher insists on a clean shell.
 """
 import math
 import os
@@ -75,16 +86,16 @@ MAX_DQ_PER_TICK = math.radians(3.0)
 # resting on the floor, say -- and the Jacobian is then evaluated at a pose the
 # robot is nowhere near, so later commands come out in the wrong direction and
 # the arm lunges when it finally comes free. This bounds the target; it is NOT
-# closing the control loop at frame rate, which is what makes the arm oscillate
-# (see WHY IT RUNS ON THE UPDATE TICK above).
+# closing the control loop at frame rate, which is the Servo failure this file
+# exists to avoid.
 MAX_LAG = math.radians(15.0)
 # Gain (1/s) pulling the tool back onto its intended orientation. With zero
 # commanded angular velocity the pseudo-inverse holds orientation only to FIRST
 # ORDER, so over finite steps -- and with rcond truncating near singularities --
 # it drifts with nothing correcting it: measured 24 degrees over a 34 cm
 # vertical move. This closes a loop on the TARGET's own orientation, which is
-# kinematic and evaluated at tick rate, so it is not frame-rate feedback on
-# measured physics, which would oscillate.
+# kinematic and evaluated at tick rate, so it is not the frame-rate feedback on
+# measured physics that made Servo oscillate.
 ORI_GAIN = 12.0
 # Orientation error below which the hold is considered satisfied. Above it the
 # arm moves even with the sticks at rest, which is what makes "point tool down"
@@ -125,8 +136,8 @@ RESTART_BTN = BTN_CREATE
 TOOL_DOWN_BTN = BTN_X
 HELP_BTN = BTN_OPTIONS          # the menu button, right of the touchpad
 # Triangle up, Square down -- both were free, and a vertical pair on the face
-# reads as a rate control. Cross stays "point tool down", the more reachable
-# button.
+# reads as a rate control. Cross stays "point tool down"; the old Servo
+# frontend put "slower" there, but tool-down earns the more reachable button.
 FASTER_BTN = BTN_TRI
 SLOWER_BTN = BTN_SQUARE
 
@@ -137,7 +148,7 @@ CONTROLS = [
     ("left stick",       "roll / pitch the tool"),
     ("L1 / R1",          "yaw the tool"),
     ("Cross",            "point tool down"),
-    ("Triangle / Square", "robot faster / slower, 250 mm/s down to 27 mm/s"),
+    ("Triangle / Square", "faster / slower, 250 mm/s down to 27 mm/s"),
     ("R2",               "open / close the gripper (analog)"),
     ("Create",           "restart the sim"),
     ("Options",          "show or hide this list"),
@@ -179,7 +190,8 @@ SPEED_ANGULAR = 1.0
 # is already brisk on a bench this size, and what fine work wants is slower,
 # not faster. So the scale runs 0.1 to 1.0 and STARTS AT THE TOP -- the demo
 # opens at exactly the speed it always did, and the control only buys
-# precision.
+# precision. (The old Servo frontend clamped 0.1-5.0 around a 1.0 m/s base;
+# this default is that frontend at 0.25, so there is no headroom to restore.)
 #
 # 1.25 per press is 11 presses from top to bottom. That is deliberate: the
 # range worth having is the top of it, and a coarser step would skip past the
@@ -199,7 +211,7 @@ SPEED_HUD_SECONDS = 1.6
 JS = _struct.Struct("IhBB")
 
 KEYBOARD_HELP = ("W/S=x  A/D=y  Q/E=z  arrows=roll/pitch  Z/C=yaw  "
-                 "SPACE=close gripper  R/F=robot speed  T=tool down")
+                 "SPACE=close gripper  R/F=speed  T=tool down")
 
 
 def _T(x):
@@ -423,12 +435,6 @@ class Keyboard:
 
 
 def _acquire_input():
-    mode = os.environ.get("TELEOP_INPUT", "auto").strip().lower()
-    if mode not in ("auto", "keyboard"):
-        print("[physx_teleop] TELEOP_INPUT=%r not recognised; using auto" % mode)
-    if mode == "keyboard":
-        print("[physx_teleop] input: KEYBOARD (TELEOP_INPUT=keyboard) -- " + KEYBOARD_HELP)
-        return Keyboard()
     try:
         p = Pad()
         print("[physx_teleop] input: DualSense on /dev/input/js0")
@@ -514,8 +520,8 @@ class Teleop:
         q = self._read(self.art.get_joint_positions())
         # Seed the target from the CURRENT measured pose, then integrate it
         # open-loop. Re-reading measured state every tick would close a loop at
-        # frame rate over a sim running at RTF ~0.45, and the arm would
-        # oscillate.
+        # frame rate over a sim running at RTF ~0.45 -- which is the Servo
+        # failure this replaces.
         self.q = [float(q[i]) for i in self.idx]
         self.grip = float(q[self.fj]) if self.fj is not None else GRIP_OPEN
         self.r2_rest = None
@@ -590,7 +596,7 @@ class Teleop:
             print("[physx_teleop] timeline events unavailable; GUI Stop/Play "
                   "will NOT be recovered from:\n" + traceback.format_exc())
         self._frame_tip()
-        print("[physx_teleop] running on Kit's update tick")
+        print("[physx_teleop] running on Kit's update tick (no Servo, no ROS)")
         print("[physx_teleop] press Options for the control list")
 
     @staticmethod
