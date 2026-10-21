@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: robotiq_rl
+Version: 0.1.0
+Summary: Robotiq gripper reinforcement-learning tasks for Isaac Lab
+Requires-Python: <3.13,>=3.12

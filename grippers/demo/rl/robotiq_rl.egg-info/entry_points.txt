@@ -1,0 +1,2 @@
+[isaaclab.tasks]
+robotiq_rl = robotiq_rl

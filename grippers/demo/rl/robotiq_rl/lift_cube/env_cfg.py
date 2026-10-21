@@ -1,15 +1,14 @@
 """UR5e + Robotiq 2F-85 cube lift (PhysX), on Isaac Lab's stock lift MDP."""
 
+import isaaclab.envs.mdp as base_mdp
 import isaaclab.sim as sim_utils
 from isaaclab.assets import RigidObjectCfg
-from isaaclab.sensors import FrameTransformerCfg
-from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.utils import configclass, replace
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
-from isaaclab_tasks.contrib.lift import mdp
 from isaaclab_tasks.contrib.lift.lift_env_cfg import LiftEnvCfg
 
 from ..assets import UR5E_2F85_CFG
+from . import mdp
 
 # Distance from wrist_3_link to the point between the fingertips, along the tool axis.
 # ESTIMATE: measure it in the composed stage (pad centre in the wrist_3_link frame) before training.
@@ -26,7 +25,7 @@ class UR5e2F85CubeLiftEnvCfg(LiftEnvCfg):
 
         self.scene.robot = replace(UR5E_2F85_CFG, prim_path="{ENV_REGEX_NS}/Robot")
 
-        self.actions.arm_action = mdp.JointPositionActionCfg(
+        self.actions.arm_action = base_mdp.JointPositionActionCfg(
             asset_name="robot", joint_names=[".*_joint"], scale=0.5, use_default_offset=True
         )
         # `.*_joint` also matches finger_joint: restrict the arm term to the six UR joints
@@ -38,7 +37,7 @@ class UR5e2F85CubeLiftEnvCfg(LiftEnvCfg):
             "wrist_2_joint",
             "wrist_3_joint",
         ]
-        self.actions.gripper_action = mdp.BinaryJointPositionActionCfg(
+        self.actions.gripper_action = base_mdp.BinaryJointPositionActionCfg(
             asset_name="robot",
             joint_names=["finger_joint"],
             open_command_expr={"finger_joint": FINGER_OPEN},
@@ -64,14 +63,6 @@ class UR5e2F85CubeLiftEnvCfg(LiftEnvCfg):
             ),
         )
 
-        self.scene.ee_frame = FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/(Geometry/)?base_link",
-            debug_vis=False,
-            target_frames=[
-                FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}/Robot/(Geometry/.*/)?wrist_3_link",
-                    name="end_effector",
-                    offset=OffsetCfg(pos=TCP_OFFSET),
-                ),
-            ],
-        )
+        self.scene.ee_frame = None
+        self.rewards.reaching_object.func = mdp.tcp_object_distance
+        self.rewards.reaching_object.params = {"std": 0.1, "body_name": "wrist_3_link", "tcp_offset": TCP_OFFSET}

@@ -11,9 +11,22 @@ the gripper command are set from Isaac Lab (actuators), not authored here."""
 )
 
 def Xform "Robot" (
+    variants = {
+        string Gripper = "None"
+    }
     prepend payload = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Robots/UniversalRobots/ur5e/ur5e.usd@
 )
 {
+    # the stock UR5e has a gripper joint with no body1 (it expects its own Gripper variant): it would pin the flange
+    over "joints"
+    {
+        over "robot_gripper_joint" (
+            active = false
+        )
+        {
+        }
+    }
+
     over "wrist_3_link"
     {
         def "Robotiq_2F_85_edit" (
