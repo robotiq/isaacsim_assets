@@ -1,9 +1,9 @@
 # Driving the simulated 2F gripper from ROS 2
 
-The simulated 2F-85 and 2F-140 answer the [`robotiq/ros`](https://github.com/robotiq/ros/tree/main/grippers)
+The simulated 2F-85 and 2F-140 answer the [`robotiq/robotiq-ros`](https://github.com/robotiq/robotiq-ros/tree/main/grippers)
 stack like the real gripper: same launch file, same `gripper_cmd` action, same `/joint_states`.
 Switching between the real gripper and the simulation is one launch argument. Until a ros release
-carries the fix of [robotiq/ros#118](https://github.com/robotiq/ros/issues/118) there is one
+carries the fix of [robotiq/robotiq-ros#118](https://github.com/robotiq/robotiq-ros/issues/118) there is one
 difference: see [Known limitation](#known-limitation-ros--13).
 
 | | Real gripper | Simulation |
@@ -34,7 +34,7 @@ rest of the four-bar linkage is the simulator's business.
 ### Known limitation (ros ≤ 1.3)
 
 The one-joint contract is the intended one, and it depends on
-[robotiq/ros#118](https://github.com/robotiq/ros/issues/118) being fixed on the ros side (declare the
+[robotiq/robotiq-ros#118](https://github.com/robotiq/robotiq-ros/issues/118) being fixed on the ros side (declare the
 URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
 
 - **`/joint_states` shows the five mimic joints at 0.** The description declares them as state
@@ -77,7 +77,7 @@ URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
    ros2 launch robotiq_description robotiq_control.launch.py gripper_model:=2f_85 sim_topic_based:=true
    ```
 
-   No `robotiq/ros` on your machine? [`tests/ros2/Dockerfile`](../../tests/ros2/Dockerfile) builds
+   No `robotiq/robotiq-ros` on your machine? [`tests/ros2/Dockerfile`](../../tests/ros2/Dockerfile) builds
    the stack in a container (Jazzy by default, `--build-arg ROS_DISTRO=humble` for Humble). Run it
    with the UDP-only FastDDS profile next to it, or the container discovers Isaac Sim but its
    messages never arrive (shared memory and data sharing between a container and the host):
@@ -107,7 +107,7 @@ URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
 
    The gripper moves in the viewport and both goals succeed. `position` is the driven joint in
    radians, from 0 (open) to the closed position in the table above; on a 2F-140 the joint is
-   `finger_joint`. See "Commanding the gripper" in the `robotiq/ros` README for the goal fields.
+   `finger_joint`. See "Commanding the gripper" in the `robotiq/robotiq-ros` README for the goal fields.
    `/joint_states` carries the knuckle (and, up to ros 1.3, the mimic joints at 0: see
    [Known limitation](#known-limitation-ros--13)).
 

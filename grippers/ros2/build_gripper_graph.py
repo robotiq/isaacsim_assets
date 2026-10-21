@@ -1,6 +1,6 @@
 """
 Build the ROS 2 Action Graph that lets a Robotiq 2F gripper in Isaac Sim be driven
-by the `robotiq/ros` stack like the real gripper.
+by the `robotiq/robotiq-ros` stack like the real gripper.
 
     ros2 launch robotiq_description robotiq_control.launch.py sim_topic_based:=true
 
@@ -15,7 +15,7 @@ one, under its URDF name (#88, option 2: the asset keeps `finger_joint`, the gra
   * state:    the driven joint's position, velocity and effort are published under its
     URDF name.
 
-This one-joint contract is the intended one, and it depends on robotiq/ros#118 being fixed
+This one-joint contract is the intended one, and it depends on robotiq/robotiq-ros#118 being fixed
 on the ros side (declare the URDF mimic joints for Gazebo only). Until a ros release carries
 that fix (ros <= 1.3), under sim_topic_based:
   * the plugin's command also names the five mimic joints, with a position for the driven
@@ -37,7 +37,7 @@ Running it again replaces the graph, so it is safe to re-run after switching the
 Physics variant.
 """
 
-# model -> (driven joint in the URDF of robotiq/ros, driven joint in the Isaac asset).
+# model -> (driven joint in the URDF of robotiq/robotiq-ros, driven joint in the Isaac asset).
 # The 2F-85 URDF names its driven joint robotiq_85_left_knuckle_joint; the asset follows
 # the 2F-140 naming. `prefix` is the URDF's `prefix` xacro argument.
 DRIVEN_JOINTS = {
@@ -71,7 +71,7 @@ def compute(db):
         return False
     i = names.index("{urdf}")
     positions = db.inputs.position
-    # ros <= 1.3 (robotiq/ros#118): the plugin names the mimic joints too but fills in a
+    # ros <= 1.3 (robotiq/robotiq-ros#118): the plugin names the mimic joints too but fills in a
     # position for the driven joint only, which comes first.
     if i >= len(positions):
         return False
