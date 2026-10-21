@@ -3,6 +3,7 @@
 import isaaclab.envs.mdp as base_mdp
 import isaaclab.sim as sim_utils
 from isaaclab.assets import RigidObjectCfg
+from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.utils import configclass, replace
 from isaaclab.visualizers import VisualizerCfg
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
@@ -67,5 +68,21 @@ class UR5e2F85CubeLiftEnvCfg(LiftEnvCfg):
         self.scene.ee_frame = None
         # close-up of the workspace (env 0 sits at the world origin when playing a single env)
         self.sim.visualizer_cfgs = VisualizerCfg(eye=(1.0, -0.9, 0.7), lookat=(0.45, 0.0, 0.15))
+
+        # Lift rewards are gated on a grasp, see mdp.py. The cube counts as held when the TCP is within 4 cm of it
+        # and the gripper is more than a third closed.
+        tcp = {"body_name": "wrist_3_link", "tcp_offset": TCP_OFFSET, "joint_name": "finger_joint", "closed_pos": FINGER_CLOSED}
+        held = {"reach": 0.04, "min_closure": 0.35}
         self.rewards.reaching_object.func = mdp.tcp_object_distance
-        self.rewards.reaching_object.params = {"std": 0.1, "body_name": "wrist_3_link", "tcp_offset": TCP_OFFSET}
+        self.rewards.reaching_object.params = {"std": 0.1, **tcp}
+        self.rewards.grasp_closure = RewTerm(func=mdp.grasp_closure, weight=2.0, params={"reach": 0.04, **tcp})
+        self.rewards.lifting_object.func = mdp.lifted_in_grasp
+        self.rewards.lifting_object.params = {"minimal_height": 0.06, **held, **tcp}
+        self.rewards.object_goal_tracking.func = mdp.goal_distance_in_grasp
+        self.rewards.object_goal_tracking.params = {
+            "std": 0.3, "minimal_height": 0.06, "command_name": "object_pose", "success_threshold": 0.05, **held, **tcp,
+        }
+        self.rewards.object_goal_tracking_fine_grained.func = mdp.goal_distance_in_grasp
+        self.rewards.object_goal_tracking_fine_grained.params = {
+            "std": 0.05, "minimal_height": 0.06, "command_name": "object_pose", **held, **tcp,
+        }
