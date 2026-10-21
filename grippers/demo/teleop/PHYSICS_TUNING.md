@@ -2,7 +2,7 @@
 
 Notes on the non-default USD attribute values we ended up with after
 tuning the gripper for reliable grasping in Isaac Sim 6. None of this is
-required for the ROS teleop to *function* — but everything below affects
+required for the teleop to *function* — but everything below affects
 whether the gripper actually holds an object during motion.
 
 Two categories:
@@ -120,16 +120,6 @@ tightens the loop closures.
 - **Cranking `finger_joint.stiffness` to hold better** — worked but
   transferred vibration into the arm. K=50, C=3.0 hits the right damping
   ratio for the finger inertia.
-- **Turning off the Butterworth smoothing in Servo** — thought Servo's
-  `internal_joint_state_` staleness came from the LPF; turns out it's a
-  separate integration-tracking issue in Servo's implementation. The LPF
-  is already at its minimum (`butterworth_filter_coeff = 1.5`) by
-  default.
-- **Rewriting the bridge to compute deltas from measured state** —
-  aimed at fixing the "first move after Stop→Play" jump. Worked in
-  principle but introduced its own edge cases; reverted to the simple
-  forward-with-NaN-guard bridge and use the `Circle (○)` gamepad button
-  to trigger `stop_servo → start_servo` as a manual resync instead.
 
 ## Summary of changed USD attributes
 
