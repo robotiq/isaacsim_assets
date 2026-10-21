@@ -45,7 +45,7 @@ gripper asset:
 - USD scenes are **composed** from layers via *sublayers*, *references*, and
   *payloads*. A stronger layer's "opinion" overrides a weaker one **in place** —
   this is how the gripper swaps its physics behavior without touching geometry
-  (see §5.3 and the layer graph below).
+  (see §5.4 and the layer graph below).
 - A **prim** is a node in the scene tree (a body, a joint, a mesh, a scope).
   **APIs** (schemas) are tags applied to a prim that give it behavior — e.g.
   `PhysicsDriveAPI`, `PhysicsMimicJointAPI`, `PhysicsArticulationRootAPI`.
@@ -666,6 +666,8 @@ Everything else (drive gains, armature, `mjc:damping`, spring stiffness,
   `[0.95, 0.99, 0.001, 0.5, 2.0]` bite harder than the cube
   `[0.9, 0.95, 0.001, 0.5, 2.0]`.
 
+Friction has its own knob, the pad `newton:contactFrictionGain` (see §5.3).
+
 Rule of thumb: **`solref` sets the timing/springiness, `solimp` sets how firmly
 it's applied.** Together they set penetration depth and force smoothness.
 
@@ -709,7 +711,28 @@ The loop (five-bar) variant is where Newton earns its place:
 > Isaac/Newton is reinstalled or upgraded to a version without #2736, **re-apply
 > the patch** or the limits regress.
 
-### 5.3 Where to find the asset
+### 5.3 Isaac Sim 6.1+: the elliptic cone and the pad friction gain
+
+- **Friction in the solver:** Isaac's Newton backend imports the USD into a Newton model, steps it with MuJoCo-Warp and converts Newton's contacts to MuJoCo contacts every step. Friction is a cone on each contact (tangential force ≤ `mu * N`), either `pyramidal` (MuJoCo's default) or `elliptic` (exact).
+- **`newton:contactFrictionGain` (`kf`, N·s/m)** is a per-material attribute, imported as the shape's `kf`. Physically it is the stiffness of the *sticking* part of friction, a viscous tangential damper `F = -kf * v_slide` capped at `mu * N`:
+  - `kf` large: close to ideal Coulomb sticking; small: the contact creeps under load; `0`: no friction.
+  - `mu` sets how hard the contact can pull before it slips; `kf` sets how rigidly it holds before that.
+- **Newton 1.5+ uses it only with an elliptic cone.** Per contact it mixes the two shapes' gains, `kf = mix*kf_a + (1-mix)*kf_b` (`mix` from each geom's `solmix`, 0.5 when unset), then:
+  - `kf > 0`: friction becomes this viscous term.
+  - `kf == 0`: friction is removed.
+  - `kf < 0`: neither applies, so friction stays MuJoCo's native cone. It has no physical meaning; it is an "off" switch (only the sign is used).
+- **What changed between 6.0 and 6.1:**
+  - 6.0.1 (Newton 1.2.1) built the solver with fixed options, so it always ran an **elliptic** cone, and had no `kf` mapping.
+  - 6.1 and 6.2 (Newton 1.5.0 / 1.6.1) read the options from USD scene attributes or Newton's defaults, so the cone is **pyramidal** unless authored, which grips worse here (2F slip 2.6 to 11 mm against a 2 mm limit).
+  - Author `mjc:option:cone = "elliptic"` (with `MjcSceneAPI`) on the physics scene; the runtime tests do this in `tests/runtime/_scene.py`.
+  - With an elliptic cone, 6.1 turns on the `kf` mapping, and with the default `kf` of 1000 the held object is lost.
+- **Why `newton:contactFrictionGain = -1000000000` on `GripMaterial`:**
+  - A negative gain skips the mapping, which is the 6.0.1 behaviour.
+  - The mixed value must stay negative against the other shape's default `+1000`: `-1` would give `0.5*(-1) + 0.5*1000 = +499.5`. A large magnitude keeps it negative for any `mix` and any plausible partner gain, and it is only compared with zero, so the size costs nothing.
+  - Large positive gains (1e5 to 1e7) also hold the lift tests, but then `test_gripper_closes_on_fixed_cylinder[Robotiq_2F_85-Newton_compliant]` fails marginally (`finger_joint still moving: 0.281 deg` against 0.25 deg); the negative gain passes every test.
+- **Caveats:** relying on a negative value is Newton 1.5 behaviour, not a documented API (checked on Newton 1.5.0 and 1.6.1; 1.2.1 ignores the attribute). It only applies where the pad material is involved; a partner with a huge positive `kf` could flip the sign (untested).
+
+### 5.4 Where to find the asset
 
 - **Newton 2F-85:** the `Newton_compliant` and `Newton_parallel_grip` variants of
   [`Robotiq_2F_85/`](Robotiq_2F_85/) — physics in the shared
