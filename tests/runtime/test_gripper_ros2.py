@@ -1,8 +1,8 @@
-"""The simulated gripper answers the robotiq/ros stack like the real one.
+"""The simulated gripper answers the robotiq/robotiq-ros stack like the real one.
 
 For each 2F gripper and physics variant (PhysX and Newton): load it, build the ROS 2
 graph of grippers/ros2/build_gripper_graph.py, and from a separate ROS 2 process send the
-JointState topic_based_ros2_control sends to a simulator (on ros <= 1.3, robotiq/ros#118:
+JointState topic_based_ros2_control sends to a simulator (on ros <= 1.3, robotiq/robotiq-ros#118:
 the mimic joints named, a position for the driven one only). Check the driven joint reaches
 the commanded position and that the state topic reports exactly that one joint, under its
 URDF name, stamped with the simulation time.
