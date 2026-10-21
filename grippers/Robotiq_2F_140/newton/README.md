@@ -5,7 +5,7 @@ Newton-specific runtime tuning and notes for the **`Newton_compliant`** and
 ([`../Robotiq_2F_140.usda`](../Robotiq_2F_140.usda)). They mirror the 2F-85's Newton
 variants (same layers, joint treatment and MuJoCo tuning) with the 2F-140's geometry.
 Select `Physics = Newton_compliant` (encompassing grip) or `Newton_parallel_grip`,
-ensure the scene has a `PhysicsScene`, and play. The gripper is **open by default**
+ensure the scene has a `PhysicsScene`, sublayer [`scene/Robotiq_Newton_scene_physics.usda`](../../scene/Robotiq_Newton_scene_physics.usda) into the stage on Isaac Sim 6.1+ (it sets the elliptic friction cone; see the simulation guide §5.3), and play. The gripper is **open by default**
 (`finger_joint` drive target `0`); drive `finger_joint` toward 45° (≈0.785 rad) to close.
 
 Everything the solver needs is baked into the payloads — the shared Newton finger linkage

@@ -633,7 +633,7 @@ The Newton 2F-85 comes as two variants of the unified asset
 (`outer_finger_joint`) stays live so the fingers wrap around the object, and
 `Newton_parallel_grip`, where the coupler is welded so the fingers stay parallel.
 Select `Physics = Newton_compliant` or `Newton_parallel_grip`, drop it in a scene
-with a `PhysicsScene`, and play. The 2F-140 has the same two Newton variants
+with a `PhysicsScene`, sublayer [`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda) into the stage on Isaac Sim 6.1+ (§5.3), and play. The 2F-140 has the same two Newton variants
 ([`Robotiq_2F_140/newton/`](Robotiq_2F_140/newton/)). It is **open by default**
 (`finger_joint` drive target 0); drive `finger_joint` toward **~0.8 rad (≈45°)**
 to close.
@@ -714,11 +714,11 @@ The loop (five-bar) variant is where Newton earns its place:
 ### 5.3 Isaac Sim 6.1+: the elliptic cone and the pad friction gain
 
 - **Friction in the solver:** Isaac's Newton backend imports the USD into a Newton model, steps it with MuJoCo-Warp and converts Newton's contacts to MuJoCo contacts every step. Friction is a cone on each contact (tangential force ≤ `mu * N`), either `pyramidal` (MuJoCo's default) or `elliptic` (exact).
-- **`newton:contactFrictionGain` (`kf`, N·s/m)** is a per-material attribute, imported as the shape's `kf`. Physically it is the stiffness of the *sticking* part of friction, a viscous tangential damper `F = -kf * v_slide` capped at `mu * N`:
+- **`newton:contactFrictionGain` (`kf`, N·s/m)** is a per-material attribute, imported as the shape's `kf`. Physically it is the stiffness of the *sticking* part of friction: Newton models the friction force as `kf * |v_slide|`, capped at `mu * N`:
   - `kf` large: close to ideal Coulomb sticking; small: the contact creeps under load; `0`: no friction.
   - `mu` sets how hard the contact can pull before it slips; `kf` sets how rigidly it holds before that.
 - **Newton 1.5+ uses it only with an elliptic cone.** Per contact it mixes the two shapes' gains, `kf = mix*kf_a + (1-mix)*kf_b` (`mix` from each geom's `solmix`, 0.5 when unset), then:
-  - `kf > 0`: friction becomes this viscous term.
+  - `kf > 0`: the friction constraint is softened to match that slope (`solreffriction` time constant `≈ 2 / (kf · invweight)`); MuJoCo's `refsafe` clamps it at `2 * timestep`, so large gains saturate at the stiffest friction (which is why 1e5 to 1e7 behave alike below).
   - `kf == 0`: friction is removed.
   - `kf < 0`: neither applies, so friction stays MuJoCo's native cone. It has no physical meaning; it is an "off" switch (only the sign is used).
 - **What changed between 6.0 and 6.1:**
@@ -730,8 +730,13 @@ The loop (five-bar) variant is where Newton earns its place:
   - A negative gain skips the mapping, which is the 6.0.1 behaviour.
   - The mixed value must stay negative against the other shape's default `+1000`: `-1` would give `0.5*(-1) + 0.5*1000 = +499.5`. A large magnitude keeps it negative for any `mix` and any plausible partner gain, and it is only compared with zero, so the size costs nothing.
   - Large positive gains (1e5 to 1e7) also hold the lift tests, but then `test_gripper_closes_on_fixed_cylinder[Robotiq_2F_85-Newton_compliant]` fails marginally (`finger_joint still moving: 0.281 deg` against 0.25 deg); the negative gain passes every test.
-- **The shared scene layer, [`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda):** it holds `mjc:option:cone = "elliptic"` on `/PhysicsScene` (with `MjcSceneAPI`). **Add it as a sublayer of any stage that holds a Newton gripper on Isaac Sim 6.1+**, or set the same attribute by hand. It only adds opinions to `/PhysicsScene`, so it merges with a scene you already have (use the same prim path) and is harmless on PhysX and on Isaac Sim 6.0.1. The runtime tests and the teleop demo scene both use it.
-- **Caveats:** relying on a negative value is Newton 1.5 behaviour, not a documented API (checked on Newton 1.5.0 and 1.6.1; 1.2.1 ignores the attribute). It only applies where the pad material is involved; a partner with a huge positive `kf` could flip the sign (untested).
+- **The shared scene layer, [`scene/Robotiq_Newton_scene_physics.usda`](scene/Robotiq_Newton_scene_physics.usda):** it holds `mjc:option:cone = "elliptic"` on `/PhysicsScene` (with `MjcSceneAPI`). **Add it as a sublayer of any stage that holds a Newton gripper on Isaac Sim 6.1+**, or set the same attribute by hand. It only adds opinions to the prim `/PhysicsScene`, so it merges with a scene you already have **only if that scene is at exactly `/PhysicsScene`**. If yours is elsewhere (e.g. `/physicsScene` or `/World/PhysicsScene`) the stage would get a second scene prim, so author `mjc:option:cone = "elliptic"` (with `MjcSceneAPI`) on your own scene instead. The layer is harmless on PhysX and on Isaac Sim 6.0.1. The runtime tests and the teleop demo scene both use it.
+- **Caveats:**
+  - A negative `kf` is Newton's MuJoCo-solver behaviour (Newton 1.5.0 and 1.6.1), not a documented API; 1.2.1 ignores the attribute. If a future Newton reads it as a real coefficient this breaks, and the lift tests (`test_gripper_lift.py`) are what catch it.
+  - **Only the MuJoCo solver should load these materials.** Newton's SemiImplicit/Featherstone solvers use `kf` directly and would treat the negative gain as negative friction (Isaac exposes neither).
+  - `GripMaterial` is bound to every collision shape of the gripper (all of them on the Hand-E), not just the pads, so the mapping is off on all of them.
+  - The gain is averaged with the contact partner's, so a negative pad gain also overrides a partner authored with `newton:contactFrictionGain = 0` (frictionless): the contact gets MuJoCo's native friction. A partner with a very large positive `kf` could in principle flip the sign (untested).
+- **`impratio`:** the "cannot be authored in USD" note in §5.1 is Isaac Sim 6.0.1 behaviour. #124 reports that 6.1+ reads `mjc:option:impratio` on the scene like the cone, so it could move into this layer too; that is left to #124, and `apply_gripper_tuning.py` still sets it at runtime on every version.
 
 ### 5.4 Where to find the asset
 
