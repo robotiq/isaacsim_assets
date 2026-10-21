@@ -1,7 +1,7 @@
 # Teleoperation demo — UR5e + Robotiq grippers in Isaac Sim
 
 Drive a UR5e fitted with a Robotiq 2F-85, 2F-140 or Hand-E with a
-**DualSense** gamepad or the **keyboard**. Everything runs inside
+**DualSense** gamepad, the **keyboard** or the **mouse**. Everything runs inside
 Isaac Sim: no ROS, no extra process. `physx_tick_teleop.py` reads the input
 and moves the arm on Isaac Sim's own update tick.
 
@@ -37,8 +37,8 @@ For a `Newton_*` physics, use `isaac-sim.newton.bat` instead of
 `$env:NAME = "value"`, except `TELEOP_HAPTICS`, `ISAACSIM_ROOT` and
 `ISAACSIM_LAUNCHER`, which only `run_demo.sh` reads.
 
-On Windows the teleop uses the keyboard: the DualSense is read from Linux's
-`/dev/input/js0`, so the gamepad and the haptics aren't available.
+On Windows the teleop uses the keyboard and the mouse: the DualSense is read
+from Linux's `/dev/input/js0`, so the gamepad and the haptics aren't available.
 
 </details>
 
@@ -71,7 +71,8 @@ always opens and closes at the same rate. Robot speed starts at its maximum
 (250 mm/s and 57°/s); each faster/slower press
 changes it by 1.25×, ten presses down to 27 mm/s for fine work. Moves are
 **relative to the view**: away from you on screen is away from you, whatever
-the camera does. Up and down are always world vertical.
+the camera does. Up and down are always world vertical. Rotations pivot about
+the tool tip.
 
 ### Keyboard
 
@@ -85,11 +86,32 @@ the camera does. Up and down are always world vertical.
 | Space (hold) | close the gripper |
 | R / F | robot faster / slower |
 | T | point the tool down |
+| Backspace | restart the simulation (only while the viewport has the focus, or in mouse mode) |
+| M | mouse mode on / off (see [Mouse](#mouse)) |
 
 Isaac Sim's own shortcuts keep working; the teleop doesn't block keys.
 
 The keyboard is used when no gamepad is found. To use it with a DualSense
 plugged in, run `./run_demo.sh --keyboard` (or set `TELEOP_INPUT=keyboard`).
+
+### Mouse
+
+With the keyboard, press **M** while the viewport has the focus to switch
+mouse mode on. The pointer is hidden and locked to the window, and Isaac Sim's
+window stops using the mouse: no camera zoom or orbit, no selection, no menus
+or panels. Press **M** again to get the pointer and the window back. Mouse mode
+also switches off when Isaac Sim loses the focus, for example on Alt-Tab.
+
+| Mouse | Action |
+|---|---|
+| Move | move the tool |
+| Scroll | tool up / down |
+| Left button (hold) | close the gripper |
+| Right button held + move | roll / pitch |
+| Right button held + scroll | yaw |
+
+Sensitivity is set by `MOUSE_FULL_PX` and `SCROLL_TICKS_PER_NOTCH` at the top of
+`physx_tick_teleop.py`.
 
 ### DualSense
 
@@ -123,7 +145,7 @@ a binding.
 
 ### Restarting
 
-The DualSense's **Create** button, or **Stop → Play** in Isaac Sim's toolbar,
+**Backspace**, the DualSense's **Create** button, or **Stop → Play** in Isaac Sim's toolbar
 resets the robot and objects to their starting state. The teleop re-attaches
 by itself; the arm can't be driven for about a second.
 
@@ -200,7 +222,7 @@ Without them the teleop still runs; only the plot and the rumble are missing.
 |---|---|
 | `ur5robot_with_2F-85.usda` | The scene: UR5e, gripper and physics variants, props. Shipped as USD ASCII so tuning changes diff in reviews. |
 | `open_scene.py` | Run by Isaac Sim at start (`--exec`): opens the scene, selects variants, presses Play, starts the teleop. |
-| `physx_tick_teleop.py` | The teleop: input (DualSense, keyboard), inverse kinematics, joint targets. |
+| `physx_tick_teleop.py` | The teleop: input (DualSense, keyboard, mouse), inverse kinematics, joint targets. |
 | `run_demo.sh` | Launcher: Isaac Sim plus the haptics. |
 | `trigger_force_feedback.py` | DualSense `R2` resistance from the pad forces. |
 | `add_props.py` | Adds the graspable props to the scene. |

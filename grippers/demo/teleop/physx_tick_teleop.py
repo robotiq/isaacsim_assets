@@ -103,6 +103,9 @@ GRIP_OPEN, GRIP_CLOSED = (0.0, 0.025) if _HANDE else (0.0, 0.80)
 GRIP_RATE = 0.04 if _HANDE else 0.8
 
 AXIS_LX, AXIS_LY, AXIS_L2, AXIS_RX, AXIS_RY, AXIS_R2, AXIS_DX, AXIS_DY = range(8)
+# Analog yaw, past the pad's 8 axes (both input classes keep 12). The pad yaws
+# with L1/R1; the mouse's scroll wheel needs a proportional yaw.
+AXIS_YAW = 8
 BTN_X, BTN_O, BTN_TRI = 0, 1, 2
 BTN_SQUARE = 3
 BTN_L1, BTN_R1 = 4, 5
@@ -199,7 +202,25 @@ SPEED_HUD_SECONDS = 1.6
 JS = _struct.Struct("IhBB")
 
 KEYBOARD_HELP = ("W/S=x  A/D=y  Q/E=z  arrows=roll/pitch  Z/C=yaw  "
-                 "SPACE=close gripper  R/F=robot speed  T=tool down")
+                 "SPACE=close gripper  R/F=robot speed  T=tool down  BACKSPACE=restart  "
+                 "M=mouse mode")
+
+# Mouse mode, toggled with M. While it is on, the pointer is hidden and locked
+# to the window (it never stops at the screen edge), motion comes from its move
+# events, and neither the viewport nor the rest of the Isaac Sim window gets
+# the mouse. Moving the mouse drives the tool like the right stick, scroll like
+# the d-pad, the left button holds the gripper closed, and holding the right
+# button switches move/scroll to roll-pitch/yaw.
+MOUSE_KEY = "M"
+MOUSE_HELP = ("MOUSE: move=x/y  scroll=z  left button=close gripper  "
+              "right button held: move=roll/pitch  scroll=yaw  M=back to keyboard")
+# Pointer travel in one tick, in pixels, that commands full speed. Smaller is
+# more sensitive.
+MOUSE_FULL_PX = 12.0
+# Ticks of full speed per scroll notch. A notch is a single event, so it is
+# spread over a few ticks: at full speed, 4 ticks move about 17 mm or yaw
+# about 4 degrees. Larger is more sensitive.
+SCROLL_TICKS_PER_NOTCH = 4
 
 
 def _T(x):
@@ -369,8 +390,12 @@ class Keyboard:
     # went nowhere once the tick controller stopped reading it, and F was
     # wired to Cross -- so pressing "slower" pointed the tool at the floor.
     BUTTON_KEYS = {"C": BTN_R1, "Z": BTN_L1, "R": BTN_TRI, "F": BTN_SQUARE,
-                   "T": BTN_X}
+                   "T": BTN_X, "BACKSPACE": RESTART_BTN}
     GRIP_KEY = "SPACE"
+    # Keys that only count while the viewport has the focus (or in mouse mode,
+    # where the keys can't be going to a text field): Backspace in a Kit text
+    # field must delete a character, not restart the simulation.
+    VIEWPORT_ONLY_KEYS = ("BACKSPACE",)
 
     def __init__(self):
         import carb.input
@@ -378,7 +403,8 @@ class Keyboard:
 
         self._ci = carb.input
         self._iface = carb.input.acquire_input_interface()
-        self._kb = omni.appwindow.get_default_app_window().get_keyboard()
+        app_window = omni.appwindow.get_default_app_window()
+        self._kb = app_window.get_keyboard()
         self._sub = self._iface.subscribe_to_keyboard_events(self._kb, self._on_key)
         self._down = set()
         self.axes = [0.0] * 12
@@ -387,18 +413,171 @@ class Keyboard:
         self.buttons = [0] * 16
         self.edges = [0] * 16
 
+        # Mouse mode. The pointer is put in DISABLED mode -- hidden and locked
+        # to the window, with unlimited motion, as in a game -- and motion is
+        # read from the differences between move events. Never moving the
+        # pointer from here: carb.windowing's get and set use different
+        # coordinates (several monitors, display scaling), which sent the
+        # pointer out of the window and made the arm drift.
+        self._mouse = app_window.get_mouse()
+        self._window = app_window.get_window()
+        self._mouse_sub = self._iface.subscribe_to_mouse_events(self._mouse, self._on_mouse)
+        self._mouse_on = False
+        self._shield = None     # the input shield window, while mouse mode is on
+        self._last_px = None    # pointer position at the previous move event
+        self._dx = self._dy = 0.0
+        self._scroll = 0.0
+        self._scroll_left = 0.0
+        self._left = False
+        self._right = False
+
     def _on_key(self, event, *_):
         try:
             name = getattr(event.input, "name", None) or \
                 str(event.input).rsplit(".", 1)[-1]
             T = self._ci.KeyboardEventType
             if event.type == T.KEY_PRESS:
+                # Off from anywhere, but on only from the viewport: typing an
+                # "m" in a Kit text field must not take the mouse away.
+                if name == MOUSE_KEY and name not in self._down \
+                        and (self._mouse_on or _viewport_focused()):
+                    self._set_mouse_mode(not self._mouse_on)
+                if name in self.VIEWPORT_ONLY_KEYS and not (self._mouse_on or _viewport_focused()):
+                    return False
                 self._down.add(name)
             elif event.type == T.KEY_RELEASE:
                 self._down.discard(name)
         except Exception:
             pass
         return False        # do not consume; Kit shortcuts keep working
+
+    def _set_mouse_mode(self, on):
+        import carb.windowing
+
+        windowing = carb.windowing.acquire_windowing_interface()
+        mode = carb.windowing.CursorMode.DISABLED if on else carb.windowing.CursorMode.NORMAL
+        windowing.set_cursor_mode(self._window, mode)
+        self._viewport_mouse(enabled=not on)
+        self._input_shield(on)
+        self._mouse_on = on
+        self._last_px = None
+        self._dx = self._dy = 0.0
+        self._scroll = 0.0
+        self._scroll_left = 0.0
+        self._left = self._right = False
+        print("[physx_teleop] input: " + (MOUSE_HELP if on else "KEYBOARD -- " + KEYBOARD_HELP))
+
+    def _input_shield(self, on):
+        """A transparent window over the whole Isaac Sim window, while mouse
+        mode is on. The hidden pointer keeps moving in DISABLED mode, and Kit's
+        menus and panels read it through omni.ui, not carb.input: without the
+        shield, a move or a left click (the gripper) acts on whatever panel the
+        hidden pointer is over. With it, the topmost window under the pointer
+        is always this empty one."""
+        if self._shield is not None:
+            self._shield.visible = False
+            self._shield.destroy()
+            self._shield = None
+        if not on:
+            return
+        import omni.ui as ui
+
+        flags = (ui.WINDOW_FLAGS_NO_TITLE_BAR | ui.WINDOW_FLAGS_NO_RESIZE
+                 | ui.WINDOW_FLAGS_NO_MOVE | ui.WINDOW_FLAGS_NO_SCROLLBAR
+                 | ui.WINDOW_FLAGS_NO_COLLAPSE | ui.WINDOW_FLAGS_NO_DOCKING
+                 | ui.WINDOW_FLAGS_NO_SAVED_SETTINGS | ui.WINDOW_FLAGS_NO_BACKGROUND)
+        self._shield = ui.Window("##physx_teleop_mouse_mode",
+                                 width=ui.Workspace.get_main_window_width(),
+                                 height=ui.Workspace.get_main_window_height(),
+                                 position_x=0, position_y=0, flags=flags,
+                                 padding_x=0, padding_y=0)
+
+    # Viewport layers that use the mouse: camera navigation (scroll zoom,
+    # orbit, pan, fly), click selection, and the right-click menu.
+    _VIEWPORT_MOUSE_LAYERS = ("Camera", "Selection", "ObjectClick", "ContextMenu")
+    _CAMERA_DISABLES = ("disable_zoom", "disable_pan", "disable_tumble", "disable_look")
+
+    def _viewport_mouse(self, enabled):
+        """Turn the viewport's own mouse handling off for mouse mode, and back
+        on. Consuming carb.input events is not enough: the viewport reads the
+        mouse through omni.ui, so scroll still zoomed the camera."""
+        try:
+            from omni.kit.viewport.utility import get_active_viewport_window
+
+            window = get_active_viewport_window()
+        except Exception:
+            return
+        if not enabled:
+            self._vp_saved = []
+            for name in self._VIEWPORT_MOUSE_LAYERS:
+                try:
+                    layer = window._find_viewport_layer(name, "manipulator").layer
+                except Exception:
+                    continue
+                camera = name == "Camera" and getattr(layer, "manipulator", None)
+                flags = ({k: list(camera.model.get_as_ints(k) or [0]) for k in self._CAMERA_DISABLES}
+                         if camera else {})
+                self._vp_saved.append((layer, layer.visible, camera, flags))
+                layer.visible = False
+                for k in flags:
+                    camera.model.set_ints(k, [1])
+        else:
+            for layer, visible, camera, flags in getattr(self, "_vp_saved", []):
+                try:
+                    layer.visible = visible
+                    for k, v in flags.items():
+                        camera.model.set_ints(k, v)
+                except Exception:
+                    pass
+            self._vp_saved = []
+
+    def _on_mouse(self, event):
+        if not self._mouse_on:
+            return False    # mouse mode off: the viewport keeps the mouse
+        try:
+            T = self._ci.MouseEventType
+            if event.type == T.MOVE:
+                px = (event.pixel_coords.x, event.pixel_coords.y)
+                if self._last_px is not None:
+                    self._dx += px[0] - self._last_px[0]
+                    self._dy += px[1] - self._last_px[1]
+                self._last_px = px
+            elif event.type == T.SCROLL:
+                self._scroll += event.scrollDelta.y
+            elif event.type == T.LEFT_BUTTON_DOWN:
+                self._left = True
+            elif event.type == T.LEFT_BUTTON_UP:
+                self._left = False
+            elif event.type == T.RIGHT_BUTTON_DOWN:
+                self._right = True
+            elif event.type == T.RIGHT_BUTTON_UP:
+                self._right = False
+        except Exception:
+            pass
+        return True         # consume: no selection, orbit or zoom in the viewport
+
+    def _poll_mouse(self):
+        """Pointer travel and scroll since the last tick, as stick deflections.
+        No move event, no motion: the arm cannot drift."""
+        mx = max(-1.0, min(1.0, self._dx / MOUSE_FULL_PX))
+        my = max(-1.0, min(1.0, self._dy / MOUSE_FULL_PX))
+        self._dx = self._dy = 0.0
+        # Each notch adds SCROLL_TICKS_PER_NOTCH ticks of full speed, used up
+        # one tick at a time; scrolling the other way cancels them.
+        self._scroll_left += self._scroll * SCROLL_TICKS_PER_NOTCH
+        self._scroll = 0.0
+        sc = max(-1.0, min(1.0, self._scroll_left))
+        self._scroll_left -= sc
+        if self._right:
+            self.axes[AXIS_LX] = mx         # roll
+            self.axes[AXIS_LY] = my         # pitch
+            self.axes[AXIS_YAW] = sc        # yaw
+        else:
+            self.axes[AXIS_RX] = mx         # x/y, view-relative like the stick
+            self.axes[AXIS_RY] = my         # pointer up = away from you
+            self.axes[AXIS_DY] = -sc        # scroll up = up
+        if self._left:
+            self.axes[AXIS_R2] = -1.0
 
     def poll(self):
         prev = list(self.buttons)
@@ -408,6 +587,18 @@ class Keyboard:
         for k, (i, v) in self.AXIS_KEYS.items():
             if k in self._down:
                 self.axes[i] = v
+        if self._mouse_on:
+            # Alt-tab or a click on another application: give the pointer back
+            # rather than leave it hidden and locked to a window without focus.
+            try:
+                import carb.windowing
+
+                if not carb.windowing.acquire_windowing_interface().is_window_focused(self._window):
+                    self._set_mouse_mode(False)
+            except Exception:
+                pass
+        if self._mouse_on:
+            self._poll_mouse()
         self.buttons = [0] * 16
         for k, i in self.BUTTON_KEYS.items():
             if k in self._down:
@@ -416,10 +607,36 @@ class Keyboard:
                       for i in range(16)]
 
     def close(self):
+        # Separate steps: a failure in one must not leave the pointer hidden
+        # and locked, the viewport without its mouse, or a subscription behind.
+        if self._mouse_on:
+            try:
+                self._set_mouse_mode(False)
+            except Exception:
+                pass
+        try:
+            self._input_shield(False)
+        except Exception:
+            pass
+        try:
+            self._iface.unsubscribe_to_mouse_events(self._mouse, self._mouse_sub)
+        except Exception:
+            pass
         try:
             self._iface.unsubscribe_to_keyboard_events(self._kb, self._sub)
         except Exception:
             pass
+
+
+def _viewport_focused():
+    """True when the viewport window has the keyboard focus, i.e. keys are not
+    going to a text field or another panel."""
+    try:
+        from omni.kit.viewport.utility import get_active_viewport_window
+
+        return bool(get_active_viewport_window().focused)
+    except Exception:
+        return True     # cannot tell: behave as before rather than lock the key out
 
 
 def _acquire_input():
@@ -599,14 +816,18 @@ class Teleop:
                           dtype=float).ravel()
 
     def _jac(self, eps=1e-5):
+        # Linear rows at the TOOL TIP (TCP), not the flange: a pure rotation
+        # command then pivots about the TCP instead of swinging it around.
+        tip = np.array([0.0, 0.0, self.tool_len])
         F0 = self.armbase @ fk(self.q)[5]
-        p0, R0 = F0[0:3, 3], F0[0:3, 0:3]
+        R0 = F0[0:3, 0:3]
+        p0 = F0[0:3, 3] + R0 @ tip
         J = np.zeros((6, 6))
         for i in range(6):
             qp = list(self.q)
             qp[i] += eps
             F1 = self.armbase @ fk(qp)[5]
-            J[0:3, i] = (F1[0:3, 3] - p0) / eps
+            J[0:3, i] = (F1[0:3, 3] + F1[0:3, 0:3] @ tip - p0) / eps
             W = (F1[0:3, 0:3] @ R0.T - np.eye(3)) / eps
             J[3:6, i] = [W[2, 1], W[0, 2], W[1, 0]]
         return J, R0
@@ -1119,7 +1340,7 @@ class Teleop:
                    + np.array([0.0, 0.0, -a[AXIS_DY] * sl]))
             tw = np.array([lin[0], lin[1], lin[2],
                            _dz(a[AXIS_LX]) * sa, _dz(a[AXIS_LY]) * sa,
-                           (b[BTN_R1] - b[BTN_L1]) * sa])
+                           max(-1.0, min(1.0, b[BTN_R1] - b[BTN_L1] + a[AXIS_YAW])) * sa])
 
             # The hold has to be able to drive the arm ON ITS OWN. Gating all
             # of this on stick input meant "point tool down" set the target and
