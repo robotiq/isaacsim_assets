@@ -4,6 +4,7 @@ import isaaclab.envs.mdp as base_mdp
 import isaaclab.sim as sim_utils
 from isaaclab.assets import RigidObjectCfg
 from isaaclab.utils import configclass, replace
+from isaaclab.visualizers import VisualizerCfg
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
 from isaaclab_tasks.contrib.lift.lift_env_cfg import LiftEnvCfg
 
@@ -64,5 +65,7 @@ class UR5e2F85CubeLiftEnvCfg(LiftEnvCfg):
         )
 
         self.scene.ee_frame = None
+        # close-up of the workspace (env 0 sits at the world origin when playing a single env)
+        self.sim.visualizer_cfgs = VisualizerCfg(eye=(1.0, -0.9, 0.7), lookat=(0.45, 0.0, 0.15))
         self.rewards.reaching_object.func = mdp.tcp_object_distance
         self.rewards.reaching_object.params = {"std": 0.1, "body_name": "wrist_3_link", "tcp_offset": TCP_OFFSET}
