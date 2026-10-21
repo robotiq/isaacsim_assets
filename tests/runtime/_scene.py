@@ -12,9 +12,9 @@ import omni.timeline
 from isaacsim.core.experimental.prims import Articulation
 from isaacsim.core.experimental.utils import stage as stage_utils
 from isaacsim.core.simulation_manager import SimulationManager
-from pxr import UsdPhysics
 
 REPO = Path(__file__).resolve().parents[2]
+SCENE_LAYER = REPO / "grippers" / "scene" / "Robotiq_Newton_scene_physics.usda"
 
 # Newton 2F variants need the gripper's runtime tuning after each play (the two
 # settings that cannot live in USD, see grippers/<gripper>/newton/).
@@ -51,7 +51,11 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     stage = stage_utils.create_new_stage()
-    UsdPhysics.Scene.Define(stage, "/physicsScene")
+    # The scene-level Newton setting the grippers need on Isaac Sim 6.1+ (the elliptic
+    # cone, see grippers/scene); on 6.0 Isaac overrides it, so it is harmless there.
+    assert SCENE_LAYER.is_file(), SCENE_LAYER
+    stage.GetRootLayer().subLayerPaths.append(str(SCENE_LAYER))
+    assert stage.GetPrimAtPath("/PhysicsScene"), f"{SCENE_LAYER} did not compose a /PhysicsScene"
     stage_utils.add_reference_to_stage(
         usd_path=str(REPO / "grippers" / gripper / f"{gripper}.usda"),
         path="/World/Gripper",

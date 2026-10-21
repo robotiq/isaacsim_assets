@@ -54,8 +54,9 @@ URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
 1. **Put the gripper in a stage** and pick its `Physics` variant: create a new stage (File → New)
    and drag `grippers/Robotiq_2F_85/Robotiq_2F_85.usda` into it, or open a scene that references
    it. Do not open the asset file itself: the graph would be authored into the shipped asset and
-   saved with it on Ctrl+S. For `Newton_*` variants start Isaac with `isaac-sim.newton.sh`, and
-   apply the gripper's `newton/apply_gripper_tuning.py` after each Stop → Play, as for any Newton
+   saved with it on Ctrl+S. For `Newton_*` variants start Isaac with `isaac-sim.newton.sh`, on
+   Isaac Sim 6.1+ sublayer [`../scene/Robotiq_Newton_scene_physics.usda`](../scene/Robotiq_Newton_scene_physics.usda)
+   into the stage (the elliptic friction cone, see the simulation guide §5.3), and apply the gripper's `newton/apply_gripper_tuning.py` after each Stop → Play, as for any Newton
    run.
 2. **Build the graph.** In the Script Editor (Window → Script Editor) open `build_gripper_graph.py`
    and run it: that builds the graph for a 2F-85. For anything else call `build_graph` with the

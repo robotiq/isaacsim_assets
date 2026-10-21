@@ -30,6 +30,10 @@ over "Robotiq_Hand_E"
                 float physics:staticFriction = 1
                 float newton:rollingFriction = 0.0001
                 float newton:torsionalFriction = 0.005
+                # Negative = skip Newton's kf friction mapping (an elliptic cone is on by default
+                # in the scene layer). Relies on the MuJoCo solver in Newton 1.5/1.6, not a documented
+                # API, and must not be loaded by other Newton solvers. See GRIPPER_SIMULATION_GUIDE.md 5.3.
+                float newton:contactFrictionGain = -1000000000
             }
         }
     }
