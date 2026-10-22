@@ -178,6 +178,7 @@ def Xform "Robotiq_2F_85" (
                 # FET028 gripper site. forward axis = approach direction (+Z, towards the
                 # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
                 float gripper_maxOpening = 0.085
+                float gripper_maxPayload = 5.0
 
                 def BasisCurves "gripper_forward_axis"
                 {
