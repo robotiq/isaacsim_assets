@@ -182,6 +182,7 @@ def gen_base():
                 # FET028 gripper site. forward axis = approach direction (+Z, towards the
                 # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
                 float gripper_maxOpening = 0.0368
+                float gripper_maxPayload = 7.0
 
                 def BasisCurves "gripper_forward_axis"
                 {{
