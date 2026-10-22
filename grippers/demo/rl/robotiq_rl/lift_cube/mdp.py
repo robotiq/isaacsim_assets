@@ -57,21 +57,21 @@ class _TcpTerm(ManagerTermBase):
 class tcp_object_distance(_TcpTerm):
     """Tanh-kernel reward for bringing the TCP to the object."""
 
-    def __call__(self, env: ManagerBasedRLEnv, std: float, **_) -> torch.Tensor:
+    def __call__(self, env: ManagerBasedRLEnv, std: float, *, body_name=None, tcp_offset=None, joint_name=None, closed_pos=None) -> torch.Tensor:
         return 1 - torch.tanh(self._distance(env) / std)
 
 
 class grasp_closure(_TcpTerm):
     """Reward closing the gripper while the TCP is within ``reach`` of the object (nothing for closing in the air)."""
 
-    def __call__(self, env: ManagerBasedRLEnv, reach: float, **_) -> torch.Tensor:
+    def __call__(self, env: ManagerBasedRLEnv, reach: float, *, body_name=None, tcp_offset=None, joint_name=None, closed_pos=None) -> torch.Tensor:
         return (self._distance(env) < reach).float() * self._closure(env)
 
 
 class lifted_in_grasp(_TcpTerm):
     """1 while the object is above ``minimal_height`` and held: TCP within ``reach``, closure above ``min_closure``."""
 
-    def __call__(self, env: ManagerBasedRLEnv, minimal_height: float, reach: float, min_closure: float, **_):
+    def __call__(self, env: ManagerBasedRLEnv, minimal_height: float, reach: float, min_closure: float, *, body_name=None, tcp_offset=None, joint_name=None, closed_pos=None):
         z = env.scene[self._object_cfg.name].data.root_pos_w.torch[:, 2]
         return ((z > minimal_height) & self._grasped(env, reach, min_closure)).float()
 
@@ -103,7 +103,10 @@ class goal_distance_in_grasp(_TcpTerm):
         min_closure: float,
         command_name: str,
         success_threshold: float | None = None,
-        **_,
+        body_name=None,
+        tcp_offset=None,
+        joint_name=None,
+        closed_pos=None,
     ) -> torch.Tensor:
         robot = env.scene[self._robot_cfg.name]
         object_pos_w = env.scene[self._object_cfg.name].data.root_pos_w.torch
