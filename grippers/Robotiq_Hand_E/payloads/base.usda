@@ -52,6 +52,28 @@ def Xform "Robotiq_Hand_E" (
             {
                 double3 xformOp:translate = (0, 0, 0.13)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                # FET028 gripper site. forward axis = approach direction (+Z, towards the
+                # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
+                float gripper_maxOpening = 0.0368
+
+                def BasisCurves "gripper_forward_axis"
+                {
+                    point3f[] points = [(0, 0, 0), (0, 0, 0.05)]
+                    float3[] extent = [(0, 0, 0), (0, 0, 0.05)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }
+
+                def BasisCurves "gripper_grip_line"
+                {
+                    point3f[] points = [(0, -0.0184, 0), (0, 0.0184, 0)]
+                    float3[] extent = [(0, -0.0184, 0), (0, 0.0184, 0)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }
             }
         }
 
