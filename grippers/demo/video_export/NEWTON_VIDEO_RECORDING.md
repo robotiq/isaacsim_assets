@@ -190,6 +190,6 @@ offline path tracing (`set_pathtracing(True)`):
 - **Higher quality:** re‑capture at higher resolution and/or more `app.update()`
   iterations per frame for more path‑tracing convergence.
 - After previewing, restore live sim: re‑enable `/app/player/playSimulations`,
-  `simulation.play()`, then re‑run `apply_gripper_tuning.py`.
+  `simulation.play()`, then (Isaac Sim 6.0.1 only) re‑run `apply_gripper_tuning.py`.
 - See also `NEWTON_USD_PERSISTENCE.md` for the runtime tuning that also doesn't
   round‑trip through USD.

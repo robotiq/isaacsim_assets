@@ -66,14 +66,14 @@ over "Robotiq_2F_85"
             }
 
             over "right_outer_knuckle_joint" (
-                prepend apiSchemas = ["MjcJointAPI", "NewtonMimicAPI"]
+                prepend apiSchemas = ["MjcJointAPI", "NewtonMimicAPI", "MjcEqualityJointAPI"]
             )
             {
                 uniform double mjc:armature = 0
                 uniform double mjc:damping = 0
-                uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                uniform double[] mjc:solimp = [0.9999, 0.99999, 0.0001, 0.5, 2]
                 uniform double[] mjc:solimplimit = [0.95, 0.99, 0.001, 0.5, 2]
-                uniform double[] mjc:solref = [0.005, 1]
+                uniform double[] mjc:solref = [0.002, 1]
                 uniform double[] mjc:solreflimit = [0.02, 2]
                 rel mjc:target = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>
                 rel newton:mimicJoint = </Robotiq_2F_85/Robotiq_2F_85/Joints/finger_joint>

@@ -1,9 +1,11 @@
 #usda 1.0
 (
-    doc = """Scene-level Newton setting the Robotiq grippers need on Isaac Sim 6.1+.
+    doc = """Scene-level Newton settings the Robotiq grippers need on Isaac Sim 6.1+: the elliptic
+friction cone and the 2F's anti-slip impratio.
 Sublayer this into the stage that holds a gripper. It only adds opinions on the prim
 /PhysicsScene, so it merges with your scene ONLY if that scene is at exactly /PhysicsScene;
-otherwise set mjc:option:cone = "elliptic" (with MjcSceneAPI) on your own scene instead.
+otherwise set mjc:option:cone = "elliptic" and mjc:option:impratio = 10 on your own scene
+instead (MjcSceneAPI must be in its prepend apiSchemas, or the attributes are ignored).
 See GRIPPER_SIMULATION_GUIDE.md section 5.3."""
 )
 
@@ -14,4 +16,8 @@ def PhysicsScene "PhysicsScene" (
     # Elliptic friction cone: what Isaac Sim 6.0.1 forced, and 6.1+ no longer does.
     # The gripper pad material's negative newton:contactFrictionGain relies on it.
     uniform token mjc:option:cone = "elliptic"
+
+    # Anti-slip friction impedance ratio (what the 2F grippers need; the Hand-E does not use it and is not
+    # hurt by it). Isaac Sim 6.0.1 ignores it: apply_gripper_tuning.py sets it at runtime there.
+    uniform double mjc:option:impratio = 10
 }

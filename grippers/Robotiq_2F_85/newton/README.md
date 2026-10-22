@@ -13,17 +13,34 @@ Everything the solver needs is baked into the variant payloads
 plus the shared Newton layers they sublayer (including the engine-neutral
 `Robotiq_2F_85_fingertip_physics.usda`), and rebuilds natively on load — **except** the items below.
 
-## Runtime tuning — `apply_gripper_tuning.py` (each stop → play)
+## Scene options — sublayer the shared scene layer once
 
-Two settings cannot be authored in USD and must be re-applied to the live
-`mujoco_warp` model after every stop → play (run from the Script Editor or the
-MCP bridge — idempotent):
+The finger-coupling equality (`solref = [0.002, 1]`, near-rigid) is authored on
+`right_outer_knuckle_joint` (`MjcEqualityJointAPI`) and rebuilds natively. The solver's
+anti-slip option and the friction cone cannot live in the asset, because the gripper has
+no `PhysicsScene`. On Isaac Sim 6.1+, sublayer
+[`../../scene/Robotiq_Newton_scene_physics.usda`](../../scene/Robotiq_Newton_scene_physics.usda)
+into your stage once. It authors both, on `/PhysicsScene`:
 
-1. `opt.impratio = 10` — anti-slip; the build ignores the authored `MjcSceneAPI`
-   option.
-2. near-rigid finger-coupling equality `solref = [0.002, 1]` — the coupling
-   joint-equality has no USD prim (it is synthesized at model build), so it is
-   located at runtime by `eq_type == mjEQ_JOINT`.
+```usda
+uniform token mjc:option:cone = "elliptic"
+uniform double mjc:option:impratio = 10
+```
+
+Or author the same two attributes on your own scene. Two things to get right: the scene needs
+`MjcSceneAPI` in its `prepend apiSchemas`, or the importer ignores the attributes; and the
+shared layer only merges with a scene at exactly `/PhysicsScene` (with `/World/PhysicsScene`
+or `/physicsScene` you would get a second scene prim, so author the attributes on your own).
+The cone matters too: see the Simulation Guide, §5.3.
+
+Needs **Isaac Sim 6.1 / Newton 1.5.0** or later, which reads scene `mjc:option:*`
+from USD. No script is needed after Stop → Play.
+
+**Isaac Sim 6.0.1 (Newton 1.2.1):** Newton 1.2.1 reads neither `mjc:option:impratio` nor the
+coupling's `solref`/`solimp`, so still run
+[`apply_gripper_tuning.py`](apply_gripper_tuning.py) after every Stop → Play (Script Editor or
+MCP bridge — idempotent). It sets every `JOINT`-type equality in the model, so a stage that
+also holds another gripper's coupling (e.g. a Hand-E) gets that one tuned to the 2F values too.
 
 ## Intentional `diagonalInertia = (0.001, 0.001, 0.001)`
 
