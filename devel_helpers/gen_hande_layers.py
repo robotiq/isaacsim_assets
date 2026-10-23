@@ -178,6 +178,29 @@ def gen_base():
             {{
                 double3 xformOp:translate = (0, 0, {GRIP_FRAME_Z})
                 uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                # FET028 gripper site. forward axis = approach direction (+Z, towards the
+                # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
+                float gripper_maxOpening = 0.0368
+                float gripper_maxPayload = 7.0
+
+                def BasisCurves "gripper_forward_axis"
+                {{
+                    point3f[] points = [(0, 0, 0), (0, 0, 0.05)]
+                    float3[] extent = [(0, 0, 0), (0, 0, 0.05)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }}
+
+                def BasisCurves "gripper_grip_line"
+                {{
+                    point3f[] points = [(0, -0.0184, 0), (0, 0.0184, 0)]
+                    float3[] extent = [(0, -0.0184, 0), (0, 0.0184, 0)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }}
             }}
 '''
     default = TIPS[0][0]
