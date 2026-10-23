@@ -164,6 +164,17 @@ jobs:
         #   python3 ci/simready/summarize.py --update results.json
         run: python3 "$GITHUB_WORKSPACE/asset/ci/simready/summarize.py" results.json
 
+      - name: Check thumbnail background is black (REVIEW.004)
+        id: thumbnail
+        if: always()
+        # SimReady Central rejects a standard thumbnail that isn't on black.
+        # Regenerate with: python3 ci/simready/thumbnail_black_bg.py
+        run: |
+          pip install pillow >/dev/null
+          asset="${{ inputs.asset || 'grippers/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
+          python3 "$GITHUB_WORKSPACE/asset/ci/simready/thumbnail_black_bg.py" --check \
+            "$GITHUB_WORKSPACE/asset/$(dirname "$asset")"
+
       - name: Name results artifact (unique per asset)
         id: artifact
         if: always()
@@ -185,9 +196,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The gate lives in the "Summarize results" step; mirror its outcome onto
+          # The gate lives in the "Summarize results" and thumbnail steps; mirror their outcome onto
           # the commit as the "validate" status the ruleset requires.
-          if [ "${{ steps.summarize.outcome }}" = "success" ]; then
+          if [ "${{ steps.summarize.outcome }}" = "success" ] && [ "${{ steps.thumbnail.outcome }}" = "success" ]; then
             state=success
             desc="SimReady validation passed"
           else
