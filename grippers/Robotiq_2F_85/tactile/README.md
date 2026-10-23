@@ -23,7 +23,7 @@ prim.GetVariantSet("SensorSim").SetVariantSelection("EffectiveResponse")
 
 ## Reading it
 
-`tactile/` (this folder) has one reader per model and `make_tactile_sensor(stage, root, engine)` returns the one
+This folder has one reader per model and `make_tactile_sensor(stage, root, engine)` returns the one
 for the stage's variant. Create it **before play**, then each frame while playing:
 
 ```python
@@ -57,7 +57,7 @@ The model parameters travel on the stage as `robotiq:tactile:*` attributes of ea
 | `payloads/Robotiq_2F_85_tactile_raycast.usda` | `Raycast`: the compliant pad and the ray parameters |
 | `payloads/Robotiq_2F_85_tactile_effective_response.usda` | `EffectiveResponse`: the Eq. 1 parameters, articulation kept awake |
 | `tools/generate_tactile_zones.py` | generates the three payloads; the grid frame is measured from the TSF-85 case bounds |
-| `tactile/` | `effective_response.py` (Eq. 1), `contact_points.py` (PhysX / Newton contacts), `readers.py`, `plot.py` |
+| `tactile/` (this folder, with this README) | `effective_response.py` (Eq. 1), `contact_points.py` (PhysX / Newton contacts), `readers.py`, `plot.py` |
 
 The markers do not collide: the TSF-85 pad is the only collider. Tests: `tests/runtime/test_tactile_sensor.py`
-(Isaac Sim) and `tests/unit/test_effective_response.py` (numpy / scipy only). Demo: [`../demo/TACTILE_DEMO.md`](../demo/TACTILE_DEMO.md).
+(Isaac Sim) and `tests/unit/test_effective_response.py` (numpy / scipy only). Demo: [`../../demo/TACTILE_DEMO.md`](../../demo/TACTILE_DEMO.md).

@@ -2,7 +2,7 @@
 
 Grip an object with the Robotiq 2F-85 and watch a **live 7×4 tactile heatmap** per finger, driving the
 gripper with a **gamepad trigger** or from Isaac. The sensor has two models (`SensorSim`), described in
-[`../Robotiq_2F_85/TACTILE_TSF85_SENSOR.md`](../Robotiq_2F_85/TACTILE_TSF85_SENSOR.md): `EffectiveResponse`
+[`../Robotiq_2F_85/tactile/README.md`](../Robotiq_2F_85/tactile/README.md): `EffectiveResponse`
 (this scene's default, any step rate, PhysX and Newton) and `Raycast` (PhysX, needs ≥ 240 Hz).
 
 | Tool | What it does |
