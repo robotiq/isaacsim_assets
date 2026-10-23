@@ -14,6 +14,8 @@
 #   TELEOP_GRIPPER=HandE ./run_demo.sh                 # the Hand-E (PhysX / Newton)
 #   TELEOP_PHYSICS=Newton_compliant ./run_demo.sh      # the Newton gripper
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
+#   TELEOP_SENSORSIM=EffectiveResponse ./run_demo.sh   # the 2F-85 with the TSF-85 tactile sensor
+#                                                      # (Raycast | EffectiveResponse) and its live heatmap
 #   TELEOP_HAPTICS=0 ./run_demo.sh                     # no plot, no R2 rumble
 #   TELEOP_INPUT=keyboard ./run_demo.sh                # same as --keyboard
 #   TELEOP_FULL_FORCE_N=100 ./run_demo.sh              # R2 at full stiffness from 100 N (default 200)
@@ -230,6 +232,9 @@ if [[ "$MCP_UP" == "1" ]]; then
   echo " ok"
   python3 "$MCP_BRIDGE/make_contact_plot.py" \
     || echo "WARNING: contact-force plot not injected; see $ISAAC_LOG." >&2
+  # The tactile heatmap, when the scene has a sensor (TELEOP_SENSORSIM); does nothing otherwise.
+  python3 "$MCP_BRIDGE/make_tactile_sensor_plot.py" --if-present \
+    || echo "WARNING: tactile heatmap not injected; see $ISAAC_LOG." >&2
 else
   echo " NOT UP"
   echo "WARNING: no MCP socket on 8766 -- the contact-force plot will not be" >&2

@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    doc = """TSF-85 tactile sensor test scene for the Robotiq 2F-85.
+
+The 2F-85 with the TSF-85 fingertip and its EffectiveResponse sensor (PhysX parallel grip, 240 Hz, zero
+gravity) and a kinematic cube between the fingers, so a firm grip does not launch it. Press Play, then use
+the mcp_bridge tools (see TACTILE_DEMO.md):
+  python3 mcp_bridge/make_tactile_sensor_plot.py   # live 7x4 heatmap
+  python3 mcp_bridge/gamepad_gripper.py            # right-trigger open/close
+The viewport camera is the stage's own: pick /World/Camera in the viewport's camera menu, or select the
+gripper and press F. Set SensorSim to Raycast to read the depth instead."""
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    # The raycast sensor needs at least 240 Hz: its compliant pad is not resolved at the 60 Hz default.
+    def PhysicsScene "PhysicsScene" (
+        prepend apiSchemas = ["PhysxSceneAPI"]
+    )
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 0
+        uint physxScene:timeStepsPerSecond = 240
+    }
+
+    def Camera "Camera"
+    {
+        float focalLength = 24
+        float2 clippingRange = (0.01, 10)
+        matrix4d xformOp:transform = ((0.806405, 0.591364, -0.0, 0), (-0.139052, 0.189617, 0.971962, 0), (0.574783, -0.783795, 0.235138, 0), (0.22, -0.3, 0.22, 1))
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Xform "Gripper" (
+        prepend references = @../Robotiq_2F_85/Robotiq_2F_85.usda@
+        variants = {
+            string Fingertip = "Tactile_TSF85"
+            string Physics = "Physx_parallel_grip"
+            string SensorSim = "EffectiveResponse"
+        }
+    )
+    {
+    }
+
+    def Cube "GripObject" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMassAPI"]
+    )
+    {
+        double size = 1
+        color3f[] primvars:displayColor = [(0.15, 0.45, 0.95)]
+        bool physics:collisionEnabled = 1
+        bool physics:kinematicEnabled = 1
+        float physics:mass = 0.05
+        double3 xformOp:translate = (0, 0, 0.13)
+        double3 xformOp:scale = (0.03, 0.03, 0.03)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}

@@ -48,8 +48,11 @@ mcp_bridge/
 ├── launch_isaac_with_mcp.sh      ← Isaac Sim launcher with --ext-folder + --enable already wired
 ├── mcp.json.example              ← template for the client-side .mcp.json config
 ├── make_contact_plot.py          ← host-side tool: overlay a live gripper pad contact-force plot
-└── remove_contact_plot.py        ← host-side tool: tear that plot back down
-    show_newton_colliders.py      ← in-Isaac: wireframe overlay of the Newton collision shapes (PhysX has a built-in one, Newton does not)
+├── remove_contact_plot.py        ← host-side tool: tear that plot back down
+├── show_newton_colliders.py      ← in-Isaac: wireframe overlay of the Newton collision shapes (PhysX has a built-in one, Newton does not)
+├── make_tactile_sensor_plot.py   ← host-side tool: live 7×4 heatmap of the TSF-85 tactile sensor (either SensorSim)
+├── gamepad_gripper.py            ← host-side tool: right-trigger open/close (no ROS)
+└── tune_tactile_zones.py         ← host-side tool: live panel to move/resize the taxel grid
 ```
 
 `make_contact_plot.py` / `remove_contact_plot.py` are standalone diagnostic
@@ -57,6 +60,11 @@ clients: they open the extension's `127.0.0.1:8766` socket directly (no MCP
 server needed) and inject a scrolling left/right pad contact-force plot into the
 running viewport. Works on both the Newton and PhysX backends — see the module
 docstring in the script. Handy while tuning gripper grasp physics.
+
+`make_tactile_sensor_plot.py`, `gamepad_gripper.py`, and `tune_tactile_zones.py` are the
+same kind of standalone `:8766` clients, for the **TSF-85 tactile sensor**.
+For a friendly end-to-end walkthrough (launch → open scene → run the tools) see
+**[../TACTILE_DEMO.md](../TACTILE_DEMO.md)**.
 
 **Not** checked in:
 
