@@ -23,7 +23,13 @@ Options (see README.md):
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
+
+# the 2F-85's tactile readers (grippers/Robotiq_2F_85/tactile/), imported as ``tactile`` by the tests
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "grippers" / "Robotiq_2F_85"))
 
 _app = None
 
@@ -254,6 +260,13 @@ def _run_items(config: pytest.Config, items: list[pytest.Item], slow: float | No
             for st in self.streams:
                 st.flush()
 
+    class Verdicts:  # print each test's outcome (and the failure) into the returned output
+        def pytest_runtest_logreport(self, report):
+            if report.failed:
+                print(f"{report.when.upper()} FAILED {report.nodeid}\n{report.longreprtext}")
+            elif report.when == "call":
+                print(f"{'PASSED' if report.passed else report.outcome.upper()} {report.nodeid}")
+
     buf = io.StringIO()
     pacing = config._isaac_pacing
     previous = pacing["factor"]
@@ -261,12 +274,15 @@ def _run_items(config: pytest.Config, items: list[pytest.Item], slow: float | No
         pacing["factor"] = slow
     real_stdout = sys.stdout
     sys.stdout = Tee(real_stdout, buf)
+    verdicts = Verdicts()
+    config.pluginmanager.register(verdicts)
     try:
         _reload_asset_layers()
         for it in items:
             print(f"\n--- {it.nodeid}")
             config.hook.pytest_runtest_protocol(item=it, nextitem=None)
     finally:
+        config.pluginmanager.unregister(verdicts)
         sys.stdout = real_stdout
         pacing["factor"] = previous
     return buf.getvalue()
@@ -376,6 +392,12 @@ def _save_cube(nodeid: str) -> None:
 
         try:
             print(f"cylinder saved: {save_cylinder(stage_utils.get_current_stage(), gripper)}")
+        except RuntimeError as e:
+            print(f"--save-cube: {e}")
+        return
+    if "test_tactile_sensor" in nodeid:  # its own static box, fixed_cubes/<gripper>_tactile.json
+        try:
+            print(f"cube saved: {save_cube(stage_utils.get_current_stage(), gripper + '_tactile', True)}")
         except RuntimeError as e:
             print(f"--save-cube: {e}")
         return

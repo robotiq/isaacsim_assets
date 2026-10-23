@@ -1,0 +1,24 @@
+# Unit tests of the TSF-85 tactile model (Eq. 1, the force / response maps, the contact aggregation):
+# pure numpy / scipy, no Isaac Sim and no GPU. The runtime tests of the sensor (tests/runtime) need Isaac.
+name: tactile-unit
+
+on:
+  # Post-merge run on main; PRs are checked once, in the merge queue (paths filters don't apply to merge_group).
+  push:
+    branches: [main]
+    paths:
+      - 'grippers/Robotiq_2F_85/tactile/**'
+      - 'tests/unit/**'
+      - '.github/workflows/tactile-unit.yml'
+  merge_group:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pytest
+      - run: python -m pytest tests/unit -v
