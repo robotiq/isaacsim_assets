@@ -30,6 +30,16 @@ PHYSICS = os.environ.get("TELEOP_PHYSICS") or {
 }.get(os.environ.get("TELEOP_GRIPPER_VARIANT", ""), "Physx_compliant")
 VARIANTS = {"Physics": PHYSICS, "Gripper": GRIPPER}
 
+# The 2F-85's tactile sensor (TELEOP_SENSORSIM alone implies the TSF-85 fingertip):
+#   TELEOP_FINGERTIP  Standard | Tactile_TSF85
+#   TELEOP_SENSORSIM  None | Raycast | EffectiveResponse   (2F85 only; Raycast needs a PhysX step of at
+#                     least 240 Hz and gets it unless TELEOP_PHYSX_HZ says otherwise; EffectiveResponse is
+#                     the recommended one)
+# With a sensor selected the live heatmap (mcp_bridge/make_tactile_sensor_plot.py) comes up
+# on its own with the contact-force plot.
+SENSORSIM = os.environ.get("TELEOP_SENSORSIM", "")
+FINGERTIP = os.environ.get("TELEOP_FINGERTIP") or ("Tactile_TSF85" if SENSORSIM else "")
+
 # Benchmark knobs, applied BEFORE play so no stop -> play cycle is needed --
 # the PhysX substep rate is only picked up when the scene starts playing, and
 # stop -> play cycles measurably degrade a session's frame-time tail.
@@ -156,6 +166,42 @@ def _select_variant(stage):
     return "; ".join(notes)
 
 
+def _select_sensor(stage):
+    """Select Fingertip / SensorSim on the mounted 2F-85. EffectiveResponse also gets the pads' contact
+    reports now, before play, so it needs no Stop -> Play. Returns a note."""
+    if not FINGERTIP and not SENSORSIM:
+        return "no tactile sensor requested (TELEOP_SENSORSIM / TELEOP_FINGERTIP)"
+    edit = next((p for p in stage.Traverse() if p.GetName() == "Robotiq_2F_85_edit"), None)
+    if edit is None:
+        return "no Robotiq_2F_85_edit prim (the tactile sensor is 2F85 only); tactile sensor NOT selected"
+    notes = []
+    for name, want in (("Fingertip", FINGERTIP), ("SensorSim", SENSORSIM)):  # SensorSim is nested in Fingertip
+        if not want:
+            continue
+        vset = edit.GetVariantSets().GetVariantSet(name)
+        if not vset or want not in vset.GetVariantNames():
+            notes.append("%s %r not available (%s); left alone" % (name, want, list(vset.GetVariantNames()) if vset else None))
+            continue
+        vset.SetVariantSelection(want)
+        notes.append("%s -> %r" % (name, want))
+    if SENSORSIM == "EffectiveResponse":
+        try:
+            from pxr import Usd
+
+            sys.path.insert(0, os.path.join(_teleop_dir(), "..", "..", "Robotiq_2F_85"))
+            from tactile.contact_points import ContactPointReader
+
+            with Usd.EditContext(stage, stage.GetSessionLayer()):  # keep the scene file clean
+                ContactPointReader("Robotiq_2F_85", str(edit.GetPath()) + "/Robotiq_2F_85", "physx").prepare(stage)
+            notes.append("pad contact reports enabled")
+        except Exception:
+            import traceback
+
+            traceback.print_exc()
+            notes.append("COULD NOT enable the pad contact reports (traceback above): the heatmap reads zero until a Stop -> Play")
+    return "; ".join(notes)
+
+
 def _set_render_mode():
     """Returns a note about what it did."""
     if RENDER_MODE.lower() == "keep":
@@ -232,7 +278,8 @@ def _apply_timing(stage):
             float(TCPS))
         notes.append("timeCodesPerSecond -> %s (sim %.2f ms/frame)"
                      % (TCPS, 1000.0 / float(TCPS)))
-    if PHYSX_HZ:
+    hz = PHYSX_HZ or ("240" if SENSORSIM == "Raycast" else "")  # the raycast depth is not resolved at 60 / 120 Hz
+    if hz:
         # Found by traversal, not a hardcoded path: it is /PhysicsScene here,
         # NOT /World/PhysicsScene, and guessing wrong fails silently enough to
         # cost an afternoon.
@@ -243,8 +290,8 @@ def _apply_timing(stage):
         for prim in scenes:
             attr = prim.GetAttribute("physxScene:timeStepsPerSecond")
             if attr:
-                attr.Set(int(PHYSX_HZ))
-                notes.append("%s substep -> %s Hz" % (prim.GetPath(), PHYSX_HZ))
+                attr.Set(int(hz))
+                notes.append("%s substep -> %s Hz" % (prim.GetPath(), hz))
     return notes
 
 
@@ -306,6 +353,7 @@ def install():
                     print("[physx-autostart] scene already open")
 
                 print("[physx-autostart] " + _select_variant(ctx.get_stage()))
+                print("[physx-autostart] " + _select_sensor(ctx.get_stage()))
                 for note in _apply_timing(ctx.get_stage()):
                     print("[physx-autostart] " + note)
                 print("[physx-autostart] " + _set_render_mode())

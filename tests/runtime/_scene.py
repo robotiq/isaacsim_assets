@@ -52,12 +52,16 @@ class GripperScene:
         return self.robot.dof_names.index(name)
 
 
-def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=None) -> GripperScene:
+def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=None,
+                 variants: list[tuple[str, str]] | None = None) -> GripperScene:
     """Fresh stage with the gripper at /World/Gripper on the engine matching
     ``physics``, timeline playing (and, on Newton < 1.5, the runtime tuning applied). Call ``view``
     (the conftest fixture) once the stage is populated, if given. ``setup(stage)``
     runs after the engine switch and before play, to add scene content (e.g. an
-    object to grasp) that the engine must see when it builds its model."""
+    object to grasp) that the engine must see when it builds its model.
+    ``variants`` selects more variant sets after Physics, in order, one at a time,
+    so a nested set (e.g. SensorSim, which only exists under
+    Fingertip=Tactile_TSF85) can follow the set that introduces it."""
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     stage = stage_utils.create_new_stage()
@@ -71,6 +75,13 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
         path="/World/Gripper",
         variants=[("Physics", physics)],
     )
+    prim = stage.GetPrimAtPath("/World/Gripper")
+    for variant_set, selection in variants or []:
+        names = prim.GetVariantSets().GetNames()
+        assert variant_set in names, f"no variant set {variant_set!r} on {gripper} (has {names})"
+        options = prim.GetVariantSet(variant_set).GetVariantNames()
+        assert selection in options, f"no {variant_set}={selection!r} on {gripper} (has {options})"
+        prim.GetVariantSet(variant_set).SetVariantSelection(selection)
     if view:
         view()
     simulation_app.update()
