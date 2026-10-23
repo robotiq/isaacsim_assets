@@ -39,6 +39,7 @@ and grip — same body tree, geometry, and collision for all of them — and who
 | `Physics` — PhysX | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `PhysX` *(default)* |
 | `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | `Newton` |
 | `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
+| `SensorSim` (only under `Fingertip=Tactile_TSF85`) | `None` *(default)*, `EffectiveResponse`, `Raycast` ([tactile sensor](grippers/Robotiq_2F_85/TACTILE_TSF85_SENSOR.md)) | — | — |
 | `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) |
 
 The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it has one
