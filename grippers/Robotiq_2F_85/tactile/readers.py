@@ -38,9 +38,9 @@ def markers_path(root: str, side: str) -> str:
 class TactileSensor:
     # (heatmap title, unit, smallest full scale so noise does not fill the colours) per quantity
     QUANTITIES = {
-        "force": ("TSF-85 tactile force per taxel [N]", "N", 1.0),
-        "response": ("TSF-85 effective contact response r", "", 0.05),
-        "depth": ("TSF-85 tactile depth [mm]", "mm", 0.5),
+        "force": ("TSF-85 tactile force per taxel [N] (simulated, uncalibrated)", "N", 1.0),
+        "response": ("TSF-85 effective contact response r (simulated, uncalibrated)", "", 0.05),
+        "depth": ("TSF-85 tactile depth [mm] (simulated, uncalibrated)", "mm", 0.5),
     }
     AVAILABLE = ("force", "response")
     caption = "per taxel (row 0 = fingertip end)"
