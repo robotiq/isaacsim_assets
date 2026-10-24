@@ -177,6 +177,7 @@ TASK = {
     "touch_n": 0.2,  # N: pad force that counts as a touch
     "hold_dist": 0.03,  # m: sphere centre within this of the TCP, with both pads pressing
     "min_closure": 0.25,
+    "out_half_xy": (BOX_INNER / 2 + 0.05, BOX_INNER / 2 + 0.05),  # the sphere counts as out only above the box (+ 5 cm)
     "lift_extra": 0.06,  # m: the lift reward reaches its maximum this far above the success height
     "success_steps": 30,  # the sphere held out of the box this many policy steps in a row (1 s) = success
     "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
@@ -244,17 +245,19 @@ class ObservationsCfg:
 @configclass
 class EventCfg:
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+    # start with the tool tip anywhere above and around the box (above the rim), pointing down: it has to find the way in
     reset_arm = EventTerm(
-        func=mdp.reset_joints_by_offset,
+        func=tp.reset_arm_start,
         mode="reset",
-        params={"position_range": (-0.05, 0.05), "velocity_range": (0.0, 0.0), "asset_cfg": SceneEntityCfg("robot", joint_names=["shoulder.*", "elbow.*", "wrist.*"])},
+        params={"x_range": (0.34, 0.68), "y_range": (-0.26, 0.26), "z_range": (0.17, 0.33)},
     )
     reset_spheres = EventTerm(
         func=tp.reset_spheres_in_box,
         mode="reset",
         params={
             "box_center": BOX_CENTER,
-            "half_xy": REACH_HALF,
+            "half_xy": (BOX_INNER / 2 - SPHERE_RADIUS - 0.004,) * 2,  # spread over the whole floor ...
+            "zone_half_xy": REACH_HALF,  # ... with sphere 0 where the tool tip can reach
             "floor_z": BOX_FLOOR,
             "radius": SPHERE_RADIUS,
         },

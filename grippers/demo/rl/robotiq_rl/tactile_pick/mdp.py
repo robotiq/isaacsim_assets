@@ -116,14 +116,20 @@ def reset_spheres_in_box(
     radius: float,
     min_gap: float = 0.046,
     candidates: int = 40,
+    zone_half_xy: tuple[float, float] | None = None,
 ):
-    """Put the spheres at random, non-overlapping spots on the box floor (dart throwing, per env)."""
+    """Put the spheres at random, non-overlapping spots on the box floor (dart throwing, per env).
+
+    ``half_xy`` is the area the spheres are spread over (the whole floor). With ``zone_half_xy`` (the area the tool tip
+    can reach) sphere 0 is placed inside it first, so there is always at least one sphere to pick; the others go
+    anywhere, so on average about half of them are out of reach and the policy has to search for the reachable ones."""
     if isinstance(env_ids, slice):
         env_ids = torch.arange(env.num_envs, device=env.device)[env_ids]
     n = len(env_ids)
     placed = torch.zeros(n, NUM_SPHERES, 2, device=env.device)
     for i in range(NUM_SPHERES):
-        cand = (torch.rand(n, candidates, 2, device=env.device) * 2 - 1) * torch.tensor(half_xy, device=env.device)
+        half = torch.tensor(zone_half_xy if (i == 0 and zone_half_xy is not None) else half_xy, device=env.device)
+        cand = (torch.rand(n, candidates, 2, device=env.device) * 2 - 1) * half
         if i == 0:
             placed[:, 0] = cand[:, 0]
             continue
@@ -146,6 +152,57 @@ def reset_spheres_in_box(
         sphere = env.scene[f"sphere_{i}"]
         sphere.write_root_pose_to_sim_index(root_pose=torch.cat([pos, quat], dim=-1), env_ids=env_ids)
         sphere.write_root_velocity_to_sim_index(root_velocity=zero, env_ids=env_ids)
+
+
+_START_TABLE = {}
+
+
+def _start_table(device):
+    """Joint angles of a UR5e whose tool tip is at (x, y, z) with the tool pointing down (``start_poses.npz``)."""
+    if "q" not in _START_TABLE:
+        import os
+
+        import numpy as np
+
+        data = np.load(os.path.join(os.path.dirname(__file__), "start_poses.npz"))
+        _START_TABLE.update({k: torch.tensor(data[k], dtype=torch.float32, device=device) for k in ("x", "y", "z", "q")})
+    return _START_TABLE
+
+
+def reset_arm_start(
+    env: ManagerBasedRLEnv,
+    env_ids: torch.Tensor,
+    x_range: tuple[float, float],
+    y_range: tuple[float, float],
+    z_range: tuple[float, float],
+    joint_names=("shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"),
+):
+    """Start the arm with the tool tip at a random point (env frame), pointing down, gripper open."""
+    if isinstance(env_ids, slice):
+        env_ids = torch.arange(env.num_envs, device=env.device)[env_ids]
+    n = len(env_ids)
+    table = _start_table(env.device)
+    lo = torch.tensor([x_range[0], y_range[0], z_range[0]], device=env.device)
+    hi = torch.tensor([x_range[1], y_range[1], z_range[1]], device=env.device)
+    p = lo + (hi - lo) * torch.rand(n, 3, device=env.device)
+    # trilinear interpolation of the joint table at p
+    idx, frac = [], []
+    for k, axis in enumerate(("x", "y", "z")):
+        grid = table[axis]
+        i0 = torch.bucketize(p[:, k], grid).clamp(1, len(grid) - 1) - 1
+        t = ((p[:, k] - grid[i0]) / (grid[i0 + 1] - grid[i0])).clamp(0, 1)
+        idx.append(i0)
+        frac.append(t)
+    q = torch.zeros(n, 6, device=env.device)
+    for dx in (0, 1):
+        for dy in (0, 1):
+            for dz in (0, 1):
+                w = (frac[0] if dx else 1 - frac[0]) * (frac[1] if dy else 1 - frac[1]) * (frac[2] if dz else 1 - frac[2])
+                q += w[:, None] * table["q"][idx[0] + dx, idx[1] + dy, idx[2] + dz]
+    robot = env.scene["robot"]
+    joint_ids = robot.find_joints(list(joint_names), preserve_order=True)[0]
+    robot.write_joint_position_to_sim_index(position=q, joint_ids=joint_ids, env_ids=env_ids)
+    robot.write_joint_velocity_to_sim_index(velocity=torch.zeros_like(q), joint_ids=joint_ids, env_ids=env_ids)
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -241,6 +298,9 @@ class TaskState:
         # any hovering below the threshold (r_out), otherwise the policy parks just under it: success ends the episode and
         # would forfeit the rest of the lift reward.
         out = stable & (near_z > c["rim_z"] + c["out_margin"])
+        if c.get("out_half_xy") is not None:  # held above the box, not carried away
+            near_xy = self.sphere_pos[torch.arange(env.num_envs, device=env.device), near, :2]
+            out &= ((near_xy - torch.tensor(c["box_center"], device=env.device)).abs() < torch.tensor(c["out_half_xy"], device=env.device)).all(-1)
         self.out_now = out.float()
         self.out_count = torch.where(out, self.out_count + 1, torch.zeros_like(self.out_count))
         done = self.out_count >= c["success_steps"]
