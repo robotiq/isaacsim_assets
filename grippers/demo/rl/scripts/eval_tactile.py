@@ -38,14 +38,16 @@ def main():
         dev = env.device
         ever = {k: torch.zeros(n, dtype=torch.bool, device=dev) for k in ("inside", "touch", "held", "stable", "out")}
         frac = {k: torch.zeros(n, device=dev) for k in ("inside", "touch", "held", "stable")}
+        successes = torch.zeros(n, device=dev)  # success events per env (the env resets on success, so count them)
         max_z = torch.zeros(n, device=dev)
         first = {k: torch.full((n,), -1, device=dev, dtype=torch.long) for k in ever}
         for t in range(args_cli.steps):
             with torch.inference_mode():
                 obs, *_ = env.step(policy(obs["policy"]))
             s = tp.get_state(env, TASK)
+            successes += s.success
             inside = (s.enter > 0.0) & (s.tcp[:, 2] < RIM_Z)
-            for k, v in (("inside", inside), ("touch", s.touch > 0), ("held", s.held > 0), ("stable", s.stable > 0), ("out", s.success_given)):
+            for k, v in (("inside", inside), ("touch", s.touch > 0), ("held", s.held > 0), ("stable", s.stable > 0), ("out", s.out_now > 0)):
                 new = v & ~ever[k]
                 first[k][new] = t
                 ever[k] |= v
@@ -63,6 +65,7 @@ def main():
             f = first[k][ever[k]].float()
             print(f"RESULT {k:7s}: ever {ever[k].float().mean().item():.2f}  first at step {f.median().item() if len(f) else float('nan'):.0f}"
                   + (f"  share of steps {frac[k].mean().item() / args_cli.steps:.2f}" if k in frac else ""))
+        print(f"RESULT successes (sphere held out of the box for 1 s): {successes.sum().item():.0f} in {n} envs x {args_cli.steps} steps; envs with one: {(successes > 0).float().mean().item():.2f}")
         print(f"RESULT coverage cells visited (mean of 64): {tp.get_state(env, TASK).visited.float().sum(-1).mean().item():.1f}")
         env.close()
 
