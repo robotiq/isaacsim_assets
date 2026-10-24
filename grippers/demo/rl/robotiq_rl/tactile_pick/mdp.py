@@ -174,7 +174,7 @@ class TaskState:
         # derived each step
         zeros = torch.zeros(n, device=dev)
         self.new_cells = self.touch = self.held = self.stable = self.success = self.dropped = zeros
-        self.lift_progress = self.sym = self.wall_force = self.enter = zeros
+        self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = zeros
         self.tcp = torch.zeros(n, 3, device=dev)
         self.sphere_pos = torch.zeros(n, NUM_SPHERES, 3, device=dev)
 
@@ -201,6 +201,7 @@ class TaskState:
         # --- phase 1/2: enter and sweep
         lowered = self.tcp[:, 2] < c["search_z"] + 0.03
         low_enough = self.tcp[:, 2] < c["rim_z"] - 0.005
+        self.approach = 1 - torch.tanh(torch.linalg.norm(rel, dim=-1) / 0.15)
         self.enter = inside_xy.float() * (1 - torch.tanh((self.tcp[:, 2] - c["search_z"]).clamp(min=0) / 0.08))
         cell = ((rel + half) / (2 * half) * self.COV_CELLS).long().clamp(0, self.COV_CELLS - 1)
         idx = cell[:, 0] * self.COV_CELLS + cell[:, 1]
@@ -259,6 +260,10 @@ def reset_task_state(env: ManagerBasedRLEnv, env_ids: torch.Tensor, cfg: dict):
 
 def r_enter(env, cfg):
     return get_state(env, cfg).enter
+
+
+def r_approach(env, cfg):
+    return get_state(env, cfg).approach
 
 
 def r_coverage(env, cfg):

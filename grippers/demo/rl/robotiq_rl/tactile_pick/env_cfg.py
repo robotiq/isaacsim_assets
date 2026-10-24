@@ -263,9 +263,10 @@ class EventCfg:
 @configclass
 class RewardsCfg:
     # phase 1 / 2: get in and sweep the floor, feel a sphere
-    enter = RewTerm(func=tp.r_enter, weight=0.1, params={"cfg": TASK})
-    coverage = RewTerm(func=tp.r_coverage, weight=0.5, params={"cfg": TASK})
-    touch = RewTerm(func=tp.r_touch, weight=0.3, params={"cfg": TASK})
+    approach = RewTerm(func=tp.r_approach, weight=0.2, params={"cfg": TASK})
+    enter = RewTerm(func=tp.r_enter, weight=1.0, params={"cfg": TASK})
+    coverage = RewTerm(func=tp.r_coverage, weight=1.0, params={"cfg": TASK})
+    touch = RewTerm(func=tp.r_touch, weight=1.0, params={"cfg": TASK})
     # phase 3: grasp, judged on both pads and their balance
     grasp = RewTerm(func=tp.r_grasp, weight=1.0, params={"cfg": TASK})
     stable = RewTerm(func=tp.r_stable, weight=1.0, params={"cfg": TASK})
