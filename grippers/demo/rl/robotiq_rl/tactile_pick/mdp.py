@@ -234,7 +234,8 @@ class TaskState:
         self.was_stable = stable | (self.was_stable & held)
         self.stable = stable.float()
         # --- phase 4: lift
-        lift_h = c["rim_z"] + c["out_margin"] - c["rest_z"]
+        # the dense lift reward keeps rising ``lift_extra`` past the success height: no plateau to hover on
+        lift_h = c["rim_z"] + c["out_margin"] + c["lift_extra"] - c["rest_z"]
         self.lift_progress = stable.float() * ((near_z - c["rest_z"]) / lift_h).clamp(0, 1)
         # Success = the held sphere stays out of the box for ``success_steps`` in a row. Being out pays more per step than
         # any hovering below the threshold (r_out), otherwise the policy parks just under it: success ends the episode and

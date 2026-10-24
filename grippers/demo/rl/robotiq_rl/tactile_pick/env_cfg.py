@@ -177,6 +177,7 @@ TASK = {
     "touch_n": 0.2,  # N: pad force that counts as a touch
     "hold_dist": 0.03,  # m: sphere centre within this of the TCP, with both pads pressing
     "min_closure": 0.25,
+    "lift_extra": 0.06,  # m: the lift reward reaches its maximum this far above the success height
     "success_steps": 30,  # the sphere held out of the box this many policy steps in a row (1 s) = success
     "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
 }
