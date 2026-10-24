@@ -316,6 +316,12 @@ def success_termination(env, cfg):
     return get_state(env, cfg).success.bool()
 
 
+def action_rate_used(env, dims: tuple[int, ...]):
+    """Squared change of the actions that move the robot (the three rotation dims have scale 0 and are left out)."""
+    a, prev = env.action_manager.action, env.action_manager.prev_action
+    return ((a[:, list(dims)] - prev[:, list(dims)]) ** 2).sum(-1)
+
+
 # --- actor observation ---------------------------------------------------------------------------------------
 
 

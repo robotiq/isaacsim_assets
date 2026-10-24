@@ -279,14 +279,15 @@ class RewardsCfg:
     drop = RewTerm(func=tp.r_drop, weight=-2.0, params={"cfg": TASK})
     # regularisation
     wall = RewTerm(func=tp.r_wall, weight=-0.005, params={"cfg": TASK})
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-3)
-    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-4, params={"asset_cfg": SceneEntityCfg("robot")})
+    action_rate = RewTerm(func=tp.action_rate_used, weight=-0.05, params={"dims": (0, 1, 2, 6)})
+    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-3, params={"asset_cfg": SceneEntityCfg("robot")})
 
 
 @configclass
 class TerminationsCfg:
+    # No termination on success: it would forfeit the per-step reward of holding the sphere out (the policy then avoids
+    # finishing). Holding out until the time-out is the goal; success is counted by the one-time bonus and the eval.
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    success = DoneTerm(func=tp.success_termination, params={"cfg": TASK})
 
 
 @configclass
