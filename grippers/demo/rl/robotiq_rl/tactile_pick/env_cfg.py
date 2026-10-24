@@ -1,12 +1,11 @@
-"""UR5e + 2F-85 with TSF-85 tactile fingertips picking spheres out of an open box, blind.
-
-Scene only for now: the MDP is a placeholder (joint-position actions, joint observations, no task reward)."""
+"""UR5e + 2F-85 with TSF-85 tactile fingertips picking spheres out of an open box, blind (see mdp.py)."""
 
 import math
 
 import isaaclab.envs.mdp as mdp
 import isaaclab.sim as sim_utils
 from isaaclab.assets import AssetBaseCfg, RigidObjectCfg
+from isaaclab.controllers.differential_ik_cfg import DifferentialIKControllerCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -15,6 +14,7 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors import ContactSensorCfg
 from isaaclab.utils import configclass, replace
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.visualizers import VisualizerCfg
@@ -22,6 +22,7 @@ from isaaclab_physx.physics import PhysxCfg
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
 
 from ..assets import UR5E_2F85_TSF85_CFG
+from . import mdp as tp
 
 # The lift task's start pose with the tool tip 15 cm higher and the same orientation (UR5e inverse kinematics:
 # only shoulder_lift, elbow and wrist_1 change).
@@ -41,22 +42,27 @@ SPHERE_MASS = 0.03  # kg
 
 # Open-top box on the table (table top at z = 0): inner footprint BOX_INNER x BOX_INNER, walls BOX_WALL thick.
 BOX_CENTER = (0.5, 0.0)
-BOX_INNER = 0.26
+BOX_INNER = 0.36
 BOX_HEIGHT = 0.10
 BOX_WALL = 0.012
 BOX_FLOOR = 0.012
+# Where the tool tip can go with the box walls in the way: the gripper base (75 x 85 mm) is inside the box at pad
+# height and the open fingers span ~125 mm across the jaws (y). The spheres are placed inside this zone only.
+REACH_HALF = (BOX_INNER / 2 - 0.0475, BOX_INNER / 2 - 0.075)  # (x, y) half extents around the box centre
 _CX, _CY = BOX_CENTER
 _OUTER = BOX_INNER + 2 * BOX_WALL
 _WALL_Z = BOX_FLOOR + BOX_HEIGHT / 2
 _WALL_OFFSET = (BOX_INNER + BOX_WALL) / 2
 
 
-def _box_part(name: str, size, pos) -> AssetBaseCfg:
-    return AssetBaseCfg(
+def _box_part(name: str, size, pos) -> RigidObjectCfg:
+    # kinematic rigid bodies, not static colliders: the pads' contact sensors can only filter on rigid bodies
+    return RigidObjectCfg(
         prim_path=f"{{ENV_REGEX_NS}}/Box/{name}",
-        init_state=AssetBaseCfg.InitialStateCfg(pos=pos),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=pos),
         spawn=sim_utils.CuboidCfg(
             size=size,
+            rigid_props=sim_utils.UsdPhysicsRigidBodyCfg(kinematic_enabled=True),
             collision_props=sim_utils.UsdPhysicsCollisionCfg(),
             physics_material=sim_utils.RigidBodyMaterialBaseCfg(static_friction=0.6, dynamic_friction=0.6),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.62, 0.45, 0.28), roughness=0.7),
@@ -95,6 +101,11 @@ class TactilePickSceneCfg(InteractiveSceneCfg):
         UR5E_2F85_TSF85_CFG,
         prim_path="{ENV_REGEX_NS}/Robot",
         init_state=replace(UR5E_2F85_TSF85_CFG.init_state, joint_pos=START_JOINT_POS),
+        spawn=replace(
+            UR5E_2F85_TSF85_CFG.spawn,
+            activate_contact_sensors=True,  # the pads' contact reports feed the tactile maps
+            rigid_props=replace(UR5E_2F85_TSF85_CFG.spawn.rigid_props, disable_gravity=True),  # IK-driven arm
+        ),
     )
 
     table = AssetBaseCfg(
@@ -130,10 +141,50 @@ class TactilePickSceneCfg(InteractiveSceneCfg):
     sphere_8 = _sphere(8)
     sphere_9 = _sphere(9)
 
+    # tactile: the contact force of each pad against the spheres / the box, with its average contact point
+    pad_spheres = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/(left|right)_fingertip",
+        track_contact_points=True,
+        max_contact_data_count_per_prim=16,
+        filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Sphere_{i}" for i in range(NUM_SPHERES)],
+    )
+    pad_box = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/(left|right)_fingertip",
+        track_contact_points=True,
+        max_contact_data_count_per_prim=16,
+        filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Box/{part}" for part in ("floor", "wall_n", "wall_s", "wall_e", "wall_w")],
+    )
+
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# task constants shared by the reward terms (all in the env frame, metres)
+# ---------------------------------------------------------------------------------------------------------------
+
+TCP_OFFSET = (0.0, 0.0, 0.13)  # point between the pads, in the wrist_3_link frame
+RIM_Z = BOX_FLOOR + BOX_HEIGHT
+TASK = {
+    "body_name": "wrist_3_link",
+    "joint_name": "finger_joint",
+    "tcp_offset": TCP_OFFSET,
+    "closed_pos": 0.8,
+    "box_center": BOX_CENTER,
+    "half_xy": REACH_HALF,  # the zone the tool tip can reach: swept for coverage, "inside" for the entry reward
+    "rim_z": RIM_Z,
+    "search_z": BOX_FLOOR + SPHERE_RADIUS + 0.012,  # tool tip height while searching: pads clear of the floor (tips 19 mm below)
+    "rest_z": BOX_FLOOR + SPHERE_RADIUS,
+    "out_margin": 0.04,  # success: the sphere centre this far above the rim
+    "touch_n": 0.2,  # N: pad force that counts as a touch
+    "hold_dist": 0.03,  # m: sphere centre within this of the TCP, with both pads pressing
+    "min_closure": 0.25,
+    "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
+}
+
 
 @configclass
 class ActionsCfg:
-    arm_action = mdp.JointPositionActionCfg(
+    # tool tip moves in Cartesian space (relative, 3 translations + 3 rotations whose scale is 0: orientation is held)
+    arm_action = mdp.DifferentialInverseKinematicsActionCfg(
         asset_name="robot",
         joint_names=[
             "shoulder_pan_joint",
@@ -143,14 +194,19 @@ class ActionsCfg:
             "wrist_2_joint",
             "wrist_3_joint",
         ],
-        scale=0.5,
-        use_default_offset=True,
+        body_name="wrist_3_link",
+        controller=DifferentialIKControllerCfg(command_type="pose", use_relative_mode=True, ik_method="dls"),
+        scale=(0.01, 0.01, 0.01, 0.0, 0.0, 0.0),  # m per policy step at full action (0.3 m/s)
+        body_offset=mdp.DifferentialInverseKinematicsActionCfg.OffsetCfg(pos=TCP_OFFSET),
     )
-    gripper_action = mdp.BinaryJointPositionActionCfg(
+    # continuous gripper target: action -1 .. 1 -> finger_joint 0 (open) .. 0.8 rad (closed)
+    gripper_action = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=["finger_joint"],
-        open_command_expr={"finger_joint": 0.0},
-        close_command_expr={"finger_joint": 0.8},
+        scale=0.4,
+        offset=0.4,
+        use_default_offset=False,
+        clip={"finger_joint": (0.0, 0.8)},
     )
 
 
@@ -158,34 +214,80 @@ class ActionsCfg:
 class ObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
+        """What the robot can feel: proprioception, the gripper opening and the two tactile maps."""
+
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel, scale=0.1)
+        tcp = ObsTerm(func=tp.tcp_in_box_frame, params={"cfg": TASK})
+        tactile = ObsTerm(func=tp.tactile_maps)
         actions = ObsTerm(func=mdp.last_action)
+
+        def __post_init__(self):
+            self.concatenate_terms = True
+            self.history_length = 3
+
+    @configclass
+    class CriticCfg(ObsGroup):
+        """Privileged: where the spheres are, and the phase flags."""
+
+        privileged = ObsTerm(func=tp.privileged_obs, params={"cfg": TASK})
 
         def __post_init__(self):
             self.concatenate_terms = True
 
     policy: PolicyCfg = PolicyCfg()
+    critic: CriticCfg = CriticCfg()
 
 
 @configclass
 class EventCfg:
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+    reset_arm = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={"position_range": (-0.05, 0.05), "velocity_range": (0.0, 0.0), "asset_cfg": SceneEntityCfg("robot", joint_names=["shoulder.*", "elbow.*", "wrist.*"])},
+    )
+    reset_spheres = EventTerm(
+        func=tp.reset_spheres_in_box,
+        mode="reset",
+        params={
+            "box_center": BOX_CENTER,
+            "half_xy": REACH_HALF,
+            "floor_z": BOX_FLOOR,
+            "radius": SPHERE_RADIUS,
+        },
+    )
+    reset_state = EventTerm(func=tp.reset_task_state, mode="reset", params={"cfg": TASK})
 
 
 @configclass
 class RewardsCfg:
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-4)
+    # phase 1 / 2: get in and sweep the floor, feel a sphere
+    enter = RewTerm(func=tp.r_enter, weight=0.1, params={"cfg": TASK})
+    coverage = RewTerm(func=tp.r_coverage, weight=0.5, params={"cfg": TASK})
+    touch = RewTerm(func=tp.r_touch, weight=0.3, params={"cfg": TASK})
+    # phase 3: grasp, judged on both pads and their balance
+    grasp = RewTerm(func=tp.r_grasp, weight=1.0, params={"cfg": TASK})
+    stable = RewTerm(func=tp.r_stable, weight=1.0, params={"cfg": TASK})
+    # phase 4: lift out of the box
+    lift = RewTerm(func=tp.r_lift, weight=5.0, params={"cfg": TASK})
+    success = RewTerm(func=tp.r_success, weight=100.0, params={"cfg": TASK})
+    drop = RewTerm(func=tp.r_drop, weight=-2.0, params={"cfg": TASK})
+    # regularisation
+    wall = RewTerm(func=tp.r_wall, weight=-0.005, params={"cfg": TASK})
+    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-1e-3)
+    joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-4, params={"asset_cfg": SceneEntityCfg("robot")})
 
 
 @configclass
 class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    success = DoneTerm(func=tp.success_termination, params={"cfg": TASK})
 
 
 @configclass
 class TactileSpherePickEnvCfg(ManagerBasedRLEnvCfg):
-    scene: TactilePickSceneCfg = TactilePickSceneCfg(num_envs=64, env_spacing=2.0)
+    scene: TactilePickSceneCfg = TactilePickSceneCfg(num_envs=512, env_spacing=2.0)
     actions: ActionsCfg = ActionsCfg()
     observations: ObservationsCfg = ObservationsCfg()
     events: EventCfg = EventCfg()
@@ -193,9 +295,9 @@ class TactileSpherePickEnvCfg(ManagerBasedRLEnvCfg):
     terminations: TerminationsCfg = TerminationsCfg()
 
     def __post_init__(self):
-        self.decimation = 4
+        self.decimation = 4  # 30 Hz policy
         self.episode_length_s = 20.0
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation
-        self.sim.physics = PhysxCfg(bounce_threshold_velocity=0.01)
+        self.sim.physics = PhysxCfg(bounce_threshold_velocity=0.01, gpu_found_lost_pairs_capacity=2**23)
         self.sim.visualizer_cfgs = VisualizerCfg(eye=(1.15, -0.75, 0.75), lookat=(0.5, 0.0, 0.1))
