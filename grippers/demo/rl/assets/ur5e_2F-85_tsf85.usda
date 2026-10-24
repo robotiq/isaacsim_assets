@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    doc = """The lift robot (ur5e_2F-85.usda) with the TSF-85 tactile fingertips and the EffectiveResponse sensor model
+(see Robotiq_2F_85/tactile/README.md): the pads' contact reports are on and the articulation stays awake."""
+    defaultPrim = "Robot"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Robot" (
+    prepend references = @./ur5e_2F-85.usda@
+)
+{
+    over "wrist_3_link"
+    {
+        over "Robotiq_2F_85_edit" (
+            variants = {
+                string Fingertip = "Tactile_TSF85"
+                string SensorSim = "EffectiveResponse"
+            }
+        )
+        {
+        }
+    }
+}

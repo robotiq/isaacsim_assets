@@ -2,4 +2,4 @@
 
 Importing this package registers the tasks with gymnasium."""
 
-from . import lift_cube  # noqa: F401
+from . import lift_cube, tactile_pick  # noqa: F401

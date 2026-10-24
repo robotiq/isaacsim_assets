@@ -6,6 +6,7 @@ from pathlib import Path
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
+from isaaclab.utils import replace
 from isaaclab_physx.sim.schemas import PhysxArticulationCfg, PhysxRigidBodyCfg
 
 ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets"
@@ -49,3 +50,8 @@ UR5E_2F85_CFG = ArticulationCfg(
     },
 )
 """UR5e with a Robotiq 2F-85 welded to the flange (PhysX)."""
+
+UR5E_2F85_TSF85_CFG = replace(
+    UR5E_2F85_CFG, spawn=replace(UR5E_2F85_CFG.spawn, usd_path=str(ASSETS_DIR / "ur5e_2F-85_tsf85.usda"))
+)
+"""UR5e with a Robotiq 2F-85 on TSF-85 tactile fingertips (EffectiveResponse sensor model)."""
