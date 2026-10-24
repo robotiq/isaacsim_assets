@@ -1,5 +1,9 @@
 # Learning policies with Isaac Lab (UR5e + Robotiq 2F-85)
 
+Two tasks: a [cube lift](#cube-lift) and a [blind sphere pick with the TSF-85 tactile fingertips](#blind-sphere-pick-with-tactile-fingertips).
+
+## Cube lift
+
 Goal: teach the UR5e + 2F-85 of the [teleop demo](../teleop/README.md) to grasp a cube and lift it,
 with reinforcement learning (PPO, rsl_rl) in Isaac Lab 3.0 on PhysX. No teleoperation or ROS involved.
 
@@ -61,3 +65,42 @@ Lesson: a lift reward on cube height alone is satisfied without grasping. Gate i
 - The gripper uses the asset's default `Physx_parallel_grip` variant; the teleop's finger tuning is not carried over.
 - "Held" is a distance and closure proxy; a contact sensor on the pads would be stricter.
 - Newton backend and the 2F-140 are follow-ups.
+
+
+## Blind sphere pick with tactile fingertips
+
+`Robotiq-Tactile-Sphere-Pick-UR5e-2F85`: the 2F-85 on `Tactile_TSF85` fingertips (`SensorSim=EffectiveResponse`) has to
+pick one of ten 4 cm spheres out of an open box **without knowing where they are**: get the fingertips into the box,
+move until the pads feel a sphere, grasp it, judge the grasp, lift it out.
+
+| What | How |
+|---|---|
+| Scene | UR5e on a table, 36 x 36 cm box (10 cm deep), 10 spheres (4 cm, 30 g) spread at random over the floor. Sphere 0 is always in the zone the tool tip can reach (the gripper base and the open fingers cannot get within ~5-8 cm of the walls), so about half of the spheres are out of reach. The tool tip starts at a random point above and around the box. |
+| Actions | Tool-tip motion (relative IK, 3 translations; the three rotation dims have scale 0: the tool stays pointing down) and a continuous gripper target. |
+| Actor sees | Joint state, tool-tip position in the box frame, gripper, **two 7 x 4 taxel force maps** (3 steps of history). No sphere positions, no camera. |
+| Critic sees | Also the sphere positions and the phase flags (asymmetric PPO). |
+| Tactile | Isaac Lab's `ContactSensor` on each pad, filtered on the spheres and on the box parts: the force of each object, spread by a Gaussian around its average contact point onto the TSF-85 taxel grid (layout from the USD markers, `taxels.py`). The contact point lands within ~3 mm of the right taxel; two pads squeezing a sphere read a symmetric ~11 N. |
+| Phases | Rewarded in order and gated: enter the box, sweep and touch, grasp (both pads press a sphere, gripper partly closed; balance of the two forces), stable grasp (8 steps), lift; success = the held sphere stays above the rim + 4 cm, over the box, for 1 s. |
+
+Train in chunks, with an evaluation and a single-env video after each (the training holds the GPU lock):
+
+```bash
+grippers/demo/rl/scripts/train_in_chunks.sh my_run 400 12 2048 [first_checkpoint]
+# <run>/eval.txt: per-phase statistics on 64 envs;  <run>/eval_video/: env 0 of the exported policy
+```
+
+Scripted checks of the pieces (they drive the real controller with the sphere's true position, not a policy):
+`scripts/probe_tactile.py`, `probe_contact.py`, `probe_grasp.py`; `eval_tactile.py --ablate_tactile` zeroes the tactile
+observations to show whether the policy needs to feel.
+
+### Lessons (what went wrong on the way)
+
+- **Hovering under the finish line.** With a dense per-step lift reward and a termination on success, the policy parked
+  the sphere 6 mm below the success height: finishing ended the episode and forfeited the reward it was collecting.
+  Fix: no termination on success, pay "held out of the box" per step, keep the dense reward rising past the threshold.
+- **Weak early shaping.** One run never found a grasp in 400 iterations; larger approach / enter / sweep / touch weights fixed it.
+- **Static colliders cannot be contact-filter targets** (the filtered force reads 0 while the unfiltered one does not):
+  the box parts are kinematic rigid bodies.
+- **Easy version first.** With a fixed start and the spheres in the reachable zone the policy never searches: it
+  closes on whatever is under it. The random start and the spread-out spheres make it search.
+- GUI training is more than twice as slow as headless here, so watch the per-chunk videos instead.
