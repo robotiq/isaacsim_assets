@@ -1,6 +1,7 @@
 """Record a clip of a task's scene (zero actions): the robot at its start pose, the spheres settling in the box.
 
-    uv run python <this file> --num_envs 1 --steps 90 --eye 1.15 -0.75 0.75 --lookat 0.5 0 0.1 --out clip_dir
+    uv run python <this file> --num_envs 1 --viz kit --hold                      # look at it in Isaac Sim
+    uv run python <this file> --num_envs 1 --steps 90 --out clip_dir             # record a clip
 """
 
 import argparse
@@ -16,7 +17,8 @@ parser.add_argument("--task", default="Robotiq-Tactile-Sphere-Pick-UR5e-2F85")
 parser.add_argument("--steps", type=int, default=90)
 parser.add_argument("--eye", type=float, nargs=3, default=None)
 parser.add_argument("--lookat", type=float, nargs=3, default=None)
-parser.add_argument("--out", required=True)
+parser.add_argument("--out", default=None, help="record a clip here (omit to only show the scene)")
+parser.add_argument("--hold", action="store_true", help="keep stepping until the window is closed (use with --viz kit)")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
 
@@ -30,14 +32,17 @@ def main():
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, overrides=hydra_overrides)
     if args_cli.eye:
         env_cfg.sim.visualizer_cfgs = VisualizerCfg(eye=tuple(args_cli.eye), lookat=tuple(args_cli.lookat))
-    env_cfg.video_recorders = [VideoRecorderCfg(source="viz", output_dir=args_cli.out, video_length=args_cli.steps)]
+    if args_cli.out:
+        env_cfg.video_recorders = [VideoRecorderCfg(source="viz", output_dir=args_cli.out, video_length=args_cli.steps)]
     with launch_simulation(env_cfg, args_cli):
         env = instantiate(env_cfg)
         env.reset()
         action = torch.zeros(env.num_envs, env.action_manager.total_action_dim, device=env.device)
         action[:, -1] = 1.0  # gripper open
-        for _ in range(args_cli.steps):
+        steps = 0
+        while steps < args_cli.steps or (args_cli.hold and env.sim.is_running()):
             env.step(action)
+            steps += 1
         env.close()
 
 

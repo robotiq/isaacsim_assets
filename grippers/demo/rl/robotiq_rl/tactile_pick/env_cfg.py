@@ -2,6 +2,8 @@
 
 Scene only for now: the MDP is a placeholder (joint-position actions, joint observations, no task reward)."""
 
+import math
+
 import isaaclab.envs.mdp as mdp
 import isaaclab.sim as sim_utils
 from isaaclab.assets import AssetBaseCfg, RigidObjectCfg
@@ -20,6 +22,18 @@ from isaaclab_physx.physics import PhysxCfg
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
 
 from ..assets import UR5E_2F85_TSF85_CFG
+
+# The lift task's start pose with the tool tip 15 cm higher and the same orientation (UR5e inverse kinematics:
+# only shoulder_lift, elbow and wrist_1 change).
+START_JOINT_POS = {
+    "shoulder_pan_joint": 0.0,
+    "shoulder_lift_joint": math.radians(-83.41),
+    "elbow_joint": math.radians(96.17),
+    "wrist_1_joint": math.radians(-112.26),
+    "wrist_2_joint": math.radians(-94.5),
+    "wrist_3_joint": math.radians(-34.0),
+    "finger_joint": 0.0,
+}
 
 NUM_SPHERES = 10
 SPHERE_RADIUS = 0.02  # m: 4 cm balls, well inside the 2F-85's 85 mm stroke
@@ -77,7 +91,11 @@ def _sphere(i: int) -> RigidObjectCfg:
 
 @configclass
 class TactilePickSceneCfg(InteractiveSceneCfg):
-    robot = replace(UR5E_2F85_TSF85_CFG, prim_path="{ENV_REGEX_NS}/Robot")
+    robot = replace(
+        UR5E_2F85_TSF85_CFG,
+        prim_path="{ENV_REGEX_NS}/Robot",
+        init_state=replace(UR5E_2F85_TSF85_CFG.init_state, joint_pos=START_JOINT_POS),
+    )
 
     table = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Table",

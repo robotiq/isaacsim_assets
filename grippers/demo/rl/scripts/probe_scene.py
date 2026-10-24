@@ -28,7 +28,7 @@ def main():
         env = instantiate(env_cfg)
         env.reset()
         robot = env.scene["robot"]
-        cube = env.scene["object"]
+        cube = env.scene["object"] if "object" in env.scene.keys() else env.scene["sphere_0"]  # the object to measure against
         print("ROOT", robot.data.root_pos_w.torch[0].tolist(), "ENV_ORIGIN", env.scene.env_origins[0].tolist())
         print("BODIES", robot.body_names)
         print("JOINTS", robot.joint_names)
