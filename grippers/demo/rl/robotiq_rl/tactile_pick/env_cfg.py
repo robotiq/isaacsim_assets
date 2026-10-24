@@ -17,6 +17,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg
 from isaaclab.utils import configclass, replace
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+from isaaclab.utils.noise import GaussianNoiseCfg as Gnoise
 from isaaclab.visualizers import VisualizerCfg
 from isaaclab_physx.physics import PhysxCfg
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
@@ -219,13 +220,15 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """What the robot can feel: proprioception, the gripper opening and the two tactile maps."""
 
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel, scale=0.1)
-        tcp = ObsTerm(func=tp.tcp_in_box_frame, params={"cfg": TASK})
-        tactile = ObsTerm(func=tp.tactile_maps)
+        # noise: a simulated pad is cleaner than a real one, and the policy must not lean on exact values
+        joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Gnoise(mean=0.0, std=0.003))
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel, scale=0.1, noise=Gnoise(mean=0.0, std=0.002))
+        tcp = ObsTerm(func=tp.tcp_in_box_frame, params={"cfg": TASK}, noise=Gnoise(mean=0.0, std=0.002))
+        tactile = ObsTerm(func=tp.tactile_maps, noise=Gnoise(mean=0.0, std=0.03))  # on log(1 + N): ~3 % of a 1 N touch
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):
+            self.enable_corruption = True
             self.concatenate_terms = True
             self.history_length = 3
 
@@ -263,6 +266,23 @@ class EventCfg:
         },
     )
     reset_state = EventTerm(func=tp.reset_task_state, mode="reset", params={"cfg": TASK})
+
+    def __post_init__(self):
+        # sphere mass 15 .. 60 g (per sphere and env, once at start-up)
+        for i in range(NUM_SPHERES):
+            setattr(
+                self,
+                f"mass_sphere_{i}",
+                EventTerm(
+                    func=mdp.randomize_rigid_body_mass,
+                    mode="startup",
+                    params={
+                        "asset_cfg": SceneEntityCfg(f"sphere_{i}"),
+                        "mass_distribution_params": (0.5, 2.0),
+                        "operation": "scale",
+                    },
+                ),
+            )
 
 
 @configclass
