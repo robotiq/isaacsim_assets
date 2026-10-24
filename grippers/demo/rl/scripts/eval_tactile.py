@@ -15,6 +15,7 @@ parser.add_argument("--steps", type=int, default=600)
 parser.add_argument("--policy", required=True)
 parser.add_argument("--task", default="Robotiq-Tactile-Sphere-Pick-UR5e-2F85")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
+parser.add_argument("--ablate_tactile", action="store_true", help="zero the tactile observations: does the policy need to feel?")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
 
@@ -38,12 +39,19 @@ def main():
         dev = env.device
         ever = {k: torch.zeros(n, dtype=torch.bool, device=dev) for k in ("inside", "touch", "held", "stable", "out")}
         frac = {k: torch.zeros(n, device=dev) for k in ("inside", "touch", "held", "stable")}
+        tact_nonzero = 0.0
         successes = torch.zeros(n, device=dev)  # success events per env (the env resets on success, so count them)
         max_z = torch.zeros(n, device=dev)
         first = {k: torch.full((n,), -1, device=dev, dtype=torch.long) for k in ever}
         for t in range(args_cli.steps):
             with torch.inference_mode():
-                obs, *_ = env.step(policy(obs["policy"]))
+                o = obs["policy"]
+                tact_nonzero += (o[:, 81:249].abs().sum(-1) > 0).float().mean().item()
+                if args_cli.ablate_tactile:
+                    # policy obs = [joint_pos 12, joint_vel 12, tcp 3, tactile 56, last action 7], each with 3 steps of history
+                    o = o.clone()
+                    o[:, 81:249] = 0.0
+                obs, *_ = env.step(policy(o))
             s = tp.get_state(env, TASK)
             successes += s.success
             inside = (s.enter > 0.0) & (s.tcp[:, 2] < RIM_Z)
@@ -66,6 +74,7 @@ def main():
             print(f"RESULT {k:7s}: ever {ever[k].float().mean().item():.2f}  first at step {f.median().item() if len(f) else float('nan'):.0f}"
                   + (f"  share of steps {frac[k].mean().item() / args_cli.steps:.2f}" if k in frac else ""))
         print(f"RESULT successes (sphere held out of the box for 1 s): {successes.sum().item():.0f} in {n} envs x {args_cli.steps} steps; envs with one: {(successes > 0).float().mean().item():.2f}")
+        print(f"RESULT obs layout check: the tactile slice [81:249] is non-zero in {tact_nonzero / args_cli.steps:.2f} of the steps (should be near the touch share)")
         print(f"RESULT coverage cells visited (mean of 64): {tp.get_state(env, TASK).visited.float().sum(-1).mean().item():.1f}")
         env.close()
 
