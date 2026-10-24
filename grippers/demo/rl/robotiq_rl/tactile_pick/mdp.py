@@ -170,11 +170,12 @@ class TaskState:
         self.held_count = torch.zeros(n, device=dev)
         self.was_stable = torch.zeros(n, dtype=torch.bool, device=dev)
         self.success_given = torch.zeros(n, dtype=torch.bool, device=dev)
+        self.out_count = torch.zeros(n, device=dev)
         self.step = -1
         # derived each step
         zeros = torch.zeros(n, device=dev)
         self.new_cells = self.touch = self.held = self.stable = self.success = self.dropped = zeros
-        self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = zeros
+        self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = self.out_now = zeros
         self.tcp = torch.zeros(n, 3, device=dev)
         self.sphere_pos = torch.zeros(n, NUM_SPHERES, 3, device=dev)
 
@@ -183,6 +184,7 @@ class TaskState:
         self.held_count[env_ids] = 0
         self.was_stable[env_ids] = False
         self.success_given[env_ids] = False
+        self.out_count[env_ids] = 0
 
     def update(self):
         env, c = self.env, self.cfg
@@ -234,9 +236,15 @@ class TaskState:
         # --- phase 4: lift
         lift_h = c["rim_z"] + c["out_margin"] - c["rest_z"]
         self.lift_progress = stable.float() * ((near_z - c["rest_z"]) / lift_h).clamp(0, 1)
+        # Success = the held sphere stays out of the box for ``success_steps`` in a row. Being out pays more per step than
+        # any hovering below the threshold (r_out), otherwise the policy parks just under it: success ends the episode and
+        # would forfeit the rest of the lift reward.
         out = stable & (near_z > c["rim_z"] + c["out_margin"])
-        self.success = (out & ~self.success_given).float()
-        self.success_given |= out
+        self.out_now = out.float()
+        self.out_count = torch.where(out, self.out_count + 1, torch.zeros_like(self.out_count))
+        done = self.out_count >= c["success_steps"]
+        self.success = (done & ~self.success_given).float()
+        self.success_given |= done
         self.step = env.common_step_counter
 
 
@@ -285,6 +293,10 @@ def r_stable(env, cfg):
 
 def r_lift(env, cfg):
     return get_state(env, cfg).lift_progress
+
+
+def r_out(env, cfg):
+    return get_state(env, cfg).out_now
 
 
 def r_success(env, cfg):

@@ -177,6 +177,7 @@ TASK = {
     "touch_n": 0.2,  # N: pad force that counts as a touch
     "hold_dist": 0.03,  # m: sphere centre within this of the TCP, with both pads pressing
     "min_closure": 0.25,
+    "success_steps": 30,  # the sphere held out of the box this many policy steps in a row (1 s) = success
     "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
 }
 
@@ -272,6 +273,7 @@ class RewardsCfg:
     stable = RewTerm(func=tp.r_stable, weight=1.0, params={"cfg": TASK})
     # phase 4: lift out of the box
     lift = RewTerm(func=tp.r_lift, weight=5.0, params={"cfg": TASK})
+    out = RewTerm(func=tp.r_out, weight=10.0, params={"cfg": TASK})  # per step: pays more than any hovering below the rim
     success = RewTerm(func=tp.r_success, weight=100.0, params={"cfg": TASK})
     drop = RewTerm(func=tp.r_drop, weight=-2.0, params={"cfg": TASK})
     # regularisation
