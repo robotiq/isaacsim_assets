@@ -117,19 +117,29 @@ def reset_spheres_in_box(
     min_gap: float = 0.046,
     candidates: int = 40,
     zone_half_xy: tuple[float, float] | None = None,
+    num_active_range: tuple[int, int] | None = None,
+    p_zone_only: float = 0.0,
+    park_xy: tuple[float, float] = (0.3, 0.95),
 ):
     """Put the spheres at random, non-overlapping spots on the box floor (dart throwing, per env).
 
     ``half_xy`` is the area the spheres are spread over (the whole floor). With ``zone_half_xy`` (the area the tool tip
-    can reach) sphere 0 is placed inside it first, so there is always at least one sphere to pick; the others go
-    anywhere, so on average about half of them are out of reach and the policy has to search for the reachable ones."""
+    can reach) sphere 0 is placed inside it first, so there is always at least one sphere to pick. A share
+    ``p_zone_only`` of the envs puts all spheres in that zone: every sphere can be picked, as when emptying the box.
+    With ``num_active_range`` only a random number of spheres (sphere 0 first) stays in the box, the others are
+    parked on the ground beside the table: the policy meets boxes with few spheres left, as when emptying one."""
     if isinstance(env_ids, slice):
         env_ids = torch.arange(env.num_envs, device=env.device)[env_ids]
     n = len(env_ids)
-    placed = torch.zeros(n, NUM_SPHERES, 2, device=env.device)
+    dev = env.device
+    placed = torch.zeros(n, NUM_SPHERES, 2, device=dev)
+    zone = torch.tensor(zone_half_xy if zone_half_xy is not None else half_xy, device=dev)
+    whole = torch.tensor(half_xy, device=dev)
+    zone_only = torch.rand(n, device=dev) < p_zone_only
+    half_env = torch.where(zone_only[:, None], zone, whole)  # (n, 2)
     for i in range(NUM_SPHERES):
-        half = torch.tensor(zone_half_xy if (i == 0 and zone_half_xy is not None) else half_xy, device=env.device)
-        cand = (torch.rand(n, candidates, 2, device=env.device) * 2 - 1) * half
+        half = zone[None] if (i == 0 and zone_half_xy is not None) else half_env
+        cand = (torch.rand(n, candidates, 2, device=dev) * 2 - 1) * half[:, None, :]
         if i == 0:
             placed[:, 0] = cand[:, 0]
             continue
@@ -138,17 +148,26 @@ def reset_spheres_in_box(
         pick = torch.where(ok.any(-1), ok.float().argmax(-1), dist.argmax(-1))
         placed[:, i] = cand[torch.arange(n), pick]
     origins = env.scene.env_origins[env_ids]
-    quat = torch.tensor([0.0, 0.0, 0.0, 1.0], device=env.device).repeat(n, 1)
-    zero = torch.zeros(n, 6, device=env.device)
+    quat = torch.tensor([0.0, 0.0, 0.0, 1.0], device=dev).repeat(n, 1)
+    zero = torch.zeros(n, 6, device=dev)
+    if num_active_range is not None:
+        k = torch.randint(num_active_range[0], num_active_range[1] + 1, (n,), device=dev)
+    else:
+        k = torch.full((n,), NUM_SPHERES, device=dev)
     for i in range(NUM_SPHERES):
-        pos = torch.stack(
+        in_box = torch.stack(
             [
                 origins[:, 0] + box_center[0] + placed[:, i, 0],
                 origins[:, 1] + box_center[1] + placed[:, i, 1],
-                origins[:, 2] + floor_z + radius + 0.002 + torch.zeros(n, device=env.device),
+                origins[:, 2] + floor_z + radius + 0.002 + torch.zeros(n, device=dev),
             ],
             dim=-1,
         )
+        parked = torch.stack(
+            [origins[:, 0] + park_xy[0] + 0.05 * i, origins[:, 1] + park_xy[1], origins[:, 2] + 0.3 + torch.zeros(n, device=dev)],
+            dim=-1,
+        )
+        pos = torch.where((i < k)[:, None], in_box, parked)
         sphere = env.scene[f"sphere_{i}"]
         sphere.write_root_pose_to_sim_index(root_pose=torch.cat([pos, quat], dim=-1), env_ids=env_ids)
         sphere.write_root_velocity_to_sim_index(root_velocity=zero, env_ids=env_ids)
@@ -228,6 +247,10 @@ class TaskState:
         self.was_stable = torch.zeros(n, dtype=torch.bool, device=dev)
         self.success_given = torch.zeros(n, dtype=torch.bool, device=dev)
         self.out_count = torch.zeros(n, device=dev)
+        self.prev_in_zone = torch.zeros(n, NUM_SPHERES, dtype=torch.bool, device=dev)
+        self.fresh = torch.ones(n, dtype=torch.bool, device=dev)
+        self.disturb = torch.zeros(n, device=dev)
+        self.speed_excess = torch.zeros(n, device=dev)
         self.step = -1
         # derived each step
         zeros = torch.zeros(n, device=dev)
@@ -242,6 +265,7 @@ class TaskState:
         self.was_stable[env_ids] = False
         self.success_given[env_ids] = False
         self.out_count[env_ids] = 0
+        self.fresh[env_ids] = True
 
     def update(self):
         env, c = self.env, self.cfg
@@ -290,6 +314,19 @@ class TaskState:
         self.dropped = (self.was_stable & ~held).float()
         self.was_stable = stable | (self.was_stable & held)
         self.stable = stable.float()
+        # --- gentleness: spheres knocked out of the reachable zone (towards the walls), and fast-moving spheres
+        on_floor = (self.sphere_pos[..., 2] > 0.0) & (self.sphere_pos[..., 2] < c["rim_z"] + 0.02)  # parked ones are lower
+        rel_s = self.sphere_pos[..., :2] - torch.tensor(c["box_center"], device=env.device)
+        in_zone = (rel_s.abs() < half).all(-1) & on_floor
+        out_zone = (rel_s.abs() < c["box_inner_half"]).all(-1) & on_floor & ~in_zone
+        is_held = held[:, None] & (torch.arange(NUM_SPHERES, device=env.device)[None] == near[:, None])
+        event = self.prev_in_zone & out_zone & ~is_held & ~self.fresh[:, None]
+        self.disturb = event.sum(-1).float()
+        self.prev_in_zone = in_zone
+        self.fresh[:] = False
+        vel = torch.stack([env.scene[f"sphere_{i}"].data.root_lin_vel_w.torch for i in range(NUM_SPHERES)], dim=1)
+        speed = torch.linalg.norm(vel, dim=-1)
+        self.speed_excess = ((speed - c["gentle_speed"]).clamp(min=0) * (on_floor & ~is_held)).sum(-1)
         # --- phase 4: lift
         # the dense lift reward keeps rising ``lift_extra`` past the success height: no plateau to hover on
         lift_h = c["rim_z"] + c["out_margin"] + c["lift_extra"] - c["rest_z"]
@@ -358,6 +395,14 @@ def r_lift(env, cfg):
 
 def r_out(env, cfg):
     return get_state(env, cfg).out_now
+
+
+def r_disturb(env, cfg):
+    return get_state(env, cfg).disturb
+
+
+def r_speed(env, cfg):
+    return get_state(env, cfg).speed_excess
 
 
 def r_success(env, cfg):

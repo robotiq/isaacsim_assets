@@ -5,6 +5,9 @@
 #
 #   train_in_chunks.sh NAME CHUNK_ITERS CHUNKS [NUM_ENVS] [FIRST_CHECKPOINT]
 #
+# With PICK_ALL=1 each chunk is also scored by scripts/pick_all.py (the policy empties a box, 16 envs): the number of
+# spheres picked and left, in <run>/pick_all.txt.
+#
 # Runs and results: $ISAACLAB/logs/rsl_rl/tactile_sphere_pick/<date>_NAME_c<k>/{eval.txt,eval_video/}
 # Environment: ISAACLAB (default ~/robotiq/devel/IsaacLab), ISAAC_LOCK (default ~/robotiq/devel/isaac-lock/isaac_lock.sh).
 set -u
@@ -33,6 +36,10 @@ for k in $(seq 1 "$CHUNKS"); do
   [ -f "$run/exported/policy.pt" ] || { echo "chunk $k: policy export failed"; continue; }
   "$LOCK" run --wait --label "tactile-$NAME-eval-c$k" -- $PY "$HERE/eval_tactile.py" --policy "$run/exported/policy.pt" --num_envs 64 > "$run/eval_full.txt" 2>&1
   grep "^RESULT" "$run/eval_full.txt" | tee "$run/eval.txt"
+  if [ "${PICK_ALL:-0}" = 1 ]; then
+    "$LOCK" run --wait --label "tactile-$NAME-pickall-c$k" -- $PY "$HERE/pick_all.py" --policy "$run/exported/policy.pt" --num_envs 16 --steps 6000 --layout reachable > "$run/pick_all_full.txt" 2>&1
+    grep -E "^RESULT" "$run/pick_all_full.txt" | tee "$run/pick_all.txt"
+  fi
   "$LOCK" run --wait --label "tactile-$NAME-video-c$k" -- $PY "$HERE/eval_tactile.py" --policy "$run/exported/policy.pt" --num_envs 1 --video "$run/eval_video" > "$run/eval_video.txt" 2>&1
 done
 echo "[$(date +%T)] all chunks done"
