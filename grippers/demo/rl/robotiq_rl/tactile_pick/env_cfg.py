@@ -174,7 +174,7 @@ TASK = {
     "rim_z": RIM_Z,
     "search_z": BOX_FLOOR + SPHERE_RADIUS + 0.012,  # tool tip height while searching: pads clear of the floor (tips 19 mm below)
     "rest_z": BOX_FLOOR + SPHERE_RADIUS,
-    "out_margin": 0.04,  # success: the sphere centre this far above the rim
+    "out_margin": 0.07,  # success: the sphere centre this far above the rim (the supervisor waits for the tool tip 6 cm above it)
     "touch_n": 0.2,  # N: pad force that counts as a touch
     "hold_dist": 0.03,  # m: sphere centre within this of the TCP, with both pads pressing
     "min_closure": 0.25,
@@ -184,6 +184,8 @@ TASK = {
     "home_ranges": {"x_range": (0.34, 0.68), "y_range": (-0.26, 0.26), "z_range": (0.17, 0.33)},
     "gentle_speed": 0.15,  # m/s: spheres moving faster than this (other than the one held) are penalised
     "out_band": 1.0,  # m: the sphere counts as out at any height above the success height (a pick completes after 10 steps)
+    "gamma": 0.995,
+    "shaping_weights": {"approach": 0.2, "enter": 1.0, "touch": 1.0, "grasp": 1.0, "stable": 1.0, "lift": 5.0},
     "lift_extra": 0.06,  # m: the lift reward reaches its maximum this far above the success height
     "success_steps": 10,  # steps with the held sphere out of the box = a pick: what the supervisor (scripts/pick_all.py) waits for
     "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
@@ -294,17 +296,11 @@ class EventCfg:
 
 @configclass
 class RewardsCfg:
-    # phase 1 / 2: get in and sweep the floor, feel a sphere
-    approach = RewTerm(func=tp.r_approach, weight=0.2, params={"cfg": TASK})
-    enter = RewTerm(func=tp.r_enter, weight=1.0, params={"cfg": TASK})
-    coverage = RewTerm(func=tp.r_coverage, weight=1.0, params={"cfg": TASK})
-    touch = RewTerm(func=tp.r_touch, weight=1.0, params={"cfg": TASK})
-    # phase 3: grasp, judged on both pads and their balance
-    grasp = RewTerm(func=tp.r_grasp, weight=1.0, params={"cfg": TASK})
-    stable = RewTerm(func=tp.r_stable, weight=1.0, params={"cfg": TASK})
-    # phase 4: lift out of the box
-    lift = RewTerm(func=tp.r_lift, weight=5.0, params={"cfg": TASK})
-    out = RewTerm(func=tp.r_out, weight=10.0, params={"cfg": TASK})  # per step: pays more than any hovering below the rim
+    # Progress through the phases (approach, enter, touch, grasp, stable, lift) as ONE potential-based term: it pays for
+    # getting further but not for staying put. Per-step rewards for being in a phase were farmed by hovering just under
+    # the success height: finishing a pick resets the hold, and 5 per step beats 100 per pick cycle.
+    shaping = RewTerm(func=tp.r_shaping, weight=1.0, params={"cfg": TASK})
+    coverage = RewTerm(func=tp.r_coverage, weight=1.0, params={"cfg": TASK})  # new floor cells swept (an event)
     success = RewTerm(func=tp.r_success, weight=100.0, params={"cfg": TASK})  # per sphere picked
     drop = RewTerm(func=tp.r_drop, weight=-2.0, params={"cfg": TASK})
     # gentleness: knocking a sphere out of the reachable zone (to a wall, where it cannot be picked) costs more than the

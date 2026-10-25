@@ -250,6 +250,8 @@ class TaskState:
         self.prev_in_zone = torch.zeros(n, NUM_SPHERES, dtype=torch.bool, device=dev)
         self.fresh = torch.ones(n, dtype=torch.bool, device=dev)
         self.n_picked = torch.zeros(n, device=dev)
+        self.phi_prev = torch.zeros(n, device=dev)
+        self.shaping = torch.zeros(n, device=dev)
         self.disturb = torch.zeros(n, device=dev)
         self.speed_excess = torch.zeros(n, device=dev)
         self.step = -1
@@ -305,6 +307,7 @@ class TaskState:
 
     def update(self):
         env, c = self.env, self.cfg
+        was_fresh = self.fresh.clone()
         robot = env.scene["robot"]
         origins = env.scene.env_origins
         link_pos = robot.data.body_pos_w.torch[:, self.body_id]
@@ -385,6 +388,19 @@ class TaskState:
         done = self.out_count >= c["success_steps"]
         self.success = (done & ~self.success_given).float()
         self.success_given |= done
+        # Potential-based shaping gamma * phi(s') - phi(s): rewards progress through the phases (approach, enter, touch, grasp,
+        # lift) but nothing for staying in one, so it cannot be farmed by hovering and picks (events) are what pays
+        w = c["shaping_weights"]
+        phi = (
+            w["approach"] * self.approach
+            + w["enter"] * self.enter
+            + w["touch"] * self.touch
+            + w["grasp"] * self.held * (0.5 + 0.5 * self.sym)
+            + w["stable"] * self.stable
+            + w["lift"] * self.lift_progress
+        )
+        self.shaping = torch.where(was_fresh, torch.zeros_like(phi), c["gamma"] * phi - self.phi_prev)
+        self.phi_prev = phi
         self.step = env.common_step_counter
         if c.get("home_ranges") is not None and bool(self.success.any()):
             self.complete_pick(self.success.bool(), near)
@@ -410,6 +426,10 @@ def reset_task_state(env: ManagerBasedRLEnv, env_ids: torch.Tensor, cfg: dict):
 
 def r_enter(env, cfg):
     return get_state(env, cfg).enter
+
+
+def r_shaping(env, cfg):
+    return get_state(env, cfg).shaping
 
 
 def r_approach(env, cfg):
