@@ -66,7 +66,8 @@ def main():
                 print(
                     f"t={t:3d} env0 tcp {[round(v, 3) for v in s.tcp[0].tolist()]} F_sph {[round(v, 1) for v in fs[0].sum(-1).tolist()]} "
                     f"touch/held/stable/lift {[round(float(x[0]), 2) for x in (s.touch, s.held, s.stable, s.lift_progress)]} "
-                    f"cells {int(s.visited[0].sum())}"
+                    f"cells {int(s.visited[0].sum())} out_now {float(s.out_now[0]):.0f} out_count {float(s.out_count[0]):.0f} "
+                    f"picked {float(s.n_picked[0]):.0f}"
                 )
         print(f"RESULT envs={n} steps={args_cli.steps}")
         for k in ("inside", "touch", "held", "stable", "out"):
