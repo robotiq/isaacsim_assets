@@ -28,7 +28,8 @@ for k in $(seq 1 "$CHUNKS"); do
   "$LOCK" run --wait --label "tactile-$NAME-train-c$k" -- $PY scripts/reinforcement_learning/train.py "${args[@]}" > "$HOME/.isaaclab/logs/tp-$NAME-c$k.log" 2>&1
   run=$(ls -td $LOGS/*_"${NAME}_c$k" 2>/dev/null | head -1)
   [ -z "$run" ] && { echo "chunk $k: no run directory, stopping"; exit 1; }
-  CKPT=$(ls -v "$run"/model_*.pt | tail -1)
+  CKPT=$(ls -v "$run"/model_*.pt 2>/dev/null | tail -1)
+  [ -z "$CKPT" ] && { echo "chunk $k: training left no checkpoint (see the log), stopping"; exit 1; }
   echo "[$(date +%T)] chunk $k done: $CKPT"
   grep -E "Mean reward|Mean episode length|Episode_Reward/(enter|coverage|touch|grasp|stable|lift|success)" "$HOME/.isaaclab/logs/tp-$NAME-c$k.log" | tail -10 | sed 's/^ *//' | tee "$run/train_tail.txt"
   # export the policy (play.py writes it at start, then loops: stop it after the export)

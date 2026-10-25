@@ -309,7 +309,7 @@ class RewardsCfg:
     speed = RewTerm(func=tp.r_speed, weight=-1.0, params={"cfg": TASK})
     # regularisation
     wall = RewTerm(func=tp.r_wall, weight=-0.005, params={"cfg": TASK})
-    action_rate = RewTerm(func=tp.action_rate_used, weight=-0.05, params={"dims": (0, 1, 2, 6)})
+    action_rate = RewTerm(func=tp.action_rate_used, weight=-0.002, params={"dims": (0, 1, 2, 6)})
     joint_vel = RewTerm(func=mdp.joint_vel_l2, weight=-1e-3, params={"asset_cfg": SceneEntityCfg("robot")})
 
 
