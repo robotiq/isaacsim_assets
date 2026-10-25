@@ -183,8 +183,9 @@ TASK = {
     # after a successful pick the sphere is parked outside and the arm is put at a random point like this, gripper open
     "home_ranges": {"x_range": (0.34, 0.68), "y_range": (-0.26, 0.26), "z_range": (0.17, 0.33)},
     "gentle_speed": 0.15,  # m/s: spheres moving faster than this (other than the one held) are penalised
+    "out_band": 0.12,  # m: the sphere counts as out only up to this far above the success height
     "lift_extra": 0.06,  # m: the lift reward reaches its maximum this far above the success height
-    "success_steps": 30,  # the sphere held out of the box this many policy steps in a row (1 s) = success
+    "success_steps": 20,  # the sphere held out of the box this many policy steps in a row (1 s) = success
     "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
 }
 

@@ -256,7 +256,7 @@ class TaskState:
         # derived each step
         zeros = torch.zeros(n, device=dev)
         self.new_cells = self.touch = self.held = self.stable = self.success = self.dropped = zeros
-        self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = self.out_now = zeros
+        self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = self.out_now = self.out_centred = zeros
         self.tcp = torch.zeros(n, 3, device=dev)
         self.sphere_pos = torch.zeros(n, NUM_SPHERES, 3, device=dev)
 
@@ -370,11 +370,14 @@ class TaskState:
         # Success = the held sphere stays out of the box for ``success_steps`` in a row. Being out pays more per step than
         # any hovering below the threshold (r_out), otherwise the policy parks just under it: success ends the episode and
         # would forfeit the rest of the lift reward.
-        out = stable & (near_z > c["rim_z"] + c["out_margin"])
+        # "out" is a height band above the rim (no reward for flying off) and, if configured, over the box
+        near_xy = self.sphere_pos[torch.arange(env.num_envs, device=env.device), near, :2]
+        out = stable & (near_z > c["rim_z"] + c["out_margin"]) & (near_z < c["rim_z"] + c["out_margin"] + c["out_band"])
+        off_centre = torch.linalg.norm(near_xy - torch.tensor(c["box_center"], device=env.device), dim=-1)
         if c.get("out_half_xy") is not None:  # held above the box, not carried away
-            near_xy = self.sphere_pos[torch.arange(env.num_envs, device=env.device), near, :2]
             out &= ((near_xy - torch.tensor(c["box_center"], device=env.device)).abs() < torch.tensor(c["out_half_xy"], device=env.device)).all(-1)
         self.out_now = out.float()
+        self.out_centred = out.float() * (0.5 + 0.5 * (1 - torch.tanh(off_centre / 0.15)))  # more when over the box centre
         self.out_count = torch.where(out, self.out_count + 1, torch.zeros_like(self.out_count))
         done = self.out_count >= c["success_steps"]
         self.success = (done & ~self.success_given).float()
@@ -432,7 +435,7 @@ def r_lift(env, cfg):
 
 
 def r_out(env, cfg):
-    return get_state(env, cfg).out_now
+    return get_state(env, cfg).out_centred
 
 
 def r_disturb(env, cfg):
