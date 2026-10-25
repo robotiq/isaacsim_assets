@@ -366,10 +366,11 @@ class TaskState:
         # --- phase 4: lift
         # the dense lift reward keeps rising ``lift_extra`` past the success height: no plateau to hover on
         lift_h = c["rim_z"] + c["out_margin"] + c["lift_extra"] - c["rest_z"]
-        self.lift_progress = stable.float() * ((near_z - c["rest_z"]) / lift_h).clamp(0, 1)
-        # Success = the held sphere stays out of the box for ``success_steps`` in a row. Being out pays more per step than
-        # any hovering below the threshold (r_out), otherwise the policy parks just under it: success ends the episode and
-        # would forfeit the rest of the lift reward.
+        # rises to its maximum at the success height + lift_extra, stays there across the "out" band and falls off above
+        # it: flying away is not rewarded, and there is a gradient back down into the band
+        top = c["rim_z"] + c["out_margin"] + c["out_band"]
+        too_high = ((near_z - top) / 0.15).clamp(0, 1)
+        self.lift_progress = stable.float() * ((near_z - c["rest_z"]) / lift_h).clamp(0, 1) * (1 - too_high)
         # "out" is a height band above the rim (no reward for flying off) and, if configured, over the box
         near_xy = self.sphere_pos[torch.arange(env.num_envs, device=env.device), near, :2]
         out = stable & (near_z > c["rim_z"] + c["out_margin"]) & (near_z < c["rim_z"] + c["out_margin"] + c["out_band"])
