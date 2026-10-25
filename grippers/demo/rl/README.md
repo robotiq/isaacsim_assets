@@ -115,6 +115,26 @@ Not done: spheres of different sizes (the spawner makes one size), friction rand
 mode is `max`, so a lower sphere friction changes nothing), a real-pad calibration of the simulated taxels (the
 sensor model is uncalibrated, see `Robotiq_2F_85/tactile/README.md`), and a check on the Newton backend.
 
+### Emptying the box (`scripts/pick_all.py`)
+
+A supervisor around the trained policy: the policy picks, and when the pads sense a held sphere above the rim (pad force
+and tool-tip height only, no privileged state) a scripted routine carries it to the table beside the box, opens the
+gripper and hands control back to the policy for the next sphere.
+
+Result with the `tp8` policy, 16 envs, 10 spheres: **2 to 8 spheres picked per run, about 4 on average**; it stops
+finding more, with about 6 left in the box. Of the spheres left, almost all end up within 2-4 cm of a wall, which the
+gripper cannot reach, whether they started in the reachable zone or not (printed by the script). Two causes:
+
+- *Geometry:* the gripper base is 75 x 85 mm and sits inside the box volume at pad height (walls are 10 cm), and the open
+  fingers span ~125 mm across the jaws. A sphere against a wall, and any sphere in a corner, cannot be straddled.
+- *The policy pushes:* it was never penalised for disturbing spheres and sweeps at up to 0.3 m/s, so every touch that is
+  not a grasp shoves a sphere towards the walls. It was also trained with at least ~5 reachable spheres, so it does not
+  search thoroughly when few are left.
+
+What it would take to get all of them (not done): a penalty on sphere speed so contact is gentle, training with 1-10
+spheres, lower walls (below ~6 cm, so the base clears them), a yaw action so the jaws can run parallel to a wall, and for
+corners a bevelled or bowl-shaped floor (a corner sphere cannot be straddled by this gripper at all).
+
 ### Lessons (what went wrong on the way)
 
 - **Hovering under the finish line.** With a dense per-step lift reward and a termination on success, the policy parked
