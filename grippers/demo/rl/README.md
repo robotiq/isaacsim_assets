@@ -119,23 +119,38 @@ sensor model is uncalibrated, see `Robotiq_2F_85/tactile/README.md`), and a chec
 
 A supervisor around the trained policy: the policy picks, and when the pads sense a held sphere above the rim (pad force
 and tool-tip height only, no privileged state) a scripted routine carries it to the table beside the box, opens the
-gripper and hands control back to the policy for the next sphere.
+gripper and returns above the box before handing control back to the policy for the next sphere.
 
-Result with the `tp8` policy, 16 envs, 10 spheres: **2 to 8 spheres picked per run, about 4 on average**; it stops
-finding more, with about 6 left in the box. Of the spheres left, almost all end up within 2-4 cm of a wall, which the
-gripper cannot reach, whether they started in the reachable zone or not (printed by the script). Two causes:
+| Policy | Spheres picked of 10 (mean, min-max) | Boxes fully emptied |
+|---|---|---|
+| `tp8`, trained on single picks | 3.4 - 4.2 (2 - 8) | 0 % |
+| `tp20` (chunk 3), trained as a sequence of picks | **7.6** (4 - 10), spheres within reach, 32 envs | 9 % |
+| | **8.1** (5 - 10), spheres spread over the whole floor as in training, 16 envs | 12 % |
 
-- *Geometry:* the gripper base is 75 x 85 mm and sits inside the box volume at pad height (walls are 10 cm), and the open
-  fingers span ~125 mm across the jaws. A sphere against a wall, and any sphere in a corner, cannot be straddled.
-- *The policy pushes:* it was never penalised for disturbing spheres and sweeps at up to 0.3 m/s, so every touch that is
-  not a grasp shoves a sphere towards the walls. It was also trained with at least ~5 reachable spheres, so it does not
-  search thoroughly when few are left.
+The remaining 1-3 spheres are those the gripper cannot straddle (against a wall, in a corner: the box is unchanged, see
+the geometry above), or ones shoved there. Almost none are left inside the reachable zone.
 
-What it would take to get all of them (not done): a penalty on sphere speed so contact is gentle, training with 1-10
-spheres, lower walls (below ~6 cm, so the base clears them), a yaw action so the jaws can run parallel to a wall, and for
-corners a bevelled or bowl-shaped floor (a corner sphere cannot be straddled by this gripper at all).
+What made the difference was training the actual task: a successful lift parks the sphere outside, puts the arm back
+at a random start with the gripper open and the episode goes on (90 s), so shoving the other spheres towards the walls
+costs the picks that follow. The reward is one potential-based shaping term, +100 per sphere picked, -15 for each sphere
+knocked out of the reachable zone and a small cost for fast-moving spheres. The pick-complete test in training is the one
+the supervisor uses (held out of the box, above the rim, 10 steps).
 
 ### Lessons (what went wrong on the way)
+
+- **Reward tuning for the multi-pick task cost most of a night.** Each of these was a real failure: hovering under the
+  success height (twice, in different forms); a "hold in a band over the box" that the policy flew past, then dithered
+  around the edge of; a dense per-step shaping that earned more than the 100 per pick, fixed by making the shaping
+  potential-based; a disturbance penalty of 50 per sphere that made the policy stop moving at all (15 works); an action-rate
+  penalty that had silently become 3500 per episode against 460 from picks. Look at the size of every reward term in the
+  log before trusting a run.
+- **The training score and the real routine disagree until they use the same criterion.** Scoring chunks with
+  `pick_all.py` (the supervisor itself, 16 envs) was what showed it; the training metric alone was misleading.
+- **Slowing the policy down near the floor to touch gently made it much worse** (1.1 picks): it was never trained at
+  reduced speed. Gentleness has to be trained.
+- **Jobs of one session share the Isaac lock's lease.** A second job started while the training ran and ran
+  alongside it, out of GPU memory; the chunk driver then restarted from scratch. It now stops when a chunk leaves no checkpoint.
+### Lessons from the single-pick version
 
 - **Hovering under the finish line.** With a dense per-step lift reward and a termination on success, the policy parked
   the sphere 6 mm below the success height: finishing ended the episode and forfeited the reward it was collecting.
