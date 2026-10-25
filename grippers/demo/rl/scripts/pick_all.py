@@ -24,6 +24,8 @@ parser.add_argument("--steps", type=int, default=6000, help="policy steps (30 pe
 parser.add_argument("--hold_steps", type=int, default=10)
 parser.add_argument("--give_up", type=int, default=900, help="steps without a pick before an env stops")
 parser.add_argument("--layout", choices=("reachable", "floor"), default="reachable", help="reachable: all spheres where the tool tip can go; floor: spread over the whole floor (as in training, about half out of reach)")
+parser.add_argument("--slow", type=float, default=1.0, help="scale the policy's tool-tip motion by this near the floor (gentler contact)")
+parser.add_argument("--slow_below", type=float, default=0.10, help="tool-tip height below which --slow applies")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
@@ -88,6 +90,8 @@ def main():
             with torch.inference_mode():
                 act = policy(obs["policy"]).clone()
             tcp = s.tcp
+            near_floor = (tcp[:, 2] < args_cli.slow_below)[:, None]
+            act = torch.cat([torch.where(near_floor, act[:, 0:3] * args_cli.slow, act[:, 0:3]), act[:, 3:]], dim=-1)  # gentler touch near the floor
             # --- the hand-over logic (sensor-based) and the scripted phases
             held_count = torch.where((phase == PICK) & sensed_hold, held_count + 1, torch.zeros_like(held_count))
             start_carry = (phase == PICK) & (held_count >= args_cli.hold_steps)
