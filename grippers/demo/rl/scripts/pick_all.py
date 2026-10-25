@@ -4,7 +4,7 @@
     uv run python <this file> --policy <run>/exported/policy.pt --num_envs 16               # statistics
     uv run python <this file> --policy <run>/exported/policy.pt --num_envs 1 --video dir    # record it
 
-Per env a small state machine:  PICK (the policy acts) -> CARRY -> RELEASE -> BACK (rise a little) -> PICK ...
+Per env a small state machine:  PICK (the policy acts) -> CARRY -> RELEASE -> BACK (rise) -> RETURN (above the box centre) -> PICK ...
 The hand-over from PICK to CARRY uses only what the robot can sense: both pads press on something and the tool tip is
 above the box rim for ``--hold_steps`` steps in a row. The scripted CARRY moves the tool tip above the table beside the
 box, keeping the gripper closed; RELEASE opens it. Spheres the gripper cannot reach (near the walls) stay in the box:
@@ -35,7 +35,8 @@ from isaaclab_tasks.utils import parse_env_cfg  # noqa: E402
 from robotiq_rl.tactile_pick import mdp as tp  # noqa: E402
 from robotiq_rl.tactile_pick.env_cfg import BOX_CENTER, BOX_INNER, REACH_HALF, RIM_Z, TASK  # noqa: E402
 
-PICK, CARRY, RELEASE, BACK = 0, 1, 2, 3
+PICK, CARRY, RELEASE, BACK, RETURN = 0, 1, 2, 3, 4
+HOME_Z = 0.28  # m: tool-tip height above the box centre where the policy takes over again (inside its training starts)
 CARRY_Z = 0.22  # m: tool tip height while carrying (sphere bottom ~ 18 cm: clear of the 11 cm walls)
 GAIN = 60.0  # action per metre of error (an action of 1 is 1 cm per step)
 
@@ -50,9 +51,9 @@ def drop_point(k: torch.Tensor) -> torch.Tensor:
 def main():
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, overrides=hydra_overrides)
     env_cfg.episode_length_s = 3600.0  # no time-out reset: this is one long run
-    if args_cli.layout == "reachable":
-        env_cfg.events.reset_spheres.params["half_xy"] = REACH_HALF
-        env_cfg.events.reset_spheres.params["zone_half_xy"] = None
+    reset = env_cfg.events.reset_spheres.params
+    reset["num_active_range"] = None  # all ten spheres are in the box
+    reset["p_zone_only"] = 1.0 if args_cli.layout == "reachable" else 0.0
     total = args_cli.steps
     if args_cli.video:
         env_cfg.video_recorders = [VideoRecorderCfg(source="viz", output_dir=args_cli.video, video_length=total)]
@@ -110,25 +111,36 @@ def main():
             back_act = torch.zeros_like(act)
             back_act[:, 2] = 0.5
             back_act[:, 6] = -1.0
+            ret = phase == RETURN
+            ret_act = torch.zeros_like(act)
+            ret_act[:, 0:2] = (GAIN * (centre - tcp[:, :2])).clamp(-1, 1)
+            ret_act[:, 2] = (GAIN * (HOME_Z - tcp[:, 2])).clamp(-1, 1)
+            ret_act[:, 6] = -1.0
             use = lambda m: m[:, None]  # noqa: E731
             act = torch.where(use(carry), scripted, act)
             act = torch.where(use(release), rel_act, act)
             act = torch.where(use(back), back_act, act)
+            act = torch.where(use(ret), ret_act, act)
             act = torch.where(use(~active), torch.zeros_like(act).index_fill_(1, torch.tensor([6], device=dev), -1.0), act)
             # --- phase transitions
-            timer = torch.where(carry | release | back, timer + 1, torch.zeros_like(timer))
+            timer = torch.where(carry | release | back | ret, timer + 1, torch.zeros_like(timer))
             to_release = carry & (reached | (timer > 300))
             phase = torch.where(to_release, torch.full_like(phase, RELEASE), phase)
             timer = torch.where(to_release, torch.zeros_like(timer), timer)
             done_release = release & (timer >= 25)
             phase = torch.where(done_release, torch.full_like(phase, BACK), phase)
             timer = torch.where(done_release, torch.zeros_like(timer), timer)
+            done_release_count = done_release.long()
+            picked = picked + done_release_count  # the sphere is dropped: count it
             done_back = back & (timer >= 15)
-            picked = picked + done_back.long()
-            last_pick = torch.where(done_back, torch.full_like(last_pick, float(t)), last_pick)
-            phase = torch.where(done_back, torch.full_like(phase, PICK), phase)
+            phase = torch.where(done_back, torch.full_like(phase, RETURN), phase)
             timer = torch.where(done_back, torch.zeros_like(timer), timer)
-            if bool(done_back[0]):
+            home = ((centre - tcp[:, :2]).norm(dim=-1) < 0.05) & ((tcp[:, 2] - HOME_Z).abs() < 0.04)
+            done_return = ret & (home | (timer >= 200))
+            last_pick = torch.where(done_return, torch.full_like(last_pick, float(t)), last_pick)
+            phase = torch.where(done_return, torch.full_like(phase, PICK), phase)
+            timer = torch.where(done_return, torch.zeros_like(timer), timer)
+            if bool(done_release[0]):
                 print(f"t={t:5d} env0: sphere {int(picked[0])} dropped; {int(spheres_in_box()[0])} left in the box")
             giving_up = active & (phase == PICK) & ((t - last_pick) > args_cli.give_up)
             if giving_up.any():
@@ -146,7 +158,9 @@ def main():
             if inside:
                 in_zone = bool((r.abs() < reach).all())
                 print(f"left in box: sphere {i} at x {r[0]:+.3f} y {r[1]:+.3f} from the centre ({'reachable zone' if in_zone else 'out of reach, ' + f'{BOX_INNER / 2 - r.abs().max():.3f} m from the nearest wall'})")
+        outside = ((s.sphere_pos[..., :2] - centre).abs() >= BOX_INNER / 2 + 0.02).any(-1) & (s.sphere_pos[..., 2] > -0.5)
         print("RESULT envs", n, "steps", t + 1)
+        print("RESULT spheres lying outside the box per env (mean/min/max):", f"{outside.sum(-1).float().mean().item():.1f} / {int(outside.sum(-1).min())} / {int(outside.sum(-1).max())}")
         print("RESULT spheres picked per env (mean/min/max):", f"{picked.float().mean().item():.1f} / {int(picked.min())} / {int(picked.max())}")
         print("RESULT spheres left in the box per env (mean/min/max):", f"{left.float().mean().item():.1f} / {int(left.min())} / {int(left.max())}")
         print("RESULT spheres left inside the reachable zone per env (mean/min/max):", f"{spheres_in_box(True).float().mean().item():.1f} / {int(spheres_in_box(True).min())} / {int(spheres_in_box(True).max())}")
