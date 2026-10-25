@@ -249,6 +249,7 @@ class TaskState:
         self.out_count = torch.zeros(n, device=dev)
         self.prev_in_zone = torch.zeros(n, NUM_SPHERES, dtype=torch.bool, device=dev)
         self.fresh = torch.ones(n, dtype=torch.bool, device=dev)
+        self.n_picked = torch.zeros(n, device=dev)
         self.disturb = torch.zeros(n, device=dev)
         self.speed_excess = torch.zeros(n, device=dev)
         self.step = -1
@@ -266,6 +267,41 @@ class TaskState:
         self.success_given[env_ids] = False
         self.out_count[env_ids] = 0
         self.fresh[env_ids] = True
+        self.n_picked[env_ids] = 0
+
+    def complete_pick(self, mask: torch.Tensor, near: torch.Tensor):
+        """A sphere was held out of the box for a second: do what the scripted carry-and-drop does, instantly.
+
+        The held sphere is parked outside, the arm goes to a random home pose above the box and the gripper opens.
+        The episode goes on with the spheres that are left, so what a pick does to the others (shoving them against a
+        wall, out of reach) costs the picks that follow."""
+        env, c = self.env, self.cfg
+        ids = mask.nonzero().flatten()
+        origins = env.scene.env_origins[ids]
+        quat = torch.tensor([0.0, 0.0, 0.0, 1.0], device=env.device).repeat(len(ids), 1)
+        zero = torch.zeros(len(ids), 6, device=env.device)
+        for i in range(NUM_SPHERES):
+            sel = near[ids] == i
+            if not sel.any():
+                continue
+            e = ids[sel]
+            pos = origins[sel] + torch.tensor([0.3 + 0.05 * i, 0.95, 0.3], device=env.device)
+            sphere = env.scene[f"sphere_{i}"]
+            sphere.write_root_pose_to_sim_index(root_pose=torch.cat([pos, quat[sel]], dim=-1), env_ids=e)
+            sphere.write_root_velocity_to_sim_index(root_velocity=zero[sel], env_ids=e)
+        reset_arm_start(env, ids, **c["home_ranges"])
+        robot = env.scene["robot"]
+        gripper = [j for j in range(len(robot.joint_names)) if j >= 6]  # the 6 arm joints come first
+        robot.write_joint_position_to_sim_index(
+            position=robot.data.default_joint_pos.torch[ids][:, gripper], joint_ids=gripper, env_ids=ids
+        )
+        robot.write_joint_velocity_to_sim_index(velocity=torch.zeros(len(ids), len(gripper), device=env.device), joint_ids=gripper, env_ids=ids)
+        self.held_count[ids] = 0
+        self.was_stable[ids] = False
+        self.out_count[ids] = 0
+        self.success_given[ids] = False
+        self.fresh[ids] = True
+        self.n_picked[ids] += 1
 
     def update(self):
         env, c = self.env, self.cfg
@@ -344,6 +380,8 @@ class TaskState:
         self.success = (done & ~self.success_given).float()
         self.success_given |= done
         self.step = env.common_step_counter
+        if c.get("home_ranges") is not None and bool(self.success.any()):
+            self.complete_pick(self.success.bool(), near)
 
 
 def get_state(env: ManagerBasedRLEnv, cfg: dict) -> TaskState:

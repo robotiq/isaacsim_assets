@@ -180,6 +180,8 @@ TASK = {
     "min_closure": 0.25,
     "out_half_xy": (BOX_INNER / 2 + 0.05, BOX_INNER / 2 + 0.05),  # the sphere counts as out only above the box (+ 5 cm)
     "box_inner_half": BOX_INNER / 2,
+    # after a successful pick the sphere is parked outside and the arm is put at a random point like this, gripper open
+    "home_ranges": {"x_range": (0.34, 0.68), "y_range": (-0.26, 0.26), "z_range": (0.17, 0.33)},
     "gentle_speed": 0.15,  # m/s: spheres moving faster than this (other than the one held) are penalised
     "lift_extra": 0.06,  # m: the lift reward reaches its maximum this far above the success height
     "success_steps": 30,  # the sphere held out of the box this many policy steps in a row (1 s) = success
@@ -263,7 +265,7 @@ class EventCfg:
             "box_center": BOX_CENTER,
             "half_xy": (BOX_INNER / 2 - SPHERE_RADIUS - 0.004,) * 2,  # spread over the whole floor ...
             "zone_half_xy": REACH_HALF,  # ... with sphere 0 where the tool tip can reach
-            "num_active_range": (1, NUM_SPHERES),  # a random number of spheres is in the box, the others are parked
+            "num_active_range": (3, NUM_SPHERES),  # a random number of spheres is in the box, the others are parked
             "p_zone_only": 0.5,  # half of the boxes have every sphere within reach
             "floor_z": BOX_FLOOR,
             "radius": SPHERE_RADIUS,
@@ -302,12 +304,12 @@ class RewardsCfg:
     # phase 4: lift out of the box
     lift = RewTerm(func=tp.r_lift, weight=5.0, params={"cfg": TASK})
     out = RewTerm(func=tp.r_out, weight=10.0, params={"cfg": TASK})  # per step: pays more than any hovering below the rim
-    success = RewTerm(func=tp.r_success, weight=100.0, params={"cfg": TASK})
+    success = RewTerm(func=tp.r_success, weight=100.0, params={"cfg": TASK})  # per sphere picked
     drop = RewTerm(func=tp.r_drop, weight=-2.0, params={"cfg": TASK})
     # gentleness: knocking a sphere out of the reachable zone (to a wall, where it cannot be picked) costs more than the
     # touch reward earns, and so does shoving spheres around fast
-    disturb = RewTerm(func=tp.r_disturb, weight=-10.0, params={"cfg": TASK})
-    speed = RewTerm(func=tp.r_speed, weight=-0.5, params={"cfg": TASK})
+    disturb = RewTerm(func=tp.r_disturb, weight=-50.0, params={"cfg": TASK})
+    speed = RewTerm(func=tp.r_speed, weight=-2.0, params={"cfg": TASK})
     # regularisation
     wall = RewTerm(func=tp.r_wall, weight=-0.005, params={"cfg": TASK})
     action_rate = RewTerm(func=tp.action_rate_used, weight=-0.05, params={"dims": (0, 1, 2, 6)})
@@ -332,7 +334,7 @@ class TactileSpherePickEnvCfg(ManagerBasedRLEnvCfg):
 
     def __post_init__(self):
         self.decimation = 4  # 30 Hz policy
-        self.episode_length_s = 25.0
+        self.episode_length_s = 90.0  # several picks: each success parks the sphere and the episode goes on
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation
         self.sim.physics = PhysxCfg(bounce_threshold_velocity=0.01, gpu_found_lost_pairs_capacity=2**23)
