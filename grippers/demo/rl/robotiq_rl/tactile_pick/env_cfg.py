@@ -305,8 +305,8 @@ class RewardsCfg:
     drop = RewTerm(func=tp.r_drop, weight=-2.0, params={"cfg": TASK})
     # gentleness: knocking a sphere out of the reachable zone (to a wall, where it cannot be picked) costs more than the
     # touch reward earns, and so does shoving spheres around fast
-    disturb = RewTerm(func=tp.r_disturb, weight=-50.0, params={"cfg": TASK})
-    speed = RewTerm(func=tp.r_speed, weight=-2.0, params={"cfg": TASK})
+    disturb = RewTerm(func=tp.r_disturb, weight=-15.0, params={"cfg": TASK})
+    speed = RewTerm(func=tp.r_speed, weight=-1.0, params={"cfg": TASK})
     # regularisation
     wall = RewTerm(func=tp.r_wall, weight=-0.005, params={"cfg": TASK})
     action_rate = RewTerm(func=tp.action_rate_used, weight=-0.05, params={"dims": (0, 1, 2, 6)})
