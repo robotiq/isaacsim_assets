@@ -178,7 +178,7 @@ TASK = {
     "touch_n": 0.2,  # N: pad force that counts as a touch
     "hold_dist": 0.03,  # m: sphere centre within this of the TCP, with both pads pressing
     "min_closure": 0.25,
-    "out_half_xy": (BOX_INNER / 2 + 0.05, BOX_INNER / 2 + 0.05),  # the sphere counts as out only above the box (+ 5 cm)
+    "out_half_xy": None,  # no limit on where the sphere is held: the supervisor only needs it above the rim
     "box_inner_half": BOX_INNER / 2,
     # after a successful pick the sphere is parked outside and the arm is put at a random point like this, gripper open
     "home_ranges": {"x_range": (0.34, 0.68), "y_range": (-0.26, 0.26), "z_range": (0.17, 0.33)},
