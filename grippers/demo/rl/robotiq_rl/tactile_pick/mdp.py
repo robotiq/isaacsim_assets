@@ -379,7 +379,9 @@ class TaskState:
             out &= ((near_xy - torch.tensor(c["box_center"], device=env.device)).abs() < torch.tensor(c["out_half_xy"], device=env.device)).all(-1)
         self.out_now = out.float()
         self.out_centred = out.float() * (0.5 + 0.5 * (1 - torch.tanh(off_centre / 0.15)))  # more when over the box centre
-        self.out_count = torch.where(out, self.out_count + 1, torch.zeros_like(self.out_count))
+        # steps in the band during one continuous hold: they add up (a policy that hunts around the band edge still
+        # counts) and start over only when the sphere is dropped
+        self.out_count = torch.where(out, self.out_count + 1, torch.where(stable, self.out_count, torch.zeros_like(self.out_count)))
         done = self.out_count >= c["success_steps"]
         self.success = (done & ~self.success_given).float()
         self.success_given |= done

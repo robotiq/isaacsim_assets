@@ -185,7 +185,7 @@ TASK = {
     "gentle_speed": 0.15,  # m/s: spheres moving faster than this (other than the one held) are penalised
     "out_band": 0.12,  # m: the sphere counts as out only up to this far above the success height
     "lift_extra": 0.06,  # m: the lift reward reaches its maximum this far above the success height
-    "success_steps": 20,  # the sphere held out of the box this many policy steps in a row (1 s) = success
+    "success_steps": 25,  # steps with the held sphere out of the box (within one hold) = success
     "stable_steps": 8,  # held this many policy steps in a row = a stable grasp
 }
 
