@@ -93,6 +93,28 @@ Scripted checks of the pieces (they drive the real controller with the sphere's 
 `scripts/probe_tactile.py`, `probe_contact.py`, `probe_grasp.py`; `eval_tactile.py --ablate_tactile` zeroes the tactile
 observations to show whether the policy needs to feel.
 
+### Results
+
+Final policy (`tp8`, 3091 PPO iterations in total, 2048 envs, ~4.5 h on an 8 GB laptop GPU), evaluated on 256 envs x 20 s
+with the observation noise and the sphere mass randomization on, the tool tip starting at a random point:
+
+| | With the tactile maps | Tactile maps zeroed (`--ablate_tactile`) |
+|---|---|---|
+| Entered the box | 100 % (step 7) | 100 % |
+| Pads felt a sphere | 100 % (median step 14) | 100 % (touched, but never reacts) |
+| Stable grasp (both pads, 8 steps) | 99 % (step 29) | **0 %** |
+| Held out of the box for 1 s | **254 / 256** | **0 / 256** |
+
+The policy only closes the gripper after it feels the sphere: with the tactile observation removed it touches spheres
+just as often and never grasps. How it gets there, from the progress clips (`tp3_c1` -> `tp8`): it sweeps the pads
+over the floor, closes on the first sphere they feel, holds it with ~11 N per pad and lifts it straight up above the box.
+Easy-version baseline (fixed start, spheres only in the reachable zone): solved in 300 iterations by a reflex that
+closes on whatever is under the gripper, which is why the search was made harder.
+
+Not done: spheres of different sizes (the spawner makes one size), friction randomization (the pad's friction combine
+mode is `max`, so a lower sphere friction changes nothing), a real-pad calibration of the simulated taxels (the
+sensor model is uncalibrated, see `Robotiq_2F_85/tactile/README.md`), and a check on the Newton backend.
+
 ### Lessons (what went wrong on the way)
 
 - **Hovering under the finish line.** With a dense per-step lift reward and a termination on success, the policy parked
