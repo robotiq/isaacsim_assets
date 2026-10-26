@@ -646,10 +646,9 @@ your own scene. Raising the friction *impedance ratio* is what actually stopped 
 — not the friction coefficient. The gripper has no `PhysicsScene`, so these cannot live in the
 asset. The near-rigid finger-coupling equality (`solref = [0.002, 1]`) is authored on
 `right_outer_knuckle_joint` via `MjcEqualityJointAPI`. All of it needs **Isaac Sim 6.1 /
-Newton 1.5.0**; on **6.0.1 (Newton 1.2.1)**, which reads neither the scene options nor the
-coupling's `solref`/`solimp`, run
-[`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py) after every
-stop → play instead.
+Newton 1.5.0** or later. Isaac Sim 6.0.1 (Newton 1.2.1) is no longer supported: it reads neither the
+scene options nor the coupling's `solref`/`solimp` and needed a runtime script; the last version that
+still has it is the git tag `last-isaac-6.0-supported`.
 
 Everything else (drive gains, armature, `mjc:damping`, spring stiffness,
 `solreflimit`, loop-closure equalities, contact tuning) is baked into the
@@ -689,8 +688,7 @@ The loop (five-bar) variant is where Newton earns its place:
   constraints (which showed the residual compliance and limit ringing of §3.2).
 - **Correct joint-limit compliance.** The coupler joints' limit stiffness/damping
   (`mjc:solreflimit`) is authored per-radian and holds the fingertip parallel
-  with an overdamped limit — after a subtle importer bug was fixed (see box
-  below).
+  with an overdamped limit.
 - **The parallel-grip spring holds** thanks to a deliberately inflated link
   inertia: `physics:diagonalInertia = (0.001, 0.001, 0.001)` is **~100× the
   physical value, on purpose** — it stabilizes the soft loop-closure equalities so
@@ -700,18 +698,6 @@ The loop (five-bar) variant is where Newton earns its place:
   inertias without re-tuning the loop-closure `solref`.
 - Critical joint `mjc:damping` prevents the fingers from ringing;
   `MjcEqualityJointAPI` is applied **on the joint prim**.
-
-> **Known importer bug (angular joint limits) — fixed in our setup.** Newton's
-> `parse_usd` divides angular limit gains by π/180 assuming they were authored
-> per-degree, but `mjc:solreflimit` is always per-radian. Result: coupler limit
-> gains mis-scaled by the ~57× deg→rad factor → the limit overshot ~7° and rang.
-> This is fixed upstream (Newton PR **#2736**) but Isaac Sim 6.0.1-rc.7 bundles
-> the older Newton 1.2.1 that still has it. A local backport patch cancels the
-> spurious division so per-radian `solreflimit` survives; overshoot dropped from
-> ~7° to <1°. **Two-part dependency:** the tuning value lives in the USD
-> (round-trips across restarts), but the *fix* lives in the Newton install — if
-> Isaac/Newton is reinstalled or upgraded to a version without #2736, **re-apply
-> the patch** or the limits regress.
 
 ### 5.3 Isaac Sim 6.1+: the elliptic cone and the pad friction gain
 
@@ -738,7 +724,7 @@ The loop (five-bar) variant is where Newton earns its place:
   - **Only the MuJoCo solver should load these materials.** Newton's SemiImplicit/Featherstone solvers use `kf` directly and would treat the negative gain as negative friction (Isaac exposes neither).
   - `GripMaterial` is bound to every collision shape of the gripper (all of them on the Hand-E), not just the pads, so the mapping is off on all of them.
   - The gain is averaged with the contact partner's, so a negative pad gain also overrides a partner authored with `newton:contactFrictionGain = 0` (frictionless): the contact gets MuJoCo's native friction. A partner with a very large positive `kf` could in principle flip the sign (untested).
-- **`impratio`:** Isaac Sim 6.1+ reads `mjc:option:impratio` from the scene like the cone, so it lives in the shared layer above. Isaac Sim 6.0.1 ignores it, and `apply_gripper_tuning.py` sets it (and the coupling `solref`/`solimp`) at runtime there only.
+- **`impratio`:** Isaac Sim 6.1+ reads `mjc:option:impratio` from the scene like the cone, so it lives in the shared layer above. Isaac Sim 6.0.1 ignores it and is no longer supported (§5.1).
 
 ### 5.4 Where to find the asset
 
@@ -748,7 +734,7 @@ The loop (five-bar) variant is where Newton earns its place:
   five-bar loop closure) and `payloads/Robotiq_2F_85_newton_common_physics.usda`
   (bodies and collision cooked from the shared visual CADs), with the thin
   `..._newton_compliant_physics.usda` / `..._newton_parallel_grip_physics.usda`
-  on top, plus the Isaac Sim 6.0.1-only runtime [`newton/apply_gripper_tuning.py`](Robotiq_2F_85/newton/apply_gripper_tuning.py).
+  on top.
 
 **Provenance:** both the visual meshes (`Defeatured_2F_85_*`, shared with the
 PhysX asset) and the Newton physics parameters (masses/inertias, joints, the

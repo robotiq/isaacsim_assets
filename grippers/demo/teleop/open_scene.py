@@ -12,7 +12,7 @@ carries two variant sets on /World -- `Gripper` (2F85 | 2F140) and `Physics`
 -- and the selections are saved IN the file, so whoever last switched them and
 saved decides what you get. Selecting them here costs nothing and makes the run
 reproducible. Set TELEOP_GRIPPER / TELEOP_PHYSICS to choose (a Newton_* physics
-also needs the Newton experience and its runtime tuning step).
+also needs the Newton experience).
 
 As in autostart.py, the work happens on Kit's update tick and never calls
 omni.kit.app.update(): pumping frames from inside a callback re-enters Kit's

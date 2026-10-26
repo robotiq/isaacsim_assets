@@ -44,14 +44,14 @@ and grip — same body tree, geometry, and collision for all of them — and who
 
 The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it has one
 `PhysX` and one `Newton` physics variant (one driven finger joint, the other finger follows it).
-The Newton coupling is a stiff MuJoCo joint equality baked into the asset, so no runtime tuning
-script is needed.
+The Newton coupling is a stiff MuJoCo joint equality baked into the asset.
 
 `*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
 coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
 fingers wrap around the object. The Newton variants model the linkage more
-robustly but need a one-shot runtime tuning after each Stop→Play (see the
-gripper's `newton/` folder, linked in the table).
+robustly; on Isaac Sim 6.1+ they need the shared scene layer on your stage (see the
+gripper's `newton/` folder, linked in the table). Isaac Sim 6.0.1 is no longer supported; the last
+version that supports it is the git tag `last-isaac-6.0-supported`.
 
 The [UR5e teleop demo](grippers/demo/teleop/) runs either gripper on either
 solver (`TELEOP_GRIPPER=2F85|2F140`, `TELEOP_PHYSICS=<Physics variant>`).

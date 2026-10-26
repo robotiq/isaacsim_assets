@@ -1,6 +1,6 @@
 # Newton (MuJoCo-Warp) tuning — 2F-85
 
-Newton-specific runtime tuning and notes for the **`Newton_compliant`** and
+Newton-specific scene settings and notes for the **`Newton_compliant`** and
 **`Newton_parallel_grip`** variants of the unified 2F-85 asset
 ([`../Robotiq_2F_85.usda`](../Robotiq_2F_85.usda)).
 Select `Physics = Newton_compliant` (encompassing grip) or `Newton_parallel_grip`,
@@ -36,11 +36,9 @@ The cone matters too: see the Simulation Guide, §5.3.
 Needs **Isaac Sim 6.1 / Newton 1.5.0** or later, which reads scene `mjc:option:*`
 from USD. No script is needed after Stop → Play.
 
-**Isaac Sim 6.0.1 (Newton 1.2.1):** Newton 1.2.1 reads neither `mjc:option:impratio` nor the
-coupling's `solref`/`solimp`, so still run
-[`apply_gripper_tuning.py`](apply_gripper_tuning.py) after every Stop → Play (Script Editor or
-MCP bridge — idempotent). It sets every `JOINT`-type equality in the model, so a stage that
-also holds another gripper's coupling (e.g. a Hand-E) gets that one tuned to the 2F values too.
+**Isaac Sim 6.0.1 (Newton 1.2.1) is no longer supported.** It reads neither `mjc:option:impratio` nor the
+coupling's `solref`/`solimp`, so it needed a runtime script after every Stop → Play; that script is
+removed. The last version that still has it is the git tag `last-isaac-6.0-supported`.
 
 ## Intentional `diagonalInertia = (0.001, 0.001, 0.001)`
 
@@ -51,20 +49,3 @@ parallel-grip spring holds; with physically-small inertias the linkage goes
 floppy and the fingertips sag ~20° out of parallel. Treat it like the
 `mjc:armature`/`damping` tuning — do **not** replace it with CAD inertias without
 re-tuning the loop-closure `solref` (or adding passive-joint armature).
-
-## Isaac Sim source patch — `solreflimit` ×180/π backport (required)
-
-Newton **1.2.1** (bundled with Isaac Sim 6.0.1) over-scales the *angular*
-hinge/D6 `mjc:solreflimit` stiffness/damping by **180/π**. Because this asset
-bakes `mjc:solreflimit` into the payload (the couplers / joint limits), a stock
-Isaac 6.0.1 imports it wrong — authored `mjc:solreflimit = [0.02, 2]` compiles to
-`jnt_solref = [-35809, -5729]` instead of the intended `[-625, -100]`.
-
-- **Fix:** backport of upstream Newton PR **#2736** ("Fix USD MJC angular
-  `limit_ke/kd` over-scaling on revolute/D6 joints") — pre-multiply the angular
-  `limit_*_ke/kd` by π/180.
-- **File patched:** `exts/isaacsim.pip.newton/pip_prebundle/newton/_src/usd/schemas.py`
-  in the Isaac install (keep a backup alongside, e.g. `schemas.py.orig-solreflimit-bug`).
-- ⚠️ **Vendored file** — an Isaac reinstall/upgrade overwrites it; reapply the
-  patch, or move to an Isaac build bundling Newton ≥ the one containing #2736.
-  Already fixed on Newton `main`, so this is packaging lag, not an open defect.
