@@ -24,14 +24,13 @@ from robotiq_rl.tactile_pick.env_cfg import TASK  # noqa: E402
 
 def show(env, tag):
     s = tp.get_state(env, TASK)
-    maps = tp.tactile_maps(env, log_scale=False)[0].reshape(2, 7, 4)
+    maps = env.scene["tactile"].taxel_force[0]
     fs, _ = tp.contact_forces(env, "pad_spheres")
     fb, _ = tp.contact_forces(env, "pad_box")
     print(f"--- {tag}")
     print("TCP (env frame)", [round(v, 3) for v in s.tcp[0].tolist()], "finger", round(env.scene["robot"].data.joint_pos.torch[0, s.finger_id].item(), 3))
-    for name in ("pad_spheres", "pad_box"):
-        net = env.scene[name].data.net_normal_forces_w.torch[0]
-        print(f"{name}: unfiltered net force per pad [N]", [round(float(v), 2) for v in torch.linalg.norm(net, dim=-1).tolist()])
+    net = env.scene["tactile"].data.net_normal_forces_w.torch[0]
+    print("unfiltered net force per pad [N]", [round(float(v), 2) for v in torch.linalg.norm(net, dim=-1).tolist()])
     print("sphere force per pad [N]", [round(v, 2) for v in fs[0].sum(-1).tolist()], "box force per pad [N]", [round(v, 2) for v in fb[0].sum(-1).tolist()])
     print("flags touch/held/stable/lift", [round(float(x[0]), 2) for x in (s.touch, s.held, s.stable, s.lift_progress)], "sym", round(float(s.sym[0]), 2))
     for side, name in enumerate(("left", "right")):
@@ -45,9 +44,8 @@ def main():
     with launch_simulation(env_cfg, args_cli):
         env = instantiate(env_cfg)
         env.reset()
-        for name in ("pad_spheres", "pad_box"):
-            sensor = env.scene[name]
-            print(name, "bodies", sensor.body_names, "force matrix", tuple(sensor.data.normal_force_matrix_w.torch.shape))
+        sensor = env.scene["tactile"]
+        print("tactile bodies", sensor.body_names, "force matrix", tuple(sensor.data.normal_force_matrix_w.torch.shape))
         n = env.num_envs
         act = torch.zeros(n, env.action_manager.total_action_dim, device=env.device)
         act[:, -1] = -1.0  # gripper open

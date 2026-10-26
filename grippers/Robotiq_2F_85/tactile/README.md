@@ -1,5 +1,8 @@
 # TSF-85 tactile sensor
 
+> Training in **Isaac Lab**? The simulated sensor for it, usable on any gripper that carries a TSF, is in
+> [`grippers/tactile_sensors`](../../tactile_sensors/README.md). This folder is the Isaac Sim reader (variants, contact patch, live heatmap).
+
 The `Tactile_TSF85` fingertip can carry a simulated TSF-85 tactile sensor: a **7×4 grid of taxels per finger**
 (row 0 at the fingertip end), filled from the physics engine's contact data. Two models, selected by
 `SensorSim`. **Uncalibrated:** the output is not in the real sensor's counts and has not been compared with

@@ -14,13 +14,14 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ContactSensorCfg
 from isaaclab.utils import configclass, replace
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import GaussianNoiseCfg as Gnoise
 from isaaclab.visualizers import VisualizerCfg
 from isaaclab_physx.physics import PhysxCfg
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
+
+from robotiq_tactile_sensors.isaaclab import TactileSensorCfg, tactile_map
 
 from ..assets import UR5E_2F85_TSF85_CFG
 from . import mdp as tp
@@ -142,19 +143,13 @@ class TactilePickSceneCfg(InteractiveSceneCfg):
     sphere_8 = _sphere(8)
     sphere_9 = _sphere(9)
 
-    # tactile: the contact force of each pad against the spheres / the box, with its average contact point
-    pad_spheres = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/(left|right)_fingertip",
-        track_contact_points=True,
-        max_contact_data_count_per_prim=16,
-        filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Sphere_{i}" for i in range(NUM_SPHERES)],
+    # tactile: both pads' force on the spheres and on the box, as 7 x 4 taxel maps (grippers/tactile_sensors)
+    tactile = TactileSensorCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85",
+        filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Sphere_{i}" for i in range(NUM_SPHERES)]
+        + [f"{{ENV_REGEX_NS}}/Box/{part}" for part in ("floor", "wall_n", "wall_s", "wall_e", "wall_w")],
     )
-    pad_box = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/(left|right)_fingertip",
-        track_contact_points=True,
-        max_contact_data_count_per_prim=16,
-        filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Box/{part}" for part in ("floor", "wall_n", "wall_s", "wall_e", "wall_w")],
-    )
+
 
 
 
@@ -231,7 +226,7 @@ class ObservationsCfg:
         joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Gnoise(mean=0.0, std=0.003))
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, scale=0.1, noise=Gnoise(mean=0.0, std=0.002))
         tcp = ObsTerm(func=tp.tcp_in_box_frame, params={"cfg": TASK}, noise=Gnoise(mean=0.0, std=0.002))
-        tactile = ObsTerm(func=tp.tactile_maps, noise=Gnoise(mean=0.0, std=0.03))  # on log(1 + N): ~3 % of a 1 N touch
+        tactile = ObsTerm(func=tactile_map, noise=Gnoise(mean=0.0, std=0.03))  # on log(1 + N): ~3 % of a 1 N touch
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):

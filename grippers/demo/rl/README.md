@@ -79,7 +79,7 @@ move until the pads feel a sphere, grasp it, judge the grasp, lift it out.
 | Actions | Tool-tip motion (relative IK, 3 translations; the three rotation dims have scale 0: the tool stays pointing down) and a continuous gripper target. |
 | Actor sees | Joint state, tool-tip position in the box frame, gripper, **two 7 x 4 taxel force maps** (3 steps of history). No sphere positions, no camera. |
 | Critic sees | Also the sphere positions and the phase flags (asymmetric PPO). |
-| Tactile | Isaac Lab's `ContactSensor` on each pad, filtered on the spheres and on the box parts: the force of each object, spread by a Gaussian around its average contact point onto the TSF-85 taxel grid (layout from the USD markers, `taxels.py`). The contact point lands within ~3 mm of the right taxel; two pads squeezing a sphere read a symmetric ~11 N. |
+| Tactile | The `TactileSensor` of [`grippers/tactile_sensors`](../../tactile_sensors/README.md), filtered on the spheres and on the box parts: the force of each object, spread by a Gaussian around its average contact point onto the TSF-85 taxel grid. The contact point lands within ~3 mm of the right taxel; two pads squeezing a sphere read a symmetric ~11 N. |
 | Phases | Rewarded in order and gated: enter the box, sweep and touch, grasp (both pads press a sphere, gripper partly closed; balance of the two forces), stable grasp (8 steps), lift; success = the held sphere stays above the rim + 4 cm, over the box, for 1 s. |
 
 Train in chunks, with an evaluation and a single-env video after each (the training holds the GPU lock):

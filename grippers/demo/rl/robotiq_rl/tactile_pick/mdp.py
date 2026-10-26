@@ -18,7 +18,7 @@ import torch
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils.math import quat_apply
 
-from .taxels import layout
+from robotiq_tactile_sensors.isaaclab import tactile_map
 
 if TYPE_CHECKING:  # importing isaaclab.envs pulls in pxr, which must not happen before Kit starts
     from isaaclab.envs import ManagerBasedRLEnv
@@ -27,79 +27,27 @@ NUM_SPHERES = 10
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# tactile observation
+# tactile: the TactileSensor of grippers/tactile_sensors (``scene.tactile``, filtered on the 10 spheres then the 5 box
+# parts). These are thin wrappers for the privileged terms and the scripts.
 # ---------------------------------------------------------------------------------------------------------------
 
 
-class _Taxels:
-    """Per env: the taxel grid in the world frame and the contact force spread over it."""
-
-    def __init__(self, env: ManagerBasedRLEnv, robot_cfg: SceneEntityCfg, pad_bodies: tuple[str, str]):
-        self.robot = env.scene[robot_cfg.name]
-        ids = [self.robot.find_bodies(b)[0][0] for b in pad_bodies]
-        self.body_ids = torch.tensor(ids, device=env.device)
-        self.local = torch.stack(
-            [torch.tensor(layout(side), dtype=torch.float32, device=env.device) for side in ("left", "right")]
-        )  # (2, T, 3)
-
-    def world(self) -> torch.Tensor:
-        """Taxel centres in the world frame, ``(E, 2, T, 3)``."""
-        pos = self.robot.data.body_pos_w.torch[:, self.body_ids]  # (E, 2, 3)
-        quat = self.robot.data.body_quat_w.torch[:, self.body_ids]  # (E, 2, 4)
-        e, _, t, _ = (pos.shape[0], 2, self.local.shape[1], 3)
-        local = self.local[None].expand(e, -1, -1, -1)
-        rot = quat_apply(quat[:, :, None].expand(-1, -1, t, -1).reshape(-1, 4), local.reshape(-1, 3))
-        return pos[:, :, None] + rot.view(e, 2, t, 3)
-
-
 def contact_forces(env: ManagerBasedRLEnv, sensor: str, floor_n: float = 0.05):
-    """Per pad (left, right) and filtered object: the normal force [N] and the average contact point.
+    """Force [N] of each pad (left, right) on each sphere (``"pad_spheres"``) or box part (``"pad_box"``), ``(E, 2, F)``.
 
-    Shapes ``(E, 2, F)`` and ``(E, 2, F, 3)``. The sensor lists its bodies in its own order: it is put in (left, right)."""
-    perms = env.__dict__.setdefault("_tp_pad_perm", {})
-    if sensor not in perms:
-        names = env.scene[sensor].body_names
-        perms[sensor] = [names.index("left_fingertip"), names.index("right_fingertip")]
-    perm = perms[sensor]
-    data = env.scene[sensor].data
-    force = torch.linalg.norm(data.normal_force_matrix_w.torch, dim=-1)[:, perm]  # (E, 2, F)
-    force = torch.where(force > floor_n, force, torch.zeros_like(force))
-    pos = torch.nan_to_num(data.contact_pos_w.torch)[:, perm]
-    return force, pos
+    Returns ``(force, None)``: the second value is kept for the callers that used to get the contact points too."""
+    force = env.scene["tactile"].object_force
+    return (force[..., :NUM_SPHERES] if sensor == "pad_spheres" else force[..., NUM_SPHERES:]), None
 
 
-def tactile_maps(
-    env: ManagerBasedRLEnv,
-    sensors: tuple[str, ...] = ("pad_spheres", "pad_box"),
-    robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    pad_bodies: tuple[str, str] = ("left_fingertip", "right_fingertip"),
-    sigma: float = 0.006,
-    log_scale: bool = True,
-) -> torch.Tensor:
-    """Force per taxel for both pads, ``(E, 2 * ROWS * COLS)``.
-
-    Each filtered object's normal force is spread over the taxels around its average contact point with a Gaussian
-    (``sigma`` m), normalised so the taxels sum to the force. Contacts with the spheres and with the box both count:
-    the sensor cannot tell what it touches. ``log_scale`` gives log(1 + N), which keeps light touches visible."""
-    taxels = getattr(env, "_tp_taxels", None)
-    if taxels is None:
-        taxels = env._tp_taxels = _Taxels(env, robot_cfg, pad_bodies)
-    centres = taxels.world()  # (E, 2, T, 3)
-    out = torch.zeros(centres.shape[:3], device=env.device)  # (E, 2, T)
-    for name in sensors:
-        force, pos = contact_forces(env, name)  # (E, 2, F), (E, 2, F, 3)
-        d2 = ((centres[:, :, :, None] - pos[:, :, None]) ** 2).sum(-1)  # (E, 2, T, F)
-        w = torch.exp(-d2 / (2 * sigma**2))
-        w = w / (w.sum(dim=2, keepdim=True) + 1e-9)
-        out += (w * force[:, :, None]).sum(-1)
-    out = torch.log1p(out) if log_scale else out
-    return out.reshape(env.num_envs, -1)
+def tactile_maps(env: ManagerBasedRLEnv, log_scale: bool = True) -> torch.Tensor:
+    """Force per taxel of both pads, ``(E, 56)``: the library's ``tactile_map`` (log(1 + N) if ``log_scale``)."""
+    return tactile_map(env, SceneEntityCfg("tactile"), log_scale=log_scale)
 
 
-def pad_force_total(env: ManagerBasedRLEnv, sensors: tuple[str, ...] = ("pad_spheres", "pad_box")) -> torch.Tensor:
-    """Summed normal force per pad, ``(E, 2)`` in N (log-scaled for the observation)."""
-    total = sum(contact_forces(env, s)[0].sum(-1) for s in sensors)
-    return torch.log1p(total)
+def pad_force_total(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Summed normal force per pad, ``(E, 2)``, log(1 + N)."""
+    return torch.log1p(env.scene["tactile"].pad_force)
 
 
 # ---------------------------------------------------------------------------------------------------------------
