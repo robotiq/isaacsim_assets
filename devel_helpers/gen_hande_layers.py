@@ -18,7 +18,11 @@ Generated (all under grippers/Robotiq_Hand_E/):
   payloads/Robotiq_Hand_E_{body_mass,fingertip,kinematics,physx_common,physx}_physics.usda
   payloads/Robotiq_Hand_E_{newton_common,newton}_physics.usda
 
-Not generated: `parts/` (baked from the CAD) and `materials/`.
+  payloads/Robotiq_Hand_E_s100.usda                     Stroke100 geometry (base, fingers, tip shift, opening)
+  payloads/Robotiq_Hand_E_s100_fingertip_<key>.usda     Stroke100 grip-frame opening per non-default tip
+  payloads/Robotiq_Hand_E_s100_{neutral,physx,newton}_physics.usda   Stroke100 physics deltas
+
+Not generated: `parts/` (baked from the CAD; the Stroke100 ones by gen_hande_s100_parts.py) and `materials/`.
 
 Usage (needs the `pxr` USD python bindings, e.g. `usd-core`):
     python3 devel_helpers/gen_hande_layers.py
@@ -854,6 +858,10 @@ over "{N}"
                 float physics:staticFriction = {GRIP_FRICTION:g}
                 float newton:rollingFriction = 0.0001
                 float newton:torsionalFriction = 0.005
+                # Negative = skip Newton's kf friction mapping (an elliptic cone is on by default
+                # in the scene layer). Relies on the MuJoCo solver in Newton 1.5/1.6, not a documented
+                # API, and must not be loaded by other Newton solvers. See GRIPPER_SIMULATION_GUIDE.md 5.3.
+                float newton:contactFrictionGain = -1000000000
             }}
         }}
     }}
@@ -1013,6 +1021,284 @@ over "Meshes"
 ''')
 
 
+
+# ---------------------------------------------------------------- Stroke100 (100 mm stroke, P7L CAD)
+# The "Stroke" variant set: Stroke50 (default, the original asset: nothing above changes for it) and Stroke100,
+# the same gripper with 100 mm total opening. Stroke100 has its own base and finger bodies (baked by
+# gen_hande_s100_parts.py); the fingertips are the stock ones, shifted TIP_SHIFT along Y (verified against the
+# P7L fingertips to ~1 mm). Everything is authored in NEW layers that only compose under Stroke100, so the
+# Stroke50 layers above stay byte-identical. The Stroke100 payloads sit in the strongest variant set
+# (Stroke is listed first in variantSets), so they win over the Physics / Fingertip payloads.
+STROKE100 = 0.050  # m, travel of each finger
+TIP_SHIFT = STROKE100 - STROKE  # m, how much further out each finger (and its tip) is when open
+MAX_OPENING_100 = 2 * STROKE100  # m, pad-to-pad at full open, Std tips, Outside mount
+S100_LINKS = [("base_link", "base"), ("left_finger", "finger_left"), ("right_finger", "finger_right")]
+S100_MESH = "mesh_s100"  # child of /Meshes/<link> holding the Stroke100 part (the stroke-50 mesh_0 is deactivated)
+
+
+def part_stats(part):
+    """mass / centre / box dims of a baked part, estimated like the stroke-50 ones (signed mesh volume x DENSITY,
+    bounding-box centre), rounded the same way."""
+    st = Usd.Stage.Open(os.path.join(ROOT, "parts", f"{N}_s100_{part}.usd"))
+    m = UsdGeom.Mesh(st.GetPrimAtPath("/World/mesh_0"))
+    pts = [tuple(p) for p in m.GetPointsAttr().Get()]
+    idx = m.GetFaceVertexIndicesAttr().Get()
+    vol = 0.0
+    for i in range(0, len(idx), 3):
+        a, b, c = (pts[k] for k in idx[i:i + 3])
+        vol += (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6
+    lo = [min(p[k] for p in pts) for k in range(3)]
+    hi = [max(p[k] for p in pts) for k in range(3)]
+    return dict(
+        mass=round(vol * DENSITY, 5),
+        com=tuple(round((lo[k] + hi[k]) / 2, 4) for k in range(3)),
+        dims=tuple(round(hi[k] - lo[k], 4) for k in range(3)),
+    )
+
+
+def s100_tip_opening(key):
+    return round(TIP_OPENING[key] + 2 * TIP_SHIFT, 4)
+
+
+def gen_s100():
+    default = TIPS[0][0]
+    swap = "".join(
+        f'''    over "{link}"
+    {{
+        over "mesh_0" (
+            active = false
+        )
+        {{
+        }}
+
+        def Xform "{S100_MESH}" (
+            prepend references = @../parts/{N}_s100_{part}.usd@
+        )
+        {{
+        }}
+    }}
+
+''' for link, part in S100_LINKS)
+    shift = ""
+    for side, sign in (("left", -1), ("right", 1)):
+        shift += f'    over "fingertip_{side}"\n    {{\n'
+        for key, _, _ in TIPS:
+            shift += f'''        over "tip_{key}"
+        {{
+            double3 xformOp:translate = (0, {sign * TIP_SHIFT:g}, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }}
+
+'''
+        shift = shift.rstrip("\n") + "\n    }\n\n"
+    w(f"payloads/{N}_s100.usda", HDR + f'''(
+    # "Stroke100" variant: the Hand-E with a 100 mm stroke (50 mm per finger). Its own base and finger bodies
+    # (parts/{N}_s100_*.usd, baked from the P7L CAD by devel_helpers/gen_hande_s100_parts.py) replace the
+    # stroke-50 ones, and the stock fingertips move {TIP_SHIFT * 1000:g} mm further out along Y. Each stroke-50 link mesh is deactivated and
+    # the Stroke100 part added next to it as /Meshes/<link>/{S100_MESH}; its colliders are authored in the
+    # Stroke100 physics layers.
+    # GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand.
+    defaultPrim = "{N}"
+    metersPerUnit = 1
+    subLayers = [
+        @./base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Meshes"
+{{
+{swap.rstrip()}
+
+    # Fingertips: every tip part is baked at the stroke-50 open position; here the fingers are {TIP_SHIFT * 1000:g} mm
+    # further out. This is the tip itself, not the FingertipMount hook (the group's translate), so the Inside
+    # offset still adds on top.
+{shift.rstrip()}
+}}
+
+over "{N}"
+{{
+    over "{N}"
+    {{
+        over "base_link"
+        {{
+            over "grip_frame"
+            {{
+                float gripper_maxOpening = {MAX_OPENING_100:g}
+            }}
+        }}
+    }}
+}}
+''')
+    for key, var, desc in TIPS[1:]:
+        w(f"payloads/{N}_s100_fingertip_{key}.usda", HDR + f'''(
+    # "{var}" fingertip on the Stroke100 stroke: the grip frame\'s opening is the stroke-50 one plus
+    # {2 * TIP_SHIFT * 1000:g} mm (each finger {TIP_SHIFT * 1000:g} mm further out). Everything else about the tip comes from
+    # {N}_fingertip_{key}.usda.
+    # GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand.
+    defaultPrim = "{N}"
+    metersPerUnit = 1
+    subLayers = [
+        @./base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "{N}"
+{{
+    over "{N}"
+    {{
+        over "base_link"
+        {{
+            over "grip_frame"
+            {{
+                float gripper_maxOpening = {s100_tip_opening(key):g}
+            }}
+        }}
+    }}
+}}
+''')
+
+
+OPENING_OVER = f'''# base.usda, sublayered above, authors the stroke-50 opening: state the Stroke100 one over it.
+over "{N}"
+{{
+    over "{N}"
+    {{
+        over "base_link"
+        {{
+            over "grip_frame"
+            {{
+                float gripper_maxOpening = {MAX_OPENING_100:g}
+            }}
+        }}
+    }}
+}}'''
+
+
+def gen_s100_physics():
+    base, stub = part_stats("base"), part_stats("finger_left")
+    tip_com = (TIP["com"][0], round(TIP["com"][1] - TIP_SHIFT, 4), TIP["com"][2])
+    link = lambda name, d, com, note="": f'''        {note}over "{name}"
+        {{
+            point3f physics:centerOfMass = {fmt3(com)}
+            float3 physics:diagonalInertia = {fmt3(box_inertia(d["mass"], d["dims"]))}
+            float physics:mass = {d["mass"]}
+        }}
+'''
+    tip = lambda side, com: f'''        over "{side}_fingertip"
+        {{
+            point3f physics:centerOfMass = {fmt3(com)}
+        }}
+'''
+    joint = lambda name: f'''            over "{name}"
+            {{
+                float physics:upperLimit = {STROKE100:g}
+            }}
+'''
+    note = "# Mirrors left_finger: same mass/inertia, CoM x/y negated.\n        "
+    w(f"payloads/{N}_s100_neutral_physics.usda", HDR + f'''(
+    # Engine-neutral physics deltas of the Stroke100 variant (UsdPhysics only): finger travel {STROKE100 * 1000:g} mm,
+    # the Stroke100 base / finger masses, and the fingertip centres of mass {TIP_SHIFT * 1000:g} mm further out. Same
+    # estimates as the stroke-50 layers ({DENSITY:.0f} kg/m^3 x baked CAD volume, bounding-box centre, box inertia). Everything
+    # else (drives, forces, tip masses) is the stroke-50 value: the datasheet is the same. Sublayered by the Stroke100
+    # PhysX / Newton payloads, so it only composes under a Physics variant.
+    # GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand.
+    defaultPrim = "{N}"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "{N}"
+{{
+    over "{N}"
+    {{
+{link("base_link", base, base["com"])}
+{link("left_finger", stub, stub["com"])}
+{link("right_finger", stub, mirror(stub["com"]), note).rstrip()}
+
+{tip("left", tip_com)}
+{tip("right", mirror(tip_com)).rstrip()}
+
+        over "Joints"
+        {{
+{joint("left_finger_joint")}
+{joint("right_finger_joint").rstrip()}
+        }}
+    }}
+}}
+''')
+    s100_cols = lambda block, engine: "\n".join(engine(f"{l}/{S100_MESH}", block) for l, _ in S100_LINKS)
+    px = "".join(_collider(f"{l}/{S100_MESH}") + "\n" for l, _ in S100_LINKS)
+    w(f"payloads/{N}_s100_physx_physics.usda", HDR + f'''(
+    # PhysX colliders of the Stroke100 base and fingers (convex hulls of the baked meshes), on top of the Stroke100
+    # neutral deltas. Everything else (articulation, drives, mimic, tip colliders) comes from
+    # {N}_physx_physics.usda, which composes as well.
+    # GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand.
+    defaultPrim = "{N}"
+    metersPerUnit = 1
+    subLayers = [
+        @./{N}_s100_neutral_physics.usda@,
+        @./base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Meshes"
+{{
+{px.rstrip()}
+}}
+
+{OPENING_OVER}
+''')
+    mjc_base = lambda i: f'''{i}    uniform int mjc:condim = 3
+{i}    uniform double mjc:gap = 0
+{i}    uniform int mjc:group = 2
+{i}    uniform double mjc:margin = 0
+{i}    uniform int mjc:priority = 1
+{i}    uniform double[] mjc:solimp = {SOLIMP}
+{i}    uniform double mjc:solmix = 1
+{i}    uniform double[] mjc:solref = [0.004, 2]
+'''
+    mjc_finger = lambda i: f"{i}    uniform int mjc:group = 2\n"
+
+    def newton_link(i, name, mjc):
+        # ONE `over` per link: the Newton collider and the MuJoCo tuning of the stroke-50 link (base_link: priority 1 +
+        # soft solref; fingers: group only)
+        return f'''{i}over "{name}" (
+{i}    prepend apiSchemas = {NEWTON_COLLIDER_APIS[:-1]}, "MjcCollisionAPI"]
+{i})
+{i}{{
+{i}    uniform token physics:approximation = "convexHull"
+{i}    bool physics:collisionEnabled = 1
+{i}    float newton:contactGap = 0
+{mjc(i)}{i}}}
+'''
+    nt = "\n".join(
+        _newton_over(f"{l}/{S100_MESH}", lambda i, name, m=(mjc_base if l == "base_link" else mjc_finger): newton_link(i, name, m))
+        for l, _ in S100_LINKS)
+    w(f"payloads/{N}_s100_newton_physics.usda", HDR + f'''(
+    defaultPrim = "{N}"
+    doc = """Newton colliders of the Stroke100 base and fingers: convex hulls of the baked meshes (UsdPhysics + Newton*) plus
+the MuJoCo collision tuning of the stroke-50 links (Mjc*), on top of the Stroke100 neutral deltas. Everything else
+(articulation, drive, joint equality, tip colliders, pad material) comes from {N}_newton_physics.usda, which composes as well.
+GENERATED by devel_helpers/gen_hande_layers.py -- do not edit by hand."""
+    metersPerUnit = 1
+    subLayers = [
+        @./{N}_s100_neutral_physics.usda@,
+        @./base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Meshes"
+{{
+{nt.rstrip()}
+}}
+
+{OPENING_OVER}
+''')
+
 # ---------------------------------------------------------------- configuration + root
 def gen_configuration():
     links = ["base_link", "left_finger", "right_finger", "left_fingertip", "right_fingertip"]
@@ -1143,6 +1429,13 @@ over "{N}" (
 
 
 def gen_root(meta):
+    s100_tips = "".join(
+        f'''                "{var}" (
+                    prepend payload = @./payloads/{N}_s100_fingertip_{key}.usda@
+                ) {{
+
+                }}
+''' for key, var, _ in TIPS[1:])
     variants = "".join(
         f'''        "{var}" (
             prepend payload = @./payloads/{N}_fingertip_{key}.usda@
@@ -1188,13 +1481,15 @@ def Xform "{N}" (
     kind = "component"
     prepend references = @./payloads/base.usda@
     variants = {{
+        string Stroke = "Stroke50"
         string FingertipMount = "Outside"
         string Fingertip = "{TIPS[0][1]}"
         string Physics = "PhysX"
     }}
-    # FingertipMount is listed first: it must be stronger than Fingertip, whose payloads
-    # re-sublayer base.usda (translate = 0) and would otherwise cancel the Inside offset.
-    prepend variantSets = ["FingertipMount", "Fingertip", "Physics"]
+    # Stroke is listed first so its payloads (Stroke100) win over every other variant set's. FingertipMount
+    # comes next: it must be stronger than Fingertip, whose payloads re-sublayer base.usda (translate = 0) and
+    # would otherwise cancel the Inside offset.
+    prepend variantSets = ["Stroke", "FingertipMount", "Fingertip", "Physics"]
 )
 {{
     string isaac:namespace (
@@ -1260,6 +1555,39 @@ def Xform "{N}" (
 
         }}
 {variants}    }}
+    # Total opening: "Stroke50" (default, the original Hand-E, 25 mm per finger) or "Stroke100" (100 mm, 50 mm per
+    # finger, own base and fingers). Stroke100 carries its own Physics and Fingertip deltas, as nested variant sets
+    # selected by the same names.
+    variantSet "Stroke" = {{
+        "Stroke50" {{
+
+        }}
+        "Stroke100" (
+            prepend payload = @./payloads/{N}_s100.usda@
+            prepend variantSets = ["Fingertip", "Physics"]
+        ) {{
+            variantSet "Physics" = {{
+                "None" {{
+
+                }}
+                "PhysX" (
+                    prepend payload = @./payloads/{N}_s100_physx_physics.usda@
+                ) {{
+
+                }}
+                "Newton" (
+                    prepend payload = @./payloads/{N}_s100_newton_physics.usda@
+                ) {{
+
+                }}
+            }}
+            variantSet "Fingertip" = {{
+                "{TIPS[0][1]}" {{
+
+                }}
+{s100_tips}            }}
+        }}
+    }}
 }}
 ''')
 
@@ -1285,6 +1613,8 @@ if __name__ == "__main__":
     gen_physx()
     gen_newton_common()
     gen_newton()
+    gen_s100()
+    gen_s100_physics()
     gen_configuration()
     gen_root(dict(bodies=0, mass=0.0, ext=(0, 0, 0)))  # first pass so the stage composes
     meta = compute_metadata()
