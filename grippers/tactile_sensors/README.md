@@ -9,9 +9,10 @@ from robotiq_tactile_sensors.isaaclab import TactileSensorCfg, tactile_map, ROBO
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
-    robot = ...   # a robot with a 2F-85 on Tactile_TSF85 fingertips, spawned with activate_contact_sensors=True
+    robot = ...   # a robot with a 2F-85 (Tactile_TSF85) or a 2F-140 (Tactile_TSF140), spawned with activate_contact_sensors=True
     tactile = TactileSensorCfg(
         prim_path="{ENV_REGEX_NS}/Robot/.../Robotiq_2F_85",         # the prim that holds left_fingertip, right_fingertip
+        mount=ROBOTIQ_2F_85,                                        # the default; ROBOTIQ_2F_140 for the 2F-140
         filter_prim_paths_expr=["{ENV_REGEX_NS}/Object"],           # what the pads can feel (rigid bodies)
     )
 
@@ -26,7 +27,7 @@ tactile = ObsTerm(func=tactile_map, params={"sensor_cfg": SceneEntityCfg("tactil
 | `sensor.object_force` | `(num_envs, 2, num_objects)` N each pad carries from each filtered object, in the order of `filter_prim_paths_expr`. |
 | `sensor.taxel_positions_w` | the taxel centres in the world frame, `(num_envs, 2, rows * cols, 3)`. |
 | `sensor.data` | the raw `ContactSensor` data. |
-| `ROBOTIQ_2F85_TSF85_CFG` | the bare 2F-85 on TSF-85 fingertips as an `ArticulationCfg` (variants `Fingertip=Tactile_TSF85`, `SensorSim=EffectiveResponse`). To mount it on an arm, weld its `base_link` to the flange: see the weld in `demo/teleop/ur5robot_with_2F-85.usda`. |
+| `ROBOTIQ_2F85_TSF85_CFG`, `ROBOTIQ_2F140_TSF140_CFG` | the bare gripper on TSF fingertips as an `ArticulationCfg` (variants `Fingertip=Tactile_TSF85` / `Tactile_TSF140`, `SensorSim=EffectiveResponse`). To mount it on an arm, weld its `base_link` to the flange: see the weld in `demo/teleop/ur5robot_with_2F-85.usda`. |
 
 Setup, once: `pip install -e grippers/tactile_sensors` into the environment that runs Isaac Lab. Isaac Lab 3.0 with the PhysX
 backend (Isaac Sim 6.2).
@@ -61,16 +62,20 @@ MY_GRIPPER = FingertipMounts(
 TactileSensorCfg(prim_path="...", mount=MY_GRIPPER, filter_prim_paths_expr=[...])
 ```
 
-The pad bodies need collision shapes, and the robot must be spawned with `activate_contact_sensors=True`. Only the 2F-85
-has a taxel layout today (`mounts.ROBOTIQ_2F_85`); the 2F-140's TSF fingertip is geometry only.
+The pad bodies need collision shapes, and the robot must be spawned with `activate_contact_sensors=True`. The mounts of the
+2F-85 (`ROBOTIQ_2F_85`) and of the 2F-140 (`ROBOTIQ_2F_140`) are in `mounts.py`: the sensing-area numbers of
+`grippers/tactile/generate_tactile_zones.py`, the script that places the taxel markers in each gripper's USD (a unit test checks
+that the taxels here are those markers, for both grippers). The Hand-E has no TSF fingertip.
 
 ## Checks
 
-- `tests/unit/test_tactile_taxels.py` (CPU, in CI): the layout against the marker grid, the spreading (the taxels sum to the
+- `tests/unit/test_tactile_taxels.py` (CPU, in CI): the taxels against the USD markers of both grippers, the spreading (the taxels sum to the
   force, the peak is under the contact, objects add up, batches are independent).
 - `examples/check_tactile_sensor.py` (Isaac Lab, GPU): the bare gripper closes on a zero-gravity sphere and opens again;
-  asserts no force when open, equal force on both pads (10.7 N), and the force centroid within 6 mm of the sphere along the pad
-  (measured: 1 mm), and no force after opening.
+  asserts no force when open, equal force on both pads (2F-85: 10.7 N, 2F-140: 3.2 N at its stock drive), and the force centroid
+  within 6 mm of the sphere along the pad (measured: 0.05 mm on the 2F-85, 0.02 mm on the 2F-140), and no force after opening.
+  `--gripper 2f85|2f140` picks the gripper. The sphere is put at the middle of the taxel arrays once the pads have almost closed
+  on it (the pads slide along the fingers as the gripper closes), so it tests the mount geometry end to end.
 
 ## Limits
 

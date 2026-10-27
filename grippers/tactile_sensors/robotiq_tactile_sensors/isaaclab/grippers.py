@@ -27,3 +27,18 @@ ROBOTIQ_2F85_TSF85_CFG = ArticulationCfg(
 to mount it on an arm, weld its ``base_link`` to the flange as in grippers/demo/teleop/ur5robot_with_2F-85.usda. The pad
 bodies are then at ``<prim>/Robotiq_2F_85/{left,right}_fingertip``: give that prim as ``TactileSensorCfg.prim_path``.
 The gripper joint goes 0 (open) to about 0.8 rad (closed)."""
+
+ROBOTIQ_2F140_TSF140_CFG = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=str(GRIPPERS_DIR / "Robotiq_2F_140" / "Robotiq_2F_140.usda"),
+        variants={"Fingertip": "Tactile_TSF140", "SensorSim": "EffectiveResponse"},
+        activate_contact_sensors=True,
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(joint_pos={"finger_joint": 0.0}),
+    actuators={
+        "gripper": ImplicitActuatorCfg(joint_names_expr=["finger_joint"], effort_limit_sim=26.0, stiffness=3.0, damping=0.05),
+    },
+)
+"""The 2F-140 on TSF-140 fingertips (the same sensor as the TSF-85, further out on the finger), alone. Like the 2F-85 config
+(see above), with the pad bodies at ``<prim>/Robotiq_2F_140/{left,right}_fingertip`` and the mount ``mounts.ROBOTIQ_2F_140``.
+The gripper joint goes 0 (open) to 0.785 rad (closed): its limit is 45 degrees."""
