@@ -1,7 +1,7 @@
 """
 Live tuning panel for the TSF-85 taxel grid: adjust the POSITION and SIZE of the 7x4
 markers in a running Isaac Sim session and see them move, then bake the printed values
-into grippers/Robotiq_2F_85/tools/generate_tactile_zones.py. The readers place the taxels
+into grippers/tactile/generate_tactile_zones.py (MOUNTS). The readers place the taxels
 from these markers live, so nothing else needs updating while tuning.
 
 Injects an omni.ui window with sliders (7 rows along local Z, 4 cols along X):

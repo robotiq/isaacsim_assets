@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'grippers/Robotiq_2F_85/tactile/**'
+      - 'grippers/tactile/**'
       - 'tests/unit/**'
       - '.github/workflows/tactile-unit.yml'
   merge_group:

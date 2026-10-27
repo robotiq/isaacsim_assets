@@ -28,8 +28,8 @@ from pathlib import Path
 
 import pytest
 
-# the 2F-85's tactile readers (grippers/Robotiq_2F_85/tactile/), imported as ``tactile`` by the tests
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "grippers" / "Robotiq_2F_85"))
+# the TSF-85 tactile readers (grippers/tactile/), imported as ``tactile`` by the tests
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "grippers"))
 
 _app = None
 

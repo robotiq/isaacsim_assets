@@ -188,7 +188,7 @@ def _select_sensor(stage):
         try:
             from pxr import Usd
 
-            sys.path.insert(0, os.path.join(_teleop_dir(), "..", "..", "Robotiq_2F_85"))
+            sys.path.insert(0, os.path.join(_teleop_dir(), "..", ".."))
             from tactile.contact_points import ContactPointReader
 
             with Usd.EditContext(stage, stage.GetSessionLayer()):  # keep the scene file clean

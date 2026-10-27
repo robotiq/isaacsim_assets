@@ -1,4 +1,5 @@
-"""Readers of the 2F-85's TSF-85 tactile sensor (``Fingertip=Tactile_TSF85``), one per ``SensorSim`` variant.
+"""Readers of the TSF-85 tactile sensor of the 2F grippers (``Fingertip=Tactile_TSF85`` on the 2F-85,
+``Fingertip=Tactile_TSF140`` on the 2F-140), one per ``SensorSim`` variant.
 
 The variant puts a 7 x 4 marker grid under each ``<side>_inner_finger`` and tags it with
 ``robotiq:tactile:method``. ``make_tactile_sensor(stage, root, engine)`` returns the reader for the stage:
@@ -67,7 +68,8 @@ class TactileSensor:
         for side in SIDES:
             markers = stage.GetPrimAtPath(markers_path(self.root, side))
             if not markers.IsValid():
-                raise ValueError(f"no taxel markers at {markers.GetPath()}: select Fingertip=Tactile_TSF85 and a SensorSim")
+                raise ValueError(f"no taxel markers at {markers.GetPath()}: select the TSF fingertip (Tactile_TSF85 / "
+                                 "Tactile_TSF140) and a SensorSim")
             finger_inv = cache.GetLocalToWorldTransform(stage.GetPrimAtPath(f"{self.root}/{side}_inner_finger")).GetInverse()
             cells = []
             for prim in markers.GetChildren():
@@ -227,8 +229,8 @@ def _method(stage, root: str) -> str:
     for side in SIDES:
         prim = stage.GetPrimAtPath(markers_path(root, side))
         if not prim.IsValid():
-            raise ValueError(f"no taxel markers at {prim.GetPath()}: select Fingertip=Tactile_TSF85 and "
-                             "SensorSim=Raycast or EffectiveResponse")
+            raise ValueError(f"no taxel markers at {prim.GetPath()}: select the TSF fingertip (Tactile_TSF85 / "
+                             "Tactile_TSF140) and SensorSim=Raycast or EffectiveResponse")
         attr = prim.GetAttribute("robotiq:tactile:method")
         methods[side] = attr.Get() if attr else None
     if len(set(methods.values())) != 1:
@@ -236,10 +238,12 @@ def _method(stage, root: str) -> str:
     return methods["left"]
 
 
-def make_tactile_sensor(stage, root: str, engine: str = "physx", gripper: str = "Robotiq_2F_85",
+def make_tactile_sensor(stage, root: str, engine: str = "physx", gripper: str | None = None,
                         object_path: str | None = None, quantity: str = "force") -> TactileSensor:
     """The reader for the stage's ``SensorSim`` variant, ``prepare``d. ``engine``: "physx" | "newton";
+    ``gripper``: e.g. "Robotiq_2F_140", by default the articulation root's name (``root`` ends with it);
     ``object_path``: the one prim whose contacts count, or None for any (``EffectiveTactile``)."""
+    gripper = gripper or root.rstrip("/").rsplit("/", 1)[-1]
     method = _method(stage, root)
     if method == "raycast":
         sensor = RaycastTactile(root, quantity)

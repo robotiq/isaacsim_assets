@@ -2,7 +2,7 @@
 
 Grip an object with the Robotiq 2F-85 and watch a **live 7×4 tactile heatmap** per finger, driving the
 gripper with a **gamepad trigger** or from Isaac. The sensor has two models (`SensorSim`), described in
-[`../Robotiq_2F_85/tactile/README.md`](../Robotiq_2F_85/tactile/README.md): `EffectiveResponse`
+[`../tactile/README.md`](../tactile/README.md): `EffectiveResponse`
 (this scene's default, any step rate, PhysX and Newton) and `Raycast` (PhysX, needs ≥ 240 Hz).
 
 | Tool | What it does |
@@ -32,7 +32,7 @@ From this folder (`grippers/demo/`).
 4. **Drive the gripper:** `python3 mcp_bridge/gamepad_gripper.py` (Ctrl-C to stop), then squeeze the cube. Without
    a gamepad, open **Window → Physics → Physics Inspector** and drag the `finger_joint` Drive Target slider.
 5. **Optional:** `python3 mcp_bridge/tune_tactile_zones.py` moves and resizes the grid live; "Print values" gives
-   the numbers to put in `../Robotiq_2F_85/tools/generate_tactile_zones.py`.
+   the numbers to put in `MOUNTS` of `../tactile/generate_tactile_zones.py`.
 
 For the teleop demo, `TELEOP_SENSORSIM=EffectiveResponse ./run_demo.sh` (see [`teleop/README.md`](teleop/README.md))
 selects the sensor at scene open and shows the same heatmap on its own.

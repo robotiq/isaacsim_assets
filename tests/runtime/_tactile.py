@@ -1,5 +1,5 @@
 """Test-side helpers for the TSF-85 tactile sensor: the SensorSim variant selections and the
-live heatmap of --gui runs. The readers themselves are grippers/Robotiq_2F_85/tactile/."""
+live heatmap of --gui runs. The readers themselves are grippers/tactile/."""
 
 from __future__ import annotations
 

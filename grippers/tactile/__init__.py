@@ -1,4 +1,4 @@
-"""Readers of the 2F-85's TSF-85 tactile sensor, one per ``SensorSim`` variant (readers.py).
+"""Readers of the TSF-85 tactile sensor of the 2F-85 and 2F-140, one per ``SensorSim`` variant (readers.py).
 
 Names are imported on first use, so ``tactile.effective_response`` (numpy / scipy only) imports without Isaac.
 """

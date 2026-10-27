@@ -1,7 +1,7 @@
 """
 Live 7x4 heatmap of the TSF-85 tactile sensor in a running Isaac Sim session, for either
 ``SensorSim`` variant of the 2F-85. The injected code runs the readers of
-grippers/Robotiq_2F_85/tactile/ (``make_tactile_sensor``) and shows them in an omni.ui window.
+grippers/tactile/ (``make_tactile_sensor``) and shows them in an omni.ui window.
 
 Run from a host shell (NOT inside Isaac) against a session with the MCP extension up
 (see README.md, TCP 127.0.0.1:8766), with the gripper loaded with Fingertip=Tactile_TSF85
@@ -26,7 +26,7 @@ import socket
 import sys
 from pathlib import Path
 
-GRIPPER_PACKAGE_DIR = str(Path(__file__).resolve().parents[2] / "Robotiq_2F_85")  # contains tactile/
+GRIPPER_PACKAGE_DIR = str(Path(__file__).resolve().parents[2])  # contains tactile/
 
 
 def send(cmd, t=70):

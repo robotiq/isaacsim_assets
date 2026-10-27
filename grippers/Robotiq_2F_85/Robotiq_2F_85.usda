@@ -214,7 +214,7 @@ def Xform "Robotiq_2F_85" (
         }
         "Tactile_TSF85" (
             prepend payload = @./payloads/Robotiq_2F_85_fingertip_tsf85.usda@
-            # Nested "SensorSim": the simulated TSF-85 sensor, see tactile/README.md.
+            # Nested "SensorSim": the simulated TSF-85 sensor, see ../tactile/README.md.
             # "None" (default); "EffectiveResponse" (recommended: rigid pad, PhysX and Newton, any step
             # rate); "Raycast" (compliant pad, PhysX only, needs a step of at least 240 Hz).
             # Simulated and uncalibrated: the output is not the real sensor's counts.
