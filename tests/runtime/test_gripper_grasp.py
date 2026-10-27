@@ -70,6 +70,9 @@ _REVOLUTE_2F = Spec("finger_joint", "right_outer_knuckle_joint", 0.8, math.radia
                     math.radians(1.0), math.radians(0.1), "deg")
 _PRISMATIC_HAND_E = Spec("left_finger_joint", "right_finger_joint", 0.025, 2.0e-3, 1.0e-3, 0.5e-3, 0.05e-3, "mm")
 
+# The Stroke100 variant: 0 (open) to 50 mm each; the cube (20 mm) stops the fingers at 40 mm.
+_PRISMATIC_HAND_E_100 = Spec("left_finger_joint", "right_finger_joint", 0.050, 2.0e-3, 1.0e-3, 0.5e-3, 0.05e-3, "mm")
+
 CASES = {
     ("Robotiq_2F_85", "Physx_parallel_grip"): _REVOLUTE_2F,
     ("Robotiq_2F_85", "Physx_compliant"): _REVOLUTE_2F,
@@ -81,6 +84,8 @@ CASES = {
     ("Robotiq_2F_140", "Newton_compliant"): _REVOLUTE_2F,
     ("Robotiq_Hand_E", "PhysX"): _PRISMATIC_HAND_E,
     ("Robotiq_Hand_E", "Newton"): _PRISMATIC_HAND_E,
+    ("Robotiq_Hand_E", "PhysX_Stroke100"): _PRISMATIC_HAND_E_100,
+    ("Robotiq_Hand_E", "Newton_Stroke100"): _PRISMATIC_HAND_E_100,
 }
 
 

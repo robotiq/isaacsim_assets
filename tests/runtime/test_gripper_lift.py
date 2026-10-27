@@ -32,7 +32,7 @@ from pxr import PhysxSchema, UsdPhysics
 from _contacts import ContactReader
 from _cube import CUBE_PATH, add_hanging_cube, load_preset
 from _lift import LIFT_JOINT, duration, mount_lift, pose_change, profile, relative_pose
-from _scene import FRAME_DT, engine_for, load_gripper, move_to, step
+from _scene import FRAME_DT, STROKE100_SUFFIX, engine_for, load_gripper, move_to, step
 
 PADS = ("left_fingertip", "right_fingertip")
 SETTLE_FRAMES = 30
@@ -55,6 +55,8 @@ PHYSX_HZ = 1000  # as in test_gripper_grasp.py: the default rate mis-resolves th
 
 # Driven joint and its full-close target, beyond the cube (as in test_gripper_grasp.py).
 TARGET = {"Robotiq_2F_85": 0.8, "Robotiq_2F_140": 0.8, "Robotiq_Hand_E": 0.025}
+# The Stroke100 variant closes 0.050 m per finger: the cube stops them at 40 mm, so the target must reach past that.
+TARGET_STROKE100 = 0.050
 DRIVEN = {"Robotiq_2F_85": "finger_joint", "Robotiq_2F_140": "finger_joint", "Robotiq_Hand_E": "left_finger_joint"}
 
 CASES = [
@@ -68,6 +70,8 @@ CASES = [
     ("Robotiq_2F_140", "Newton_compliant"),
     ("Robotiq_Hand_E", "PhysX"),
     ("Robotiq_Hand_E", "Newton"),
+    ("Robotiq_Hand_E", "PhysX_Stroke100"),
+    ("Robotiq_Hand_E", "Newton_Stroke100"),
 ]
 
 
@@ -105,7 +109,8 @@ def test_gripper_lifts_cube(simulation_app, view, gripper: str, physics: str) ->
     assert not reader.read(), f"gripper touches the cube while open: {sorted(reader.read())}"
 
     # Grasp: close toward full close, past the cube, and hold.
-    move_to(simulation_app, scene, driven, TARGET[gripper], settle_frames=GRASP_HOLD_FRAMES)
+    target = TARGET_STROKE100 if physics.endswith(STROKE100_SUFFIX) else TARGET[gripper]
+    move_to(simulation_app, scene, driven, target, settle_frames=GRASP_HOLD_FRAMES)
     grasped = reader.read()
     q_lift0 = float(robot.get_dof_positions().numpy()[0][lift])
     cube_z0 = _pose(cube)[0][2]

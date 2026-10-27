@@ -75,7 +75,18 @@ _PRISMATIC_HAND_E_C10 = Spec(
     extra_followers=("finger_3_joint",),
 )
 
-# (gripper, Physics variant) -> spec; the engine follows the variant name.
+# The Stroke100 variant: 0 (open) to 50 mm each. The target stays short of the 50 mm stop.
+_PRISMATIC_HAND_E_100 = Spec(
+    driven="left_finger_joint",
+    follower="right_finger_joint",
+    target=0.045,
+    open_tol=0.5e-3,
+    close_tol=1.0e-3,
+    unit="mm",
+)
+
+# (gripper, Physics variant) -> spec; the engine follows the variant name. A "_Stroke100" suffix is the Hand-E's
+# 100 mm stroke (see _scene.variant_selections).
 CASES = {
     ("Robotiq_2F_85", "Physx_parallel_grip"): _REVOLUTE_2F,
     ("Robotiq_2F_85", "Physx_compliant"): _REVOLUTE_2F,
@@ -89,6 +100,8 @@ CASES = {
     ("Robotiq_2F_140", "Newton_compliant"): _REVOLUTE_2F_140,
     ("Robotiq_Hand_E", "Newton"): _PRISMATIC_HAND_E,
     ("Robotiq_Hand_E_C10", "Newton"): _PRISMATIC_HAND_E_C10,
+    ("Robotiq_Hand_E", "PhysX_Stroke100"): _PRISMATIC_HAND_E_100,
+    ("Robotiq_Hand_E", "Newton_Stroke100"): _PRISMATIC_HAND_E_100,
 }
 
 
