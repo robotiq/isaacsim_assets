@@ -1,23 +1,24 @@
 # TSF-85 tactile sensor
 
-The `Tactile_TSF85` fingertip can carry a simulated TSF-85 tactile sensor: a **7×4 grid of taxels per finger**
+The TSF-85 fingertip of the 2F-85 (`Tactile_TSF85`) and of the 2F-140 (`Tactile_TSF140`, the same sensor on the
+2F-140's finger) can carry a simulated TSF-85 tactile sensor: a **7×4 grid of taxels per finger**
 (row 0 at the fingertip end), filled from the physics engine's contact data. Two models, selected by
 `SensorSim`. **Uncalibrated:** the output is not in the real sensor's counts and has not been compared with
 recordings of it (the paper's per-taxel gain and noise are not modelled).
 
 ## Selecting a model
 
-On the root `Robotiq_2F_85` prim:
+On the gripper's root prim (`Robotiq_2F_85` or `Robotiq_2F_140`), the same `SensorSim` variants:
 
 | variantSet | value | |
 |---|---|---|
-| `Fingertip` | `Tactile_TSF85` | the TSF-85 fingertip; `SensorSim` only exists under it |
+| `Fingertip` | `Tactile_TSF85` (2F-85) / `Tactile_TSF140` (2F-140) | the TSF fingertip; `SensorSim` only exists under it |
 | `SensorSim` | `None` | no sensor (default) |
 | `SensorSim` | `EffectiveResponse` | **recommended.** The effective contact response of the pad's contact force and patch. Rigid pad; PhysX and Newton, any step rate. |
 | `SensorSim` | `Raycast` | A ray per taxel measures the depth of the object past a **compliant pad**, and the pad's spring turns it into a force. PhysX only, needs a step of **at least 240 Hz** (validated at 1000 Hz): at 60 Hz the pad is not resolved and the force reads about 0. |
 
 ```python
-prim.GetVariantSet("Fingertip").SetVariantSelection("Tactile_TSF85")
+prim.GetVariantSet("Fingertip").SetVariantSelection("Tactile_TSF85")   # "Tactile_TSF140" on the 2F-140
 prim.GetVariantSet("SensorSim").SetVariantSelection("EffectiveResponse")
 ```
 
@@ -27,7 +28,7 @@ This folder has one reader per model and `make_tactile_sensor(stage, root, engin
 for the stage's variant. Create it **before play**, then each frame while playing:
 
 ```python
-sensor = make_tactile_sensor(stage, "/World/Gripper/Robotiq_2F_85", "physx")   # or "newton"
+sensor = make_tactile_sensor(stage, "/World/Gripper/Robotiq_2F_85", "physx")   # or "newton"; .../Robotiq_2F_140
 grids = sensor.read()        # {"left": (7, 4), "right": (7, 4)}
 ```
 
@@ -51,13 +52,23 @@ The model parameters travel on the stage as `robotiq:tactile:*` attributes of ea
 
 ## Files
 
+The sensor is the same on both grippers, so this folder is shared; each gripper only has its generated payloads.
+
 | | |
 |---|---|
-| `payloads/Robotiq_2F_85_tactile_zones.usda` | the marker grid, shared by both models |
-| `payloads/Robotiq_2F_85_tactile_raycast.usda` | `Raycast`: the compliant pad and the ray parameters |
-| `payloads/Robotiq_2F_85_tactile_effective_response.usda` | `EffectiveResponse`: the Eq. 1 parameters, articulation kept awake |
-| `tools/generate_tactile_zones.py` | generates the three payloads; the grid frame is measured from the TSF-85 case bounds |
-| `tactile/` (this folder, with this README) | `effective_response.py` (Eq. 1), `contact_points.py` (PhysX / Newton contacts), `readers.py`, `plot.py` |
+| `<gripper>/payloads/<gripper>_tactile_zones.usda` | the marker grid, shared by both models |
+| `<gripper>/payloads/<gripper>_tactile_raycast.usda` | `Raycast`: the compliant pad and the ray parameters |
+| `<gripper>/payloads/<gripper>_tactile_effective_response.usda` | `EffectiveResponse`: the Eq. 1 parameters, articulation kept awake |
+| `generate_tactile_zones.py` | generates those payloads for every gripper in `MOUNTS` (where the sensing area sits on each gripper's inner finger, measured from its TSF tip); `python3 grippers/tactile/generate_tactile_zones.py` |
+| this folder | `effective_response.py` (Eq. 1), `contact_points.py` (PhysX / Newton contacts), `readers.py`, `plot.py` |
 
-The markers do not collide: the TSF-85 pad is the only collider. Tests: `tests/runtime/test_tactile_sensor.py`
-(Isaac Sim) and `tests/unit/test_effective_response.py` (numpy / scipy only). Demo: [`../../demo/TACTILE_DEMO.md`](../../demo/TACTILE_DEMO.md).
+The markers do not collide: the TSF pad is the only collider. Their front face is on the collider's surface,
+which on the 2F-140 is the TSF-140 tip body: its collider (`tip_tsf140/mesh_0`) leaves out the sensing pad, whose
+visual stands 1.9 mm proud of it, so a gripped object looks 1.9 mm sunk into the 2F-140's pads.
+
+To add a gripper: measure its sensing area in the `<side>_inner_finger` frame, add it to `MOUNTS`, run the
+generator, nest the `SensorSim` variant set under its TSF fingertip (as in `Robotiq_2F_140.usda`), and add it to
+`FINGERTIPS` in `tests/runtime/_tactile.py` with a box preset `tests/runtime/fixed_cubes/<gripper>_tactile.json`.
+
+Tests: `tests/runtime/test_tactile_sensor.py` (Isaac Sim, both grippers) and `tests/unit/test_effective_response.py`
+(numpy / scipy only). Demo: [`../demo/TACTILE_DEMO.md`](../demo/TACTILE_DEMO.md).

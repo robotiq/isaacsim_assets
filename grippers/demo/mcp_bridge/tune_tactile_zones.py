@@ -14,20 +14,39 @@ Injects an omni.ui window with sliders (7 rows along local Z, 4 cols along X):
 
 "Print values" dumps the current numbers to paste into the generator.
 
-    python3 tune_tactile_zones.py          # open the panel
-    python3 tune_tactile_zones.py --off    # close it
+    python3 tune_tactile_zones.py                             # the 2F-85
+    python3 tune_tactile_zones.py --gripper Robotiq_2F_140    # the 2F-140
+    python3 tune_tactile_zones.py --off                       # close it
 
-Requires the gripper loaded with Fingertip=Tactile_TSF85 and a SensorSim.
+Requires the gripper loaded with its TSF fingertip (Tactile_TSF85 / Tactile_TSF140) and a SensorSim.
 Set GRIPPER_ROOT for your scene.
 """
+import argparse
 import json
 import socket
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # grippers/, for tactile.generate_tactile_zones
+from tactile import generate_tactile_zones as gen  # noqa: E402  (stdlib only)
 
 GRIPPER_ROOT = "/World/Gripper"
-# Seed values = current generator constants (metres). 7 rows along local Z,
+ap = argparse.ArgumentParser(description="TSF-85 taxel grid tuning panel")
+ap.add_argument("--gripper", default="Robotiq_2F_85", choices=list(gen.MOUNTS))
+ap.add_argument("--off", action="store_true", help="close the panel")
+ARGS = ap.parse_args()
+# Seed values = the gripper's current generator values (metres). 7 rows along local Z,
 # 4 cols along local X; cz = rows centre, cx = cols centre, y = grip-face |Y|.
-SEED = dict(cx=0.0, cz=0.1324, y=0.0416, h=0.038, w=0.0235, th=0.004)
+_M = gen.MOUNTS[ARGS.gripper]
+SEED = dict(cx=_M.center_x, cz=_M.center_z, y=_M.pad_y, h=gen.SENSING_HEIGHT, w=gen.SENSING_WIDTH,
+            th=gen.ZONE_THICKNESS)
+# Slider ranges around the seed: (key, label, min, max, step[m]), the step sets the drag resolution.
+SPECS = [("cz", "Center Z (rows/length)", SEED["cz"] - 0.05, SEED["cz"] + 0.05, 0.0002),
+         ("cx", "Center X (cols/across)", -0.03, 0.03, 0.0002),
+         ("y", "Grip face |Y|", SEED["y"] - 0.015, SEED["y"] + 0.015, 0.0002),
+         ("h", "Length (7-row span)", 0.02, 0.055, 0.0005),
+         ("w", "Width (4-col span)", 0.015, 0.035, 0.0005),
+         ("th", "Thickness", 0.001, 0.01, 0.0002)]
 
 
 def send(cmd, t=70):
@@ -45,7 +64,7 @@ def send(cmd, t=70):
     return {}
 
 
-if "--off" in sys.argv:
+if ARGS.off:
     code = r'''
 import carb
 w = getattr(carb, "_tzt", None)
@@ -66,8 +85,8 @@ try:
 
     ROWS, COLS, GAP = 7, 4, 0.0004
     G = "%s"
-    FING = {"left": G + "/Robotiq_2F_85/left_inner_finger",
-            "right": G + "/Robotiq_2F_85/right_inner_finger"}
+    FING = {"left": G + "/%s/left_inner_finger",
+            "right": G + "/%s/right_inner_finger"}
     stage = omni.usd.get_context().get_stage()
     P = dict(cx=%r, cz=%r, y=%r, h=%r, w=%r, th=%r)
 
@@ -84,6 +103,11 @@ try:
                 x = xmin + ((c + 0.5) * col_x + c * GAP)
                 out.append((x, pad_y, z))
         return out, col_x, row_z
+
+    for side, path in FING.items():
+        if not stage.GetPrimAtPath(path + "/tactile_zone_visuals").IsValid():
+            raise RuntimeError("no taxel markers at %%s/tactile_zone_visuals: load the gripper with its TSF "
+                               "fingertip and a SensorSim, or pass the matching --gripper" %% path)
 
     def _set(prim, tr, sc):
         if not prim or not prim.IsValid():
@@ -104,14 +128,8 @@ try:
         try: prev["win"].destroy()
         except: pass
 
-    win = ui.Window("Tactile Grid Tuning", width=380, height=340)
-    # (key, label, min, max, step[m])  -- step sets the drag resolution
-    SPECS = [("cz", "Center Z (rows/length)", 0.08, 0.18, 0.0002),
-             ("cx", "Center X (cols/across)", -0.03, 0.03, 0.0002),
-             ("y",  "Grip face |Y|", 0.03, 0.06, 0.0002),
-             ("h",  "Length (7-row span)", 0.02, 0.055, 0.0005),
-             ("w",  "Width (4-col span)", 0.015, 0.035, 0.0005),
-             ("th", "Thickness", 0.001, 0.01, 0.0002)]
+    win = ui.Window("Tactile Grid Tuning: %s", width=380, height=340)
+    SPECS = %r
     with win.frame:
         with ui.VStack(spacing=6, height=0):
             ui.Label("Drag a field (fine step) or type a value; visuals update live.",
@@ -135,7 +153,8 @@ try:
     print("tuning panel open")
 except Exception:
     print("ERR:\n" + traceback.format_exc())
-''' % (GRIPPER_ROOT, SEED["cx"], SEED["cz"], SEED["y"], SEED["h"], SEED["w"], SEED["th"])
+''' % (GRIPPER_ROOT, ARGS.gripper, ARGS.gripper, SEED["cx"], SEED["cz"], SEED["y"], SEED["h"], SEED["w"],
+       SEED["th"], ARGS.gripper, SPECS)
 
 r = send({"type": "simulation.execute_script", "params": {"code": code}})
 out = r.get("result", r) if isinstance(r, dict) else r
