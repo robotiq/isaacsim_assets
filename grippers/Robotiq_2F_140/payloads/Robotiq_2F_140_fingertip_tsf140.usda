@@ -49,3 +49,18 @@ over "Meshes"
         }
     }
 }
+
+# The TSF-140 sensor pads open less than the standard fingertips (132 mm pad to pad, measured on the composed mesh).
+over "Robotiq_2F_140"
+{
+    over "Robotiq_2F_140"
+    {
+        over "base_link"
+        {
+            over "grip_frame"
+            {
+                float gripper_maxOpening = 0.132
+            }
+        }
+    }
+}
