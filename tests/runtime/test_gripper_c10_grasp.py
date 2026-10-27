@@ -60,7 +60,9 @@ CENTRE_TOL = 1.0e-3  # m, the puck's axis ends up this close to the gripper axis
 PUCK_REST = 0.05e-3  # m, the puck moves less than this over the sampled frames
 PHYSX_HZ = 1000  # PhysX steps the test scene at 60 Hz by default: too coarse for a stiff squeeze (see test_gripper_grasp.py)
 
-CASES = ["PhysX", "Newton"]
+# (gripper, Physics variant): the gripper is a parameter so that the test id names it, which is how the saved view
+# presets (tests/runtime/views/<gripper>.json) are found.
+CASES = [(GRIPPER, "PhysX"), (GRIPPER, "Newton")]
 
 
 def add_puck(stage) -> None:
@@ -76,8 +78,8 @@ def add_puck(stage) -> None:
     UsdPhysics.MassAPI.Apply(cyl.GetPrim()).CreateMassAttr(MASS)
 
 
-@pytest.mark.parametrize("physics", CASES)
-def test_c10_grasps_puck(simulation_app, view, physics: str) -> None:
+@pytest.mark.parametrize(("gripper", "physics"), CASES, ids=[f"{g}-{p}" for g, p in CASES])
+def test_c10_grasps_puck(simulation_app, view, gripper: str, physics: str) -> None:
     reader = ContactReader(GRIPPER, f"/World/Gripper/{GRIPPER}", PUCK_PATH, engine_for(physics))
 
     def setup(stage):
