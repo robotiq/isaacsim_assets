@@ -46,6 +46,10 @@ GRIPPERS = Path(__file__).resolve().parents[1]
 MOUNTS = {
     # TSF-85 case X [-0.0135, 0.0135], Z [0.1024, 0.1539], left Y [-0.0627, -0.0395] (the case is the collider).
     "Robotiq_2F_85": Mount(center_x=0.0, center_z=0.1324, pad_y=0.0416),
+    # TSF-140 tip: the sensing pad (mesh_1) is X [-0.01196, 0.01162], Z [0.16822, 0.2068], the same 23.6 x 38.6 mm
+    # as the TSF-85's. The collider is the tip body (mesh_0) only, whose face is at |Y| = 0.06807: the visual pad
+    # stands 1.9 mm proud of it, so objects stop at the body face and the markers sit flush with that.
+    "Robotiq_2F_140": Mount(center_x=-0.00017, center_z=0.18751, pad_y=0.06807 + ZONE_THICKNESS / 2),
 }
 
 # The TSF-85 soft layer is 3 mm of E = 1.289 MPa, nu = 0.173 (ETS CoRo lab model,
