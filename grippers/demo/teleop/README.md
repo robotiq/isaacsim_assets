@@ -171,8 +171,8 @@ follows), instead of `finger_joint` over 0.78 rad.
 | --------- | ----------- | ----------------------- |
 | `Physx_compliant` *(default)* | normal Isaac Sim (`isaac-sim.sh`) | nothing |
 | `Physx_parallel_grip` | normal Isaac Sim | nothing |
-| `Newton_compliant` | **Newton experience** (`isaac-sim.newton.sh`) | nothing on 6.1+; on 6.0.1 run the gripper's `newton/apply_gripper_tuning.py` |
-| `Newton_parallel_grip` | **Newton experience** | nothing on 6.1+; on 6.0.1 run the gripper's `newton/apply_gripper_tuning.py` |
+| `Newton_compliant` | **Newton experience** (`isaac-sim.newton.sh`) | nothing |
+| `Newton_parallel_grip` | **Newton experience** | nothing |
 
 `Gripper` payloads the gripper's unified asset under `wrist_3_link`, deletes
 its own `PhysicsArticulationRootAPI` so it merges into the arm articulation,
@@ -195,14 +195,11 @@ Switch variants by relaunching, not live in a running scene: grippers and
 grips have different DOF counts (e.g. compliant 8 vs parallel 6), and the
 teleop crashes (CUDA device-side assert) if the articulation changes under it.
 
-**Newton on Isaac Sim 6.1+ needs no runtime step.** The scene sublayers the
-shared Newton scene layer, which authors the elliptic cone and `mjc:option:impratio = 10`
-(anti-slip) on `/PhysicsScene`, and the gripper asset authors the finger-coupling equality; Newton 1.5.0 reads both from USD. On **Isaac Sim 6.0.1
-(Newton 1.2.1)** neither is read, so for the 2F grippers run
-`newton/apply_gripper_tuning.py` from **Window → Script Editor** after each
-Stop → Play, or the fingers go floppy. The Hand-E needs no tuning. See
-[the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the
-details.
+**Newton needs no runtime step** (Isaac Sim 6.1+). The scene sublayers the shared Newton scene layer,
+which authors the elliptic cone and `mjc:option:impratio = 10` (anti-slip) on `/PhysicsScene`, and the
+gripper asset authors the finger-coupling equality; Newton 1.5.0 reads both from USD. Isaac Sim 6.0.1 is
+no longer supported (the last version that supports it is the git tag `last-isaac-6.0-supported`). See
+[the Gripper Simulation Guide](../../GRIPPER_SIMULATION_GUIDE.md) for the details.
 
 ## Haptics (DualSense)
 

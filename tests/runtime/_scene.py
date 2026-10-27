@@ -4,7 +4,6 @@ the matching engine, playing and ready to be driven."""
 from __future__ import annotations
 
 import math
-import runpy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,26 +14,6 @@ from isaacsim.core.simulation_manager import SimulationManager
 
 REPO = Path(__file__).resolve().parents[2]
 SCENE_LAYER = REPO / "grippers" / "scene" / "Robotiq_Newton_scene_physics.usda"
-
-# Isaac Sim 6.0.1 (Newton 1.2.1) cannot load the 2F's `impratio` or its coupling `solref`/`solimp` from USD, so
-# there the Newton 2F variants need the gripper's runtime tuning after each play (see grippers/<gripper>/newton/).
-# Newton >= 1.5 (Isaac Sim 6.1+) reads both, so there the tests run on the USD alone (the shared scene layer and the
-# asset) and cover the script-free setup.
-_NEWTON_TUNING = {
-    ("Robotiq_2F_85", "Newton_parallel_grip"): "newton/apply_gripper_tuning.py",
-    ("Robotiq_2F_85", "Newton_compliant"): "newton/apply_gripper_tuning.py",
-    ("Robotiq_2F_140", "Newton_parallel_grip"): "newton/apply_gripper_tuning.py",
-    ("Robotiq_2F_140", "Newton_compliant"): "newton/apply_gripper_tuning.py",
-}
-
-
-def _needs_runtime_tuning() -> bool:
-    """True on Newton < 1.5 (Isaac Sim 6.0.1), which cannot load that tuning from USD."""
-    import newton
-
-    major, minor = (int(part) for part in newton.__version__.split(".")[:2])
-    return (major, minor) < (1, 5)
-
 
 def engine_for(physics: str) -> str:
     """A Physics variant starting with "Newton" runs on Newton, anything else on PhysX."""
@@ -55,7 +34,7 @@ class GripperScene:
 def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=None,
                  variants: list[tuple[str, str]] | None = None) -> GripperScene:
     """Fresh stage with the gripper at /World/Gripper on the engine matching
-    ``physics``, timeline playing (and, on Newton < 1.5, the runtime tuning applied). Call ``view``
+    ``physics``, timeline playing. Call ``view``
     (the conftest fixture) once the stage is populated, if given. ``setup(stage)``
     runs after the engine switch and before play, to add scene content (e.g. an
     object to grasp) that the engine must see when it builds its model.
@@ -65,8 +44,8 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     timeline = omni.timeline.get_timeline_interface()
     timeline.stop()
     stage = stage_utils.create_new_stage()
-    # The scene-level Newton settings the grippers need on Isaac Sim 6.1+ (the elliptic
-    # cone and impratio, see grippers/scene); Isaac Sim 6.0.1 ignores them, so they are harmless there.
+    # The scene-level Newton settings the grippers need (the elliptic cone and impratio,
+    # see grippers/scene).
     assert SCENE_LAYER.is_file(), SCENE_LAYER
     stage.GetRootLayer().subLayerPaths.append(str(SCENE_LAYER))
     assert stage.GetPrimAtPath("/PhysicsScene"), f"{SCENE_LAYER} did not compose a /PhysicsScene"
@@ -100,9 +79,6 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     robot = Articulation(root)
     timeline.play()
     simulation_app.update()
-    tuning = _NEWTON_TUNING.get((gripper, physics))
-    if tuning and _needs_runtime_tuning():
-        runpy.run_path(str(REPO / "grippers" / gripper / tuning))  # idempotent, needs a built model
     return GripperScene(gripper, physics, robot, root)
 
 

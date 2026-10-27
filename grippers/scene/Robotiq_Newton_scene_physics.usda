@@ -18,6 +18,6 @@ def PhysicsScene "PhysicsScene" (
     uniform token mjc:option:cone = "elliptic"
 
     # Anti-slip friction impedance ratio (what the 2F grippers need; the Hand-E does not use it and is not
-    # hurt by it). Isaac Sim 6.0.1 ignores it: apply_gripper_tuning.py sets it at runtime there.
+    # hurt by it). Isaac Sim 6.0.1 ignores it and is no longer supported.
     uniform double mjc:option:impratio = 10
 }
