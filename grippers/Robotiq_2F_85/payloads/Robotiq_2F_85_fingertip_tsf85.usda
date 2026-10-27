@@ -29,3 +29,18 @@ over "Meshes"
         }
     }
 }
+
+# The TSF-85 sensor pads open less than the standard fingertips (79 mm pad to pad, measured on the composed mesh).
+over "Robotiq_2F_85"
+{
+    over "Robotiq_2F_85"
+    {
+        over "base_link"
+        {
+            over "grip_frame"
+            {
+                float gripper_maxOpening = 0.079
+            }
+        }
+    }
+}

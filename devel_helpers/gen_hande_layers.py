@@ -129,6 +129,11 @@ STUB = dict(mass=0.01784, com=(-0.0141, -0.0139, 0.0925), dims=(0.0138, 0.0452, 
 TIP = dict(mass=0.0201, com=(-0.0041, -0.0271, 0.1229), dims=(0.0292, 0.0174, 0.0465))  # LEFT Std tip, shared by ALL tips
 QCODE = "Q1340324"  # Wikidata Q-code SimReady SR.003 requires; same gripper concept as the 2F-85 / 2F-140
 GRIP_FRAME_Z = 0.13  # m, provisional TCP between the pads
+PAD_WIDTH = 0.0198  # m, fingertip pad width along X (GR.003 grip-line length), Std tips
+# Pad-to-pad opening (m) of the non-default fingertips (Outside mount), measured on the composed mesh in the top
+# 10 mm of the tip. Support/Extender end below the grip_frame, so their value is at the tip's own top.
+TIP_OPENING = {"flat_overmolded": 0.0491, "support": 0.0378, "extender": 0.0316, "binpick": 0.0486}
+MAX_OPENING = 0.050  # m, pad-to-pad at full open (Std tips, Outside mount; = 2 x STROKE)
 
 
 def mirror(v):
@@ -178,6 +183,30 @@ def gen_base():
             {{
                 double3 xformOp:translate = (0, 0, {GRIP_FRAME_Z})
                 uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                # FET028 gripper site. grip_line is the tube axis (X, GR.003): its length is the pad width, and the
+                # closure is forward x grip_line (Y). The benchmark's own hints draw it pad-to-pad; see NVIDIA/simready-foundation#42.
+                custom token simready:attactment:socketType = "Gripper"
+                float gripper_maxOpening = {MAX_OPENING:g}
+                float gripper_maxPayload = 7.0
+
+                def BasisCurves "gripper_forward_axis"
+                {{
+                    point3f[] points = [(0, 0, 0), (0, 0, 0.05)]
+                    float3[] extent = [(0, 0, 0), (0, 0, 0.05)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }}
+
+                def BasisCurves "gripper_grip_line"
+                {{
+                    point3f[] points = [({-PAD_WIDTH / 2:g}, 0, 0), ({PAD_WIDTH / 2:g}, 0, 0)]
+                    float3[] extent = [({-PAD_WIDTH / 2:g}, 0, 0), ({PAD_WIDTH / 2:g}, 0, 0)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }}
             }}
 '''
     default = TIPS[0][0]
@@ -351,6 +380,14 @@ over "{N}"
 {{
     over "{N}"
     {{
+        over "base_link"
+        {{
+            over "grip_frame"
+            {{
+                float gripper_maxOpening = {TIP_OPENING[key]:g}
+            }}
+        }}
+
         over "Joints"
         {{
             over "left_finger_joint"

@@ -149,7 +149,8 @@
     "FET_028_MUJOCO": {
       "blocking": [],
       "optional": [
-        "com.nvidia.simready.MUJOCO.DJ.001"
+        "com.nvidia.simready.MUJOCO.DJ.001",
+        "com.nvidia.simready.MUJOCO.GR.001"
       ]
     },
     "FET_028_STANDARD": {
