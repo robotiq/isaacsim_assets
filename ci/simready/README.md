@@ -54,7 +54,7 @@ isn't authored for.) Pinned to SimReady Foundation **v2026.08.0**
 `simready-validate-pr.yml` runs on every pull request. It validates the 2F-85 when
 the PR changes `grippers/Robotiq_2F_85/**`, the 2F-140 when it changes
 `grippers/Robotiq_2F_140/**`, the Hand-E when it changes
-`grippers/Robotiq_Hand_E/**`, all of them when it changes the tooling (`ci/simready/**`,
+`grippers/Robotiq_Hand_E/**`, the Hand-E C10 when it changes `grippers/Robotiq_Hand_E_C10/**`, all of them when it changes the tooling (`ci/simready/**`,
 the validate workflows), and nothing otherwise. Each gripper is gated against its
 own baseline, `ci/simready/expected/<asset>.json`. Its `validate` job is the
 required check. Refresh a baseline after an intended change with
