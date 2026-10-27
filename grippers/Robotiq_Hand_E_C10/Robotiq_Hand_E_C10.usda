@@ -1,0 +1,98 @@
+#usda 1.0
+(
+    customLayerData = {
+        # SR.001 requires these identity fields authored DIRECTLY in the root layer's customLayerData (not only nested
+        # in SimReady_Metadata). They mirror the matching SimReady_Metadata entries below.
+        string asset_name = "Robotiq_Hand_E_C10"
+        string asset_type = "gripper"
+        string source_file = "ROBOTIQ_HAND-E_C10_DEFEATURE.STEP"
+        string usd_date_generated = "2026-10-27"
+        # SimReady provenance metadata (SimReady Foundations SR.003 / FET_033_STANDARD).
+        # rigid_body_count / mass / asset_extents are COMPUTED from the default composed stage by
+        # devel_helpers/gen_hande_c10_layers.py -- re-run it instead of editing them by hand.
+        dictionary SimReady_Metadata = {
+            string asset_name = "Robotiq_Hand_E_C10"
+            string asset_type = "gripper"
+            string category = "robot_gripper"
+            string author = "Robotiq"
+            string asset_license = "CC-BY-4.0"
+            string source_file = "ROBOTIQ_HAND-E_C10_DEFEATURE.STEP"
+            string usd_date_generated = "2026-10-27"
+            string qcode = "Q1340324"
+            int rigid_body_count = 7
+            float3 asset_extents = (0.1192, 0.1214, 0.1598)
+            float mass = 1.7000
+        }
+    }
+    defaultPrim = "Robotiq_Hand_E_C10"
+    metersPerUnit = 1
+    subLayers = [
+        @./configuration/Robotiq_Hand_E_C10_robot.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_Hand_E_C10" (
+    kind = "component"
+    prepend references = @./payloads/base.usda@
+    variants = {
+        string Fingertip = "Stepped"
+        string Physics = "PhysX"
+    }
+    prepend variantSets = ["Fingertip", "Physics"]
+)
+{
+    string isaac:namespace (
+        displayName = "Namespace"
+        doc = "Namespace of the prim in Isaac Sim"
+    )
+
+    over "Robotiq_Hand_E_C10"
+    {
+        string isaac:namespace (
+            displayName = "Namespace"
+            doc = "Namespace of the prim in Isaac Sim"
+        )
+    }
+
+    variantSet "Physics" = {
+        "None" (
+            customData = {
+                string[] variantPrimPaths = ["Robotiq_Hand_E_C10/Joints"]
+            }
+        ) {
+            over "Robotiq_Hand_E_C10"
+            {
+                over "Joints" (
+                    active = false
+                )
+                {
+                }
+            }
+
+        }
+        "PhysX" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_Hand_E_C10_physx_physics.usda@
+        ) {
+
+        }
+        "Newton" (
+            customData = {
+                string[] variantPrimPaths = ["."]
+            }
+            prepend payload = @./payloads/Robotiq_Hand_E_C10_newton_physics.usda@
+        ) {
+
+        }
+    }
+    # Only the stepped fingertip is baked so far: the finger extender and the long and short spacers still have to be
+    # placed on the finger, then each gets a row in TIPS of gen_hande_c10_layers.py.
+    variantSet "Fingertip" = {
+        "Stepped" {
+
+        }
+    }
+}

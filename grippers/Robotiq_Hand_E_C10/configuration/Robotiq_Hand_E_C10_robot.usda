@@ -1,0 +1,164 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary omni_layer = {
+            string authoring_layer = "../Robotiq_Hand_E_C10.usda"
+        }
+    }
+    defaultPrim = "World"
+    endTimeCode = 0
+    metersPerUnit = 1
+    startTimeCode = -1
+    upAxis = "Z"
+)
+
+over "Robotiq_Hand_E_C10" (
+    prepend apiSchemas = ["IsaacRobotAPI"]
+)
+{
+    string[] isaac:changelog (
+        displayName = "Changelog"
+    )
+    string isaac:description = "Robotiq Hand-E C10 adaptive gripper (3 concentric sliding fingers, 38.4 mm of travel in diameter)." (
+        displayName = "Description"
+    )
+    token isaac:license (
+        displayName = "License"
+    )
+    string isaac:namespace (
+        displayName = "Namespace"
+        doc = "Namespace of the prim in Isaac Sim"
+    )
+    rel isaac:physics:robotJoints (
+        displayName = "Robot Joints"
+    )
+    rel isaac:physics:robotLinks (
+        displayName = "Robot Links"
+    )
+    prepend rel isaac:physics:robotLinks = [
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/base_link>,
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/finger_1>,
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/finger_2>,
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/finger_3>,
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/fingertip_1>,
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/fingertip_2>,
+        </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/fingertip_3>,
+    ]
+    token isaac:robotType = "End Effector" (
+        displayName = "Robot Type"
+    )
+    string isaac:source = "Robotiq" (
+        displayName = "Source"
+    )
+    string isaac:version = "1.0.0" (
+        displayName = "Version"
+    )
+
+    # robotJoints is variant-specific (authored per Physics variant); fingertip welds are not listed, as on the
+    # 2F-85 / 2F-140 / Hand-E. robotLinks stays shared: the bodies are the same across variants.
+    variantSet "Physics" = {
+        "PhysX" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/root_joint>,
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Joints/finger_1_joint>,
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Joints/finger_2_joint>,
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Joints/finger_3_joint>,
+            ]
+        }
+        "Newton" {
+            prepend rel isaac:physics:robotJoints = [
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/root_joint>,
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Joints/finger_1_joint>,
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Joints/finger_2_joint>,
+                </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Joints/finger_3_joint>,
+            ]
+        }
+    }
+
+    over "Robotiq_Hand_E_C10"
+    {
+        string isaac:namespace (
+            displayName = "Namespace"
+            doc = "Namespace of the prim in Isaac Sim"
+        )
+
+        over "base_link" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            string isaac:nameOverride (
+                displayName = "Name Override"
+                doc = "Name override for prim lookup in base name search"
+            )
+
+            over "grip_frame" (
+                prepend apiSchemas = ["IsaacSiteAPI"]
+            )
+            {
+                string isaac:Description = "Tool center point (grasp frame) on the gripper axis, between the three fingertips." (
+                    displayName = "Reference Description"
+                )
+                uniform token isaac:forwardAxis = "Z" (
+                    displayName = "Forward Axis"
+                )
+            }
+        }
+
+        over "finger_1" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "finger_2" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "finger_3" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "fingertip_1" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "fingertip_2" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "fingertip_3" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+        }
+
+        over "Joints"
+        {
+            over "finger_1_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "finger_2_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+
+            over "finger_3_joint" (
+                prepend apiSchemas = ["IsaacJointAPI"]
+            )
+            {
+            }
+        }
+    }
+}
