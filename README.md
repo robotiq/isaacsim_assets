@@ -2,8 +2,8 @@
 
 Public [NVIDIA Isaac Sim](https://developer.nvidia.com/isaac/sim) assets
 maintained by [Robotiq](https://robotiq.com). This repository is a home for
-Robotiq simulation assets and the documentation needed to use them. Three
-grippers are published here today, the **2F-85**, the **2F-140** and the **Hand-E**, and the
+Robotiq simulation assets and the documentation needed to use them. Four
+grippers are published here today, the **2F-85**, the **2F-140**, the **Hand-E** and the **Hand-E C10**, and the
 layout is organized by asset category so other assets (grippers, robots,
 tooling, scenes) can be added over time.
 
@@ -16,6 +16,7 @@ grippers/                         Gripper assets
   Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
   Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
   Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
+  Robotiq_Hand_E_C10/             Hand-E C10 gripper, three concentric fingers (PhysX + Newton)
   tactile/                        TSF-85 tactile sensor of the 2F grippers (readers, payload generator)
   demo/                           Demos, incl. the UR5e teleop for either gripper
 tests/runtime/                    Manual Isaac Sim runtime tests (need a GPU, not run in CI)
@@ -27,25 +28,30 @@ New asset categories should be added as sibling top-level directories (e.g.
 
 ## Contents
 
-### Robotiq 2F-85, 2F-140 and Hand-E grippers
+### Robotiq 2F-85, 2F-140, Hand-E and Hand-E C10 grippers
 
-The 2F-85, 2F-140 and Hand-E grippers are authored for Isaac Sim 6 with the
+The 2F-85, 2F-140, Hand-E and Hand-E C10 grippers are authored for Isaac Sim 6 with the
 same layout: each is a single asset whose `Physics` variant selects the solver
 and grip — same body tree, geometry, and collision for all of them — and whose
 `Fingertip` variant selects the fingertip.
 
-| | 2F-85 | 2F-140 | Hand-E |
-| --- | --- | --- | --- |
-| Asset | [`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/) | [`grippers/Robotiq_2F_140/`](grippers/Robotiq_2F_140/) | [`grippers/Robotiq_Hand_E/`](grippers/Robotiq_Hand_E/) |
-| `Physics` — PhysX | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `PhysX` *(default)* |
-| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | `Newton` |
-| `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
-| `SensorSim` (only under the TSF fingertip) | `None` *(default)*, `EffectiveResponse`, `Raycast` ([tactile sensor](grippers/tactile/README.md)) | `None` *(default)*, `EffectiveResponse`, `Raycast` (same sensor) | — |
-| `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) |
+| | 2F-85 | 2F-140 | Hand-E | Hand-E C10 |
+| --- | --- | --- | --- | --- |
+| Asset | [`grippers/Robotiq_2F_85/`](grippers/Robotiq_2F_85/) | [`grippers/Robotiq_2F_140/`](grippers/Robotiq_2F_140/) | [`grippers/Robotiq_Hand_E/`](grippers/Robotiq_Hand_E/) | [`grippers/Robotiq_Hand_E_C10/`](grippers/Robotiq_Hand_E_C10/) |
+| `Physics` — PhysX | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `Physx_parallel_grip` *(default)*, `Physx_compliant` | `PhysX` *(default)* | `PhysX` *(default)* |
+| `Physics` — Newton / MuJoCo-Warp | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_85/newton/)) | `Newton_compliant`, `Newton_parallel_grip` ([tuning](grippers/Robotiq_2F_140/newton/)) | `Newton` | `Newton` |
+| `Fingertip` | `Standard` *(default)*, `Tactile_TSF85` | `Flat_Overmolded` *(default)*, `Silicone`, `V_Groove`, `Tactile_TSF140` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` | `Stepped` *(default)* |
+| `SensorSim` (only under the TSF fingertip) | `None` *(default)*, `EffectiveResponse`, `Raycast` ([tactile sensor](grippers/tactile/README.md)) | `None` *(default)*, `EffectiveResponse`, `Raycast` (same sensor) | — | — |
+| `FingertipMount` | — | — | `Outside` *(default)*, `Inside` (fingertip screw-hole row; `Inside` is 9 mm closer to the centerline) | — |
 
 The Hand-E has two sliding fingers (50 mm stroke) instead of a linkage, so it has one
 `PhysX` and one `Newton` physics variant (one driven finger joint, the other finger follows it).
 The Newton coupling is a stiff MuJoCo joint equality baked into the asset.
+
+The Hand-E C10 has **three concentric fingers**, 120 degrees apart, that slide radially toward the gripper axis
+(19.2 mm each), so it is a separate asset rather than a Hand-E variant: one driven finger joint, the other two
+follow it (PhysX mimic, a stiff joint equality on Newton). Only its stepped fingertip is modelled so far; see its
+[README](grippers/Robotiq_Hand_E_C10/docs/README.md).
 
 `*_parallel_grip` keeps the fingers parallel (mimic joints on PhysX, a welded
 coupler on Newton); `*_compliant` simulates the closed five-bar loop, so the
