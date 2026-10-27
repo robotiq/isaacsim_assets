@@ -85,6 +85,8 @@ USD, or a USD that was not regenerated, fails. The Hand-E has no TSF fingertip.
   force, the peak is under the contact, objects add up, batches with different contacts per env and pad give each slice's own result, the
   contact-distance gate); and the sensor logic of `sensing.py`: quaternion rotation, the left/right pad order whatever order the
   contact sensor lists its bodies in, the force floor, NaN contact points, taxels following the pad pose, a contact on a taxel lighting that taxel.
+- The blind sphere-picking task (`demo/rl`) is built on it: the sensor reproduced that task's earlier private implementation exactly
+  (0.0 N difference over a scripted grasp), and the trained policy still empties the box.
 - `examples/check_tactile_sensor.py` (Isaac Lab, GPU): the bare gripper closes on a zero-gravity sphere and opens again;
   asserts no force when open, equal force on both pads (2F-85: 10.7 N, 2F-140: 3.2 N at its stock drive), and the force centroid
   within 6 mm of the sphere along the pad (measured: 0.05 mm on the 2F-85, 0.02 mm on the 2F-140), and no force after opening.
