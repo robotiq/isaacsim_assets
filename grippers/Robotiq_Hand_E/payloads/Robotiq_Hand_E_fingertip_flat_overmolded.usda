@@ -64,6 +64,14 @@ over "Robotiq_Hand_E"
 {
     over "Robotiq_Hand_E"
     {
+        over "base_link"
+        {
+            over "grip_frame"
+            {
+                float gripper_maxOpening = 0.0491
+            }
+        }
+
         over "Joints"
         {
             over "left_finger_joint"

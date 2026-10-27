@@ -130,6 +130,9 @@ TIP = dict(mass=0.0201, com=(-0.0041, -0.0271, 0.1229), dims=(0.0292, 0.0174, 0.
 QCODE = "Q1340324"  # Wikidata Q-code SimReady SR.003 requires; same gripper concept as the 2F-85 / 2F-140
 GRIP_FRAME_Z = 0.13  # m, provisional TCP between the pads
 PAD_WIDTH = 0.0198  # m, fingertip pad width along X (GR.003 grip-line length), Std tips
+# Pad-to-pad opening (m) of the non-default fingertips (Outside mount), measured on the composed mesh in the top
+# 10 mm of the tip. Support/Extender end below the grip_frame, so their value is at the tip's own top.
+TIP_OPENING = {"flat_overmolded": 0.0491, "support": 0.0378, "extender": 0.0316, "binpick": 0.0486}
 MAX_OPENING = 0.050  # m, pad-to-pad at full open (Std tips, Outside mount; = 2 x STROKE)
 
 
@@ -377,6 +380,14 @@ over "{N}"
 {{
     over "{N}"
     {{
+        over "base_link"
+        {{
+            over "grip_frame"
+            {{
+                float gripper_maxOpening = {TIP_OPENING[key]:g}
+            }}
+        }}
+
         over "Joints"
         {{
             over "left_finger_joint"
