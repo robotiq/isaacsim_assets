@@ -94,11 +94,14 @@ FRAME_DT = 1.0 / 60.0  # simulation_app.update() advances one 60 Hz frame
 
 # Datasheet maximum finger speed, 150 mm/s, as a rate on the driven DOF:
 # 2F: 85 mm <-> 49 deg at finger_joint (guide 4.5) -> 86 deg/s; Hand-E: the
-# prismatic finger joint moves at the finger speed itself.
+# prismatic finger joint moves at the finger speed itself. Hand-E C10: the
+# datasheet's 107 mm/s closing speed is read as the diameter's, so each of the
+# three radial fingers moves at half of it.
 FINGER_RATE = {
     "Robotiq_2F_85": math.radians(86.0),
     "Robotiq_2F_140": math.radians(86.0),
     "Robotiq_Hand_E": 0.150,
+    "Robotiq_Hand_E_C10": 0.0535,
 }
 
 

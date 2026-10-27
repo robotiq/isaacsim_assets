@@ -29,6 +29,7 @@ class Spec:
     open_tol: float
     close_tol: float
     unit: str  # for messages: "deg" or "mm"
+    extra_followers: tuple[str, ...] = ()  # more DOFs coupled the same way (the C10's third finger)
 
 
 def _fmt(x: float, unit: str) -> str:
@@ -63,6 +64,17 @@ _PRISMATIC_HAND_E = Spec(
     unit="mm",
 )
 
+# Three concentric sliding fingers, 0 (open) to 19.2 mm each; finger_2/3_joint mimic finger_1_joint.
+_PRISMATIC_HAND_E_C10 = Spec(
+    driven="finger_1_joint",
+    follower="finger_2_joint",
+    target=0.015,
+    open_tol=0.5e-3,
+    close_tol=1.0e-3,
+    unit="mm",
+    extra_followers=("finger_3_joint",),
+)
+
 # (gripper, Physics variant) -> spec; the engine follows the variant name.
 CASES = {
     ("Robotiq_2F_85", "Physx_parallel_grip"): _REVOLUTE_2F,
@@ -70,11 +82,13 @@ CASES = {
     ("Robotiq_2F_140", "Physx_parallel_grip"): _REVOLUTE_2F_140,
     ("Robotiq_2F_140", "Physx_compliant"): _REVOLUTE_2F_140,
     ("Robotiq_Hand_E", "PhysX"): _PRISMATIC_HAND_E,
+    ("Robotiq_Hand_E_C10", "PhysX"): _PRISMATIC_HAND_E_C10,
     ("Robotiq_2F_85", "Newton_parallel_grip"): _REVOLUTE_2F,
     ("Robotiq_2F_85", "Newton_compliant"): _REVOLUTE_2F,
     ("Robotiq_2F_140", "Newton_parallel_grip"): _REVOLUTE_2F_140,
     ("Robotiq_2F_140", "Newton_compliant"): _REVOLUTE_2F_140,
     ("Robotiq_Hand_E", "Newton"): _PRISMATIC_HAND_E,
+    ("Robotiq_Hand_E_C10", "Newton"): _PRISMATIC_HAND_E_C10,
 }
 
 
@@ -87,6 +101,7 @@ def test_gripper_closes(simulation_app, view, gripper: str, physics: str) -> Non
 
     driven = scene.dof(spec.driven)
     follower = scene.dof(spec.follower)
+    extra = [scene.dof(n) for n in spec.extra_followers]
 
     q = robot.get_dof_positions().numpy()[0]
     assert np.all(np.isfinite(q)), f"non-finite DOF positions after settle: {q}"
@@ -106,6 +121,7 @@ def test_gripper_closes(simulation_app, view, gripper: str, physics: str) -> Non
     assert abs(q[driven] - spec.target) < spec.close_tol, (
         f"{spec.driven}={_fmt(q[driven], spec.unit)}, target {_fmt(spec.target, spec.unit)}"
     )
-    assert abs(q[follower] - q[driven]) < spec.close_tol, (
-        f"{spec.follower}={_fmt(q[follower], spec.unit)} does not follow {spec.driven}={_fmt(q[driven], spec.unit)}"
-    )
+    for name, dof in [(spec.follower, follower), *zip(spec.extra_followers, extra)]:
+        assert abs(q[dof] - q[driven]) < spec.close_tol, (
+            f"{name}={_fmt(q[dof], spec.unit)} does not follow {spec.driven}={_fmt(q[driven], spec.unit)}"
+        )
