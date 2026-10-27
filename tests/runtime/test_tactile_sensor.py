@@ -6,10 +6,11 @@ baseline, the pad force of the contact report (``ContactReader``) averaged over 
 passing thresholds differ (``MODELS``). Model-specific tests cover the raycast depth, the effective response
 r against Eq. 1, and the two models agreeing on one simulation. What they check is in tests/runtime/README.md.
 
-Most tests close the gripper on a static box (fixed_cubes/<gripper>_tactile.json) and average the last
-frames. On a fixed rigid box the load split between the two fingers is ill-conditioned (it follows sub-0.1 mm
-penetration differences, e.g. 284 / 111 N, or 0 / 399 N with the box shifted 2 mm), so every assertion is per
-pad, never left against right. A free cube on its holder, as in test_gripper_grasp.py, would split it as a grasp does.
+Most tests close the gripper on a free box (fixed_cubes/<gripper>_tactile.json gives its size and starting
+place) in zero gravity, and average the last frames. Free, the box is squeezed as in a grasp: the pads centre it
+and press it flat, so both push equally (checked). A box fixed in space over-constrains the two fingers instead:
+the load split follows sub-0.1 mm differences (0 / 42 N, 162 / 20 N on the 2F-140) and a rigid pad can meet it
+along one edge. The box is judged where it is at the stall, not where it started.
 """
 
 from __future__ import annotations
@@ -37,11 +38,14 @@ SETTLE_FRAMES = 30
 HOLD_FRAMES = 60
 SAMPLE_FRAMES = 20
 PHYSX_HZ = 1000  # as the fixed-cube test
-EFFORTS = (5.0, 20.0)  # finger_joint max effort for the weak / strong grip (stock 26 on both grippers)
+BOX_MASS = 0.1  # kg, the free box (zero gravity: it only sets the box's inertia)
+EFFORTS = (5.0, 20.0)  # finger_joint max effort for the weak / strong grip (stock: 26 parallel grip, 16.5 compliant, 15-25 Newton)
 
 
 def tactile_preset(gripper: str) -> str:
-    """A box over part of the sensing area, clear of the finger links: fixed_cubes/<gripper>_tactile.json."""
+    """A box over part of the sensing area, clear of the finger links: fixed_cubes/<gripper>_tactile.json (its size
+    and starting place). Only part: on the 2F-140 the TSF tip's collider extends 34 mm below the sensing area, so a
+    box there would push where no taxel reads."""
     return f"{gripper}_tactile"
 
 
@@ -53,18 +57,22 @@ class Model:
     sensor_sim: str  # the SensorSim variant (under the gripper's TSF fingertip)
     sensor_class: type
     physics: tuple  # the Physics variants it runs on
-    sum_band: tuple  # force-map total / contact-report pad force
+    sum_band: tuple  # force-map total / contact-report pad force, on a held grip
+    fast_band: tuple  # the same after a full close in one step (test_tactile_force_stable_on_fast_close)
     scale_tol: float  # (map total ratio) / (pad force ratio) within 1 +- this, weak -> strong grip
     pad_compliant: bool  # the variant softens the pad (the raycast needs it) or leaves it rigid
 
 
 MODELS = {
-    # the depth under-reads at weak grips (x0.7 at 20 N) and on a 240 Hz step, and the pad force varies run to run
+    # The raycast turns depth into force with the soft layer's stiffness (E / thickness), while PhysX's compliant
+    # pad is a spring per contact point, so the depth per newton follows how many contact points PhysX makes.
+    # Measured (Isaac Sim 6.2): x0.7 at light grips, x1.10-1.51 held on the free box (sets the 1.6 bound), up to
+    # x1.69 after a full close in one step at 240 Hz (sets the 1.9 fast-close bound).
     "raycast": Model("Raycast", RaycastTactile, ("Physx_parallel_grip", "Physx_compliant"),
-                     (0.65, 1.15), 0.3, True),
+                     (0.65, 1.6), (0.65, 1.9), 0.3, True),
     "effective": Model("EffectiveResponse", EffectiveTactile,
                        ("Physx_parallel_grip", "Physx_compliant", "Newton_parallel_grip", "Newton_compliant"),
-                       (0.9, 1.1), 0.15, False),
+                       (0.9, 1.1), (0.9, 1.1), 0.15, False),
 }
 SENSORS = list(MODELS)
 
@@ -79,54 +87,49 @@ def _cases(*axes) -> list:
 
 
 SENSOR_CASES = _cases(SENSORS)
-# Cases known to fail, {test: {case id: why}}: all the 2F-140 on the fixed rigid box, whose contact there is
-# lopsided (the sensor maps it faithfully; a free cube on a holder, as in test_gripper_grasp.py, would not be).
-_LINE_CONTACT = ("PhysX reports one pad's contact with the fixed rigid box as collinear points along the box edge "
-                 "(the pads are not tilted: 0.00 deg), so the rigid-pad contact patch is a line")
-_ONE_PAD = ("with the weak grip (max effort 5) on the fixed rigid box one pad does not touch (0.0 N, the other "
-            "42 N): the parallel-grip fingers stall unevenly, so the weak / strong comparison has no left pad")
-_SMALL_PATCH = ("the contact points cover only part of the box face, so the pressure on that patch, hence r, is "
-                "above the box-wide uniform value")
-KNOWN_FAILURES = {
-    "footprint": {"Robotiq_2F_140-effective-Physx_compliant": _LINE_CONTACT + "; the covered column next to it reads nothing"},
-    "scale": {"Robotiq_2F_140-effective-Physx_parallel_grip": _ONE_PAD},
-    "power": {"Robotiq_2F_140-effective-Physx_parallel_grip": _ONE_PAD},
-    "eq1": {"Robotiq_2F_140-Physx_compliant": _LINE_CONTACT, "Robotiq_2F_140-Newton_parallel_grip": _SMALL_PATCH},
-}
-
-
-def _known(test: str, params: list) -> list:
-    """``params`` with a non-strict xfail on the cases of KNOWN_FAILURES[test]."""
-    out = []
-    for p in params:
-        why = KNOWN_FAILURES[test].get(p.id)
-        out.append(pytest.param(*p.values, id=p.id, marks=[*p.marks, pytest.mark.xfail(reason=why)]) if why else p)
-    return out
-
-
 CASES = [pytest.param(g, s, p, id=f"{g}-{s}-{p}") for g in GRIPPERS for s in SENSORS for p in MODELS[s].physics]
-FOOTPRINT_CASES = _known("footprint", CASES)
 SCALE_PHYSICS = ("Physx_parallel_grip", "Newton_parallel_grip")
-SCALE_CASES = _known("scale", [c for c in CASES if c.values[2] in SCALE_PHYSICS])
-EFFECTIVE_SCALE_CASES = _known("power", [c for c in CASES if c.values[2] in SCALE_PHYSICS and c.values[1] == "effective"])
+SCALE_CASES = [c for c in CASES if c.values[2] in SCALE_PHYSICS]  # _known() below, once KNOWN_FAILURES exists
+EFFECTIVE_SCALE_CASES = [c for c in SCALE_CASES if c.values[1] == "effective"]
 RAYCAST_CASES = _cases(MODELS["raycast"].physics)
-EFFECTIVE_CASES = _known("eq1", _cases(MODELS["effective"].physics))
+# On Newton_parallel_grip the 2F-140's pads do not stay parallel under the grip: they pitch 1.3 / 1.7 deg along
+# the rows, in a slight V (the 2F-85's 0.3-0.7 deg, PhysX's mimic coupling 0.00 deg), so the free box wedges and
+# one pad's force bunches at one end. The pads balance; it is the asset's Newton coupling, not the sensor.
+_NEWTON_PATCH = ("on Newton_parallel_grip the 2F-140's pads pitch 1.3-1.7 deg under the grip (not parallel), so the "
+                 "free box wedges between them and one pad's force bunches at one end")
+KNOWN_FAILURES = {"Robotiq_2F_140-effective-Newton_parallel_grip": _NEWTON_PATCH,
+                  "Robotiq_2F_140-Newton_parallel_grip": _NEWTON_PATCH}
+
+
+def _known(params: list) -> list:
+    """``params`` with a non-strict xfail on the cases of KNOWN_FAILURES."""
+    return [pytest.param(*p.values, id=p.id, marks=[*p.marks, pytest.mark.xfail(reason=KNOWN_FAILURES[p.id])])
+            if p.id in KNOWN_FAILURES else p for p in params]
+
+
+EFFECTIVE_CASES = _known(_cases(MODELS["effective"].physics))
+SCALE_CASES, EFFECTIVE_SCALE_CASES = _known(SCALE_CASES), _known(EFFECTIVE_SCALE_CASES)
+# One static box (a collider, no body), as a fixture or a table edge: PhysX contact against a static collider and
+# Newton's world body as the object. On the 2F-85, where its load split stays well conditioned.
+STATIC_CASES = [pytest.param("Robotiq_2F_85", "effective", p, "static", id=f"Robotiq_2F_85-effective-{p}-static")
+                for p in SCALE_PHYSICS]
+FOOTPRINT_CASES = [pytest.param(*c.values, "free", id=c.id, marks=c.marks) for c in _known(CASES)] + STATIC_CASES
 RATE_PHYSICS = "Physx_parallel_grip"  # the rate tests set PhysX time steps
 
 
 def _at_60hz(gripper: str, sensor: str, *params, hz: int = 60):
     """A rate case; the raycast method fails it at 60 Hz (strict xfail): PhysX does not resolve the soft pad's
-    compliant contact at that step, so the box does not sink and the depth is ~0 (force map x0.00-0.29 of the
-    pad force, x0.82 at 240 Hz). The effective response reads the contact report, which is fine at 60 Hz.
-    Strict on the 2F-85; on the 2F-140 a fast close at 60 Hz reads x0.71-0.79, within the band, so not strict."""
+    compliant contact at that step, so the depth no longer follows the force. A held (kinematic) box barely sinks
+    (force map x0.04-0.43 of the pad force), a free box sinks far too deep (x2.6-4.7); at 240 Hz it is within
+    the raycast band. The effective response reads the contact report, which is fine at 60 Hz."""
     marks = []
     if sensor == "raycast" and hz == 60:
-        marks.append(pytest.mark.xfail(strict=gripper == "Robotiq_2F_85",
-                                       reason="the compliant-pad depth is ~0 at a 60 Hz PhysX step"))
+        marks.append(pytest.mark.xfail(strict=True, reason="the compliant pad is not resolved at a 60 Hz PhysX step: "
+                                                           "the depth does not follow the force"))
     return pytest.param(gripper, sensor, *params, marks=marks, id="-".join([gripper, sensor, *map(str, params)]))
 
 
-DEFAULT_RATE_CASES = [_at_60hz(g, s, obj) for g in GRIPPERS for s in SENSORS for obj in ("static", "kinematic")]
+DEFAULT_RATE_CASES = [_at_60hz(g, s, obj) for g in GRIPPERS for s in SENSORS for obj in ("free", "kinematic")]
 FAST_CLOSE_CASES = [_at_60hz(g, s, hz, hz=hz) for g in GRIPPERS for s in SENSORS for hz in (60, 240)]
 
 FORCE_ACTIVE_N = 0.1  # a taxel "carries force" above this
@@ -134,11 +137,18 @@ PAD_MIN_N = 1.0  # each pad pushes at least this hard on the box
 FOOTPRINT_MARGIN = 0.0025  # m: taxels this close to the box edge are not judged as covered
 CLEAR_SHARE = 0.05  # at most this share of the force is on taxels clear of the box
 PEAK_BOUND = 1.15  # no taxel carries more than this times the pad force
+BALANCE_TOL = 0.15  # a free box: the two pad forces within this fraction of the larger
+# The footprint (_taxel_masks, _model) is the box's face kept upright at its stall centre. A free box turning
+# 1 deg moves its 12 x 16.5 mm face's corners by < 0.2 mm, well inside FOOTPRINT_MARGIN; it turns <= 0.23 deg.
+MAX_BOX_ROT_DEG = 1.0
 
 ACTIVE_MM = 0.05  # a taxel "reads" above this depth
 MM_PER_N = (0.003, 0.05)  # depth per newton of pad force, around the pad spring's 0.012
-# the TSF-85 soft layer is 3 mm thick: deeper and the object would be through it
+# The TSF-85 soft layer is 3 mm thick: deeper and the object would be through it. The depth test grips below the
+# sensor's rated range (0-225 N, robotiq.com/tactile-sensor-fingertips); the stock drive at 1000 Hz pushes the
+# raycast's compliant pad ~320 N per pad on the 2F-85 (139 N on the 2F-140), past it on the 2F-85.
 MAX_SINK_MM = 3.0
+DEPTH_EFFORT = EFFORTS[1]  # finger_joint max effort of the depth test: the strong grip, 60-95 N per pad on the raycast's compliant pad
 ACTIVE_R = 0.03  # a taxel "reads" above this response
 MODEL_TOL = 0.35  # mean |r - Eq. 1 on the ideal footprint| within this fraction of the peak
 POWER_TOL = 0.25  # r ratio within 25 % of (force ratio) ** GAMMA
@@ -149,7 +159,7 @@ RAY_RESPONSE_TOL = 0.10  # mean |r raycast - r effective| within this fraction o
 
 
 def _box(gripper: str) -> tuple[np.ndarray, np.ndarray]:
-    """(size, centre) of the fixed box."""
+    """(size, starting centre) of the box."""
     preset = load_preset(tactile_preset(gripper), fixed=True)
     size = preset["size"]
     size = np.array(size if isinstance(size, list) else [size] * 3, dtype=float)
@@ -174,11 +184,22 @@ class Rig:
     sensor: object  # the method under test, ``read()`` = force
     contacts: ContactReader  # the baseline: pad force of the contact report
     extra: object = None  # a second reader on the same sim, when a test asks for one
+    box: object = None  # RigidPrim of a free / kinematic box, to read where it is; None for a static one
+    box_start: np.ndarray = None  # its starting centre (from the preset)
+
+    def box_pose(self) -> tuple[np.ndarray, float]:
+        """(centre m, rotation from its starting orientation in deg) of the box now."""
+        if self.box is None:  # a static collider does not move
+            return self.box_start, 0.0
+        pos, quat = (a.numpy()[0] for a in self.box.get_world_poses())  # quaternion wxyz
+        return pos.astype(float), math.degrees(2.0 * math.acos(min(1.0, abs(float(quat[0])))))
 
 
 def _load(simulation_app, view, gripper: str, sensor: str, physics: str, hz: int | None = PHYSX_HZ,
-          kinematic: bool = False, extra: str | None = None) -> Rig:
-    """Fresh stage with the box and ``sensor``'s variant. ``extra``: "depth" adds a raycast depth reader
+          obj: str = "free", extra: str | None = None) -> Rig:
+    """Fresh stage with the box and ``sensor``'s variant, zero gravity. ``obj``: "free" (a dynamic body, the pads
+    centre it), "kinematic" (held in place) or "static" (a collider only, no body: the world on Newton).
+    ``extra``: "depth" adds a raycast depth reader
     (on the effective variant's rigid pad), "effective" an effective-response reader (on the raycast
     variant's compliant pad)."""
     model = MODELS[sensor]
@@ -186,11 +207,16 @@ def _load(simulation_app, view, gripper: str, sensor: str, physics: str, hz: int
     built = {}
 
     def setup(stage):
-        box = add_fixed_cube(stage, tactile_preset(gripper))
-        if kinematic:  # a kinematic rigid body instead of a static collider
-            UsdPhysics.RigidBodyAPI.Apply(box.GetPrim()).CreateKinematicEnabledAttr().Set(True)
+        prim = add_fixed_cube(stage, tactile_preset(gripper)).GetPrim()
+        if obj == "kinematic":
+            UsdPhysics.RigidBodyAPI.Apply(prim).CreateKinematicEnabledAttr().Set(True)
+        elif obj == "free":
+            UsdPhysics.RigidBodyAPI.Apply(prim)
+            UsdPhysics.MassAPI.Apply(prim).CreateMassAttr().Set(BOX_MASS)
+            PhysxSchema.PhysxRigidBodyAPI.Apply(prim).CreateSleepThresholdAttr().Set(0.0)  # keep reporting contacts
+        scene_prim = next(p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene))
+        UsdPhysics.Scene(scene_prim).CreateGravityMagnitudeAttr().Set(0.0)  # the box floats until squeezed
         if hz and engine == "physx":
-            scene_prim = next(p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene))
             PhysxSchema.PhysxSceneAPI.Apply(scene_prim).CreateTimeStepsPerSecondAttr().Set(hz)
         root = f"/World/Gripper/{gripper}"
         contacts = ContactReader(gripper, root, CUBE_PATH, engine)
@@ -209,7 +235,10 @@ def _load(simulation_app, view, gripper: str, sensor: str, physics: str, hz: int
                          variants=sensor_variants(gripper, model.sensor_sim))
     if _plot:
         _plot.show(built["sensor"])
-    return Rig(scene, built["sensor"], built["contacts"], built.get("extra"))
+    from isaacsim.core.experimental.prims import RigidPrim
+
+    return Rig(scene, built["sensor"], built["contacts"], built.get("extra"),
+               None if obj == "static" else RigidPrim(CUBE_PATH), _box(gripper)[1])
 
 
 @dataclass
@@ -221,6 +250,8 @@ class Squeeze:
     totals: np.ndarray  # force-map total of both pads, per frame
     points: dict  # {side: (ROWS, COLS, 3)} taxel positions at the stall
     maps: dict  # {quantity: {side: grid}}, the ``also`` quantities
+    box: np.ndarray  # the box centre at the stall, m
+    box_rot: float  # how far the box turned from its starting orientation, deg
 
 
 def _squeeze(simulation_app, rig: Rig, ramp: bool = True, also: tuple = ()) -> Squeeze:
@@ -235,7 +266,7 @@ def _squeeze(simulation_app, rig: Rig, ramp: bool = True, also: tuple = ()) -> S
     force = {s: [] for s in SIDES}
     pad = {s: [] for s in SIDES}
     maps = {q: {s: [] for s in SIDES} for q in also}
-    others, angles, totals = {}, [], []
+    others, angles, totals, box = {}, [], [], []
     for _ in range(SAMPLE_FRAMES):
         simulation_app.update()
         grids = sensor.read()
@@ -251,9 +282,11 @@ def _squeeze(simulation_app, rig: Rig, ramp: bool = True, also: tuple = ()) -> S
         for link in set(c) - set(PADS.values()):
             others[link] = max(others.get(link, 0.0), c[link].force)
         angles.append(math.degrees(float(scene.robot.get_dof_positions().numpy()[0][scene.dof(DRIVEN)])))
+        box.append(rig.box_pose()[0])
     mean = lambda d: {s: np.mean(v, axis=0) for s, v in d.items()}
     return Squeeze(mean(force), {s: float(np.mean(v)) for s, v in pad.items()}, others, np.array(angles),
-                   np.array(totals), sensor.taxel_points(), {q: mean(m) for q, m in maps.items()})
+                   np.array(totals), sensor.taxel_points(), {q: mean(m) for q, m in maps.items()},
+                   np.mean(box, axis=0), rig.box_pose()[1])
 
 
 def _tilt_deg(a: np.ndarray, b: np.ndarray) -> float:
@@ -275,17 +308,25 @@ def _finger_limit_deg(stage) -> float:
     return float(joint.GetAttribute("physics:upperLimit").Get())
 
 
-def _assert_pad_forces(model: Model, sq: Squeeze, label: str) -> None:
+def _assert_pad_forces(model: Model, sq: Squeeze, label: str, band: tuple | None = None) -> None:
     """The common baseline check: the force map carries the pad force of the contact report."""
     for s in SIDES:
         total = float(sq.force[s].sum())
         assert np.isfinite(sq.force[s]).all() and (sq.force[s] >= 0).all(), f"{label} {s}: invalid forces"
         assert sq.pad[s] >= PAD_MIN_N, f"{label} {s}: the pad pushes with only {sq.pad[s]:.2f} N"
         ratio = total / sq.pad[s]
-        assert model.sum_band[0] <= ratio <= model.sum_band[1], (
+        band = band or model.sum_band
+        assert band[0] <= ratio <= band[1], (
             f"{label} {s}: the force map carries {total:.1f} N of the {sq.pad[s]:.1f} N pad force (x{ratio:.2f}, "
-            f"allowed {model.sum_band})")
+            f"allowed {band})")
         assert sq.force[s].max() <= PEAK_BOUND * sq.pad[s], f"{label} {s}: one taxel carries {sq.force[s].max():.1f} N"
+
+
+def _assert_balanced(sq: Squeeze, label: str) -> None:
+    """A free box in equilibrium: the two pads push it equally."""
+    lo, hi = sorted(sq.pad.values())
+    assert hi - lo <= BALANCE_TOL * hi, (
+        f"{label}: the pads push the free box unequally, left {sq.pad['left']:.1f} / right {sq.pad['right']:.1f} N")
 
 
 def _taxel_masks(pitch_mm, points: np.ndarray, size, centre):
@@ -319,10 +360,10 @@ def test_tactile_layout(simulation_app, view, gripper: str, sensor: str) -> None
     omni.timeline.get_timeline_interface().stop()
 
 
-@pytest.mark.parametrize(("gripper", "sensor", "physics"), FOOTPRINT_CASES)
-def test_tactile_force_footprint(simulation_app, view, gripper: str, sensor: str, physics: str) -> None:
+@pytest.mark.parametrize(("gripper", "sensor", "physics", "obj"), FOOTPRINT_CASES)
+def test_tactile_force_footprint(simulation_app, view, gripper: str, sensor: str, physics: str, obj: str) -> None:
     model = MODELS[sensor]
-    rig = _load(simulation_app, view, gripper, sensor, physics)
+    rig = _load(simulation_app, view, gripper, sensor, physics, obj=obj)
     step(simulation_app, SETTLE_FRAMES)
     for s, g in rig.sensor.read().items():
         assert g.max() <= FORCE_ACTIVE_N, f"{s} carries {g.max():.2f} N with the gripper open"
@@ -343,7 +384,12 @@ def test_tactile_force_footprint(simulation_app, view, gripper: str, sensor: str
     assert not sq.others, "only the pads should touch the box, also: " + ", ".join(
         f"{k} {v:.1f} N" for k, v in sorted(sq.others.items()))
     _assert_pad_forces(model, sq, f"{sensor} {physics}")
-    size, centre = _box(gripper)
+    if obj == "free":  # a static box takes any split (it is the world's, not the pads', to balance)
+        _assert_balanced(sq, f"{sensor} {physics}")
+    size, start = _box(gripper)
+    centre = sq.box
+    print(f"{gripper} {sensor} {physics}: box moved {np.round((centre - start) * 1000, 2)} mm, turned {sq.box_rot:.2f} deg")
+    assert sq.box_rot <= MAX_BOX_ROT_DEG, f"the box turned {sq.box_rot:.2f} deg: the upright footprint no longer fits it"
     for s in SIDES:
         covered, clear = _taxel_masks(pad_plane(sq.points[s])[4], sq.points[s], size, centre)
         g = sq.force[s]
@@ -386,18 +432,18 @@ def test_tactile_force_scales_with_grip_force(simulation_app, view, gripper: str
         f"the force map ratio is x{ratio:.2f} of the pad force ratio (allowed 1 +- {model.scale_tol})")
 
 
-def _assert_stable(model: Model, sq: Squeeze, label: str) -> None:
+def _assert_stable(model: Model, sq: Squeeze, label: str, band: tuple | None = None) -> None:
     limit = _finger_limit_deg(omni.usd.get_context().get_stage())
     print(f"{label}: finger_joint peak {sq.angles.max():.1f} deg; force-map total over frames "
           f"{sq.totals.min():.1f}..{sq.totals.max():.1f} N")
     assert sq.angles.max() <= limit + 0.5, f"finger_joint {sq.angles.max():.1f} deg past its {limit:.0f} deg limit"
     assert sq.totals.min() > 0.0, "the force map drops out on some frames"
-    _assert_pad_forces(model, sq, label)
+    _assert_pad_forces(model, sq, label, band)
 
 
 @pytest.mark.parametrize(("gripper", "sensor", "obj"), DEFAULT_RATE_CASES)
 def test_tactile_force_stable_at_default_rate(simulation_app, view, gripper: str, sensor: str, obj: str) -> None:
-    rig = _load(simulation_app, view, gripper, sensor, RATE_PHYSICS, hz=None, kinematic=obj == "kinematic")
+    rig = _load(simulation_app, view, gripper, sensor, RATE_PHYSICS, hz=None, obj=obj)
     step(simulation_app, SETTLE_FRAMES)
     sq = _squeeze(simulation_app, rig)
     omni.timeline.get_timeline_interface().stop()
@@ -413,14 +459,15 @@ def test_tactile_force_stable_on_fast_close(simulation_app, view, gripper: str, 
     sq = _squeeze(simulation_app, rig, ramp=False)
     omni.timeline.get_timeline_interface().stop()
     _print(f"{gripper} {sensor} fast close @ {hz} Hz", sq)
-    _assert_stable(MODELS[sensor], sq, f"{sensor} fast close {hz} Hz")
+    _assert_stable(MODELS[sensor], sq, f"{sensor} fast close {hz} Hz", MODELS[sensor].fast_band)
 
 
 @pytest.mark.parametrize(("gripper", "physics"), RAYCAST_CASES)
 def test_raycast_depth(simulation_app, view, gripper: str, physics: str) -> None:
     """The depth the force is made from: millimetres per newton of pad force in the spring's range, and
-    never through the soft layer."""
+    never through the soft layer at a grip within the sensor's rating."""
     rig = _load(simulation_app, view, gripper, "raycast", physics)
+    rig.scene.robot.set_dof_max_efforts([DEPTH_EFFORT], dof_indices=[rig.scene.dof(DRIVEN)])
     step(simulation_app, SETTLE_FRAMES)
     sq = _squeeze(simulation_app, rig, also=("depth",))
     omni.timeline.get_timeline_interface().stop()
@@ -452,10 +499,11 @@ def test_effective_response_matches_eq1(simulation_app, view, gripper: str, phys
     step(simulation_app, SETTLE_FRAMES)
     sq = _squeeze(simulation_app, rig, also=("response",))
     omni.timeline.get_timeline_interface().stop()
-    size, centre = _box(gripper)
+    size, _start = _box(gripper)
+    assert sq.box_rot <= MAX_BOX_ROT_DEG, f"the box turned {sq.box_rot:.2f} deg: the upright footprint no longer fits it"
     for s in SIDES:
         r = sq.maps["response"][s]
-        model = _model(sq.points[s], size, centre, sq.pad[s])
+        model = _model(sq.points[s], size, sq.box, sq.pad[s])
         err = float(np.abs(r - model).mean() / max(model.max(), 1e-9))
         bound = UNIFORM_SLACK * (sq.pad[s] / (size[0] * size[2] * 1e6)) ** GAMMA
         print(f"{gripper} {physics} {s}: peak r {r.max():.3f} (Eq. 1 on the box {model.max():.3f}, uniform bound {bound:.3f}), "

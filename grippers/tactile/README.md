@@ -15,7 +15,7 @@ On the gripper's root prim (`Robotiq_2F_85` or `Robotiq_2F_140`), the same `Sens
 | `Fingertip` | `Tactile_TSF85` (2F-85) / `Tactile_TSF140` (2F-140) | the TSF fingertip; `SensorSim` only exists under it |
 | `SensorSim` | `None` | no sensor (default) |
 | `SensorSim` | `EffectiveResponse` | **recommended.** The effective contact response of the pad's contact force and patch. Rigid pad; PhysX and Newton, any step rate. |
-| `SensorSim` | `Raycast` | A ray per taxel measures the depth of the object past a **compliant pad**, and the pad's spring turns it into a force. PhysX only, needs a step of **at least 240 Hz** (validated at 1000 Hz): at 60 Hz the pad is not resolved and the force reads about 0. |
+| `SensorSim` | `Raycast` | A ray per taxel measures the depth of the object past a **compliant pad**, and the pad's spring turns it into a force. PhysX only, needs a step of **at least 240 Hz** (validated at 1000 Hz): at 60 Hz the pad is not resolved and the depth no longer follows the force (a held object barely sinks, a free one sinks far too deep). |
 
 ```python
 prim.GetVariantSet("Fingertip").SetVariantSelection("Tactile_TSF85")   # "Tactile_TSF140" on the 2F-140
@@ -45,7 +45,11 @@ Both models give the same maps; `sensor.quantity` picks what `read()` returns:
   `efc.force` normal row (summed over the facets for a pyramidal cone), so it is approximate and can split unevenly
   between the pads.
 - **`Raycast`** converts the depth with the soft layer's stiffness `padStiffness` = E / thickness =
-  1.289 MPa / 3 mm = 0.43 N/mm³ (ETS CoRo lab TSF-85 model, github.com/Lab-CORO/TSF-85).
+  1.289 MPa / 3 mm = 0.43 N/mm³ (ETS CoRo lab TSF-85 model, github.com/Lab-CORO/TSF-85). PhysX's compliant pad
+  is a spring per contact point, so how deep a given force sinks the object follows how many contact points PhysX
+  makes: the raycast force is x0.65-1.75 of the true pad force (x0.7 at light grips, x1.15-1.5 on a free box, up
+  to x1.7 after a fast close).
+  Prefer `EffectiveResponse` for forces.
 
 The model parameters travel on the stage as `robotiq:tactile:*` attributes of each finger's `tactile_zone_visuals`
 (`method`; `rayStandoff`, `rayMaxDistance`, `padStiffness`; `sigmaMm`, `eta`, `gamma`).
