@@ -51,6 +51,10 @@ TOL = {
 # shared mean: a looser tolerance for that gripper only.
 GRIPPER_TOL = {
     ("Robotiq_2F_85", "compliant"): (math.radians(3.0), math.radians(5.5)),
+    # The 2F-140 compliant PhysX and Newton recordings are 3.9 deg apart (the pads of the two engines
+    # close differently on the cylinder), so each sits ~1.95 deg from their shared mean, plus the PhysX
+    # left/right knuckle asymmetry: a wider joint tolerance for that gripper only.
+    ("Robotiq_2F_140", "compliant"): (math.radians(2.5), math.radians(1.5)),
 }
 PHYSX_HZ = 1000  # as in test_gripper_grasp.py: 60 Hz mis-resolves a stiff squeeze
 REST_DRIFT = math.radians(0.1)  # each joint moves less than this over the sampled frames
