@@ -11,42 +11,42 @@
   ],
   "recorded": {
     "Physx_parallel_grip": {
-      "finger_joint_deg": 14.316,
-      "right_outer_knuckle_joint_deg": 14.316,
-      "left_fingertip_rotation_deg": 0.0,
-      "right_fingertip_rotation_deg": 0.04
+      "finger_joint_deg": 14.359,
+      "right_outer_knuckle_joint_deg": 14.36,
+      "left_fingertip_rotation_deg": 0.04,
+      "right_fingertip_rotation_deg": 0.056
     },
     "Physx_compliant": {
-      "finger_joint_deg": 39.335,
-      "right_outer_knuckle_joint_deg": 39.255,
-      "left_fingertip_rotation_deg": 36.337,
-      "right_fingertip_rotation_deg": 36.867
+      "finger_joint_deg": 41.076,
+      "right_outer_knuckle_joint_deg": 40.936,
+      "left_fingertip_rotation_deg": 38.399,
+      "right_fingertip_rotation_deg": 38.803
     },
     "Newton_parallel_grip": {
-      "finger_joint_deg": 14.702,
-      "right_outer_knuckle_joint_deg": 14.702,
+      "finger_joint_deg": 14.853,
+      "right_outer_knuckle_joint_deg": 14.853,
       "left_fingertip_rotation_deg": 0.0,
-      "right_fingertip_rotation_deg": 0.148
+      "right_fingertip_rotation_deg": 0.131
     },
     "Newton_compliant": {
-      "finger_joint_deg": 43.002,
-      "right_outer_knuckle_joint_deg": 43.002,
-      "left_fingertip_rotation_deg": 39.046,
-      "right_fingertip_rotation_deg": 39.104
+      "finger_joint_deg": 44.972,
+      "right_outer_knuckle_joint_deg": 44.972,
+      "left_fingertip_rotation_deg": 41.188,
+      "right_fingertip_rotation_deg": 41.218
     }
   },
   "expected": {
     "parallel_grip": {
-      "finger_joint_deg": 14.509,
-      "right_outer_knuckle_joint_deg": 14.509,
-      "left_fingertip_rotation_deg": 0.0,
-      "right_fingertip_rotation_deg": 0.094
+      "finger_joint_deg": 14.606,
+      "right_outer_knuckle_joint_deg": 14.607,
+      "left_fingertip_rotation_deg": 0.02,
+      "right_fingertip_rotation_deg": 0.093
     },
     "compliant": {
-      "finger_joint_deg": 41.169,
-      "right_outer_knuckle_joint_deg": 41.129,
-      "left_fingertip_rotation_deg": 37.692,
-      "right_fingertip_rotation_deg": 37.986
+      "finger_joint_deg": 43.024,
+      "right_outer_knuckle_joint_deg": 42.954,
+      "left_fingertip_rotation_deg": 39.794,
+      "right_fingertip_rotation_deg": 40.011
     }
   }
 }

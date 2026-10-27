@@ -26,12 +26,6 @@ Rigid-body mass / inertia / colliders / pad material are the Newton-pure shared 
 ./Robotiq_2F_140_fingertip_physics.usda); the neutral
 joint frames/limits/bodies are in ./Robotiq_2F_140_kinematics_physics.usda. This layer
 carries the Mjc* solver tuning for both, so newton_common stays Newton-pure (RV.011).
-
-Mirrors the 2F-85 Newton layer of the same name exactly (same schemas, joint
-treatment, Mjc tuning, loop closures) and changes ONLY the 2F-140 values: the joint
-frames come from ./Robotiq_2F_140_kinematics_physics.usda, the loop closures sit at the
-2F-140 inner_finger<->outer_finger junction (= the kinematics layer's inner_finger_joint
-origin, (0, +-0.097456, 0.129029)), and the colliders are the 2F-140 per-link mesh_0.
 """
     metersPerUnit = 1
     upAxis = "Z"
@@ -148,8 +142,8 @@ over "Robotiq_2F_140"
                 rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/right_inner_finger>
                 rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/right_inner_knuckle>
                 uniform bool physics:excludeFromArticulation = 1
-                point3f physics:localPos0 = (0, 0.079555, 0.135545)
-                point3f physics:localPos1 = (0, 0.079555, 0.135545)
+                point3f physics:localPos0 = (0, 0.077337, 0.137723)
+                point3f physics:localPos1 = (0, 0.077337, 0.137723)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
             }
@@ -163,8 +157,8 @@ over "Robotiq_2F_140"
                 rel physics:body0 = </Robotiq_2F_140/Robotiq_2F_140/left_inner_finger>
                 rel physics:body1 = </Robotiq_2F_140/Robotiq_2F_140/left_inner_knuckle>
                 uniform bool physics:excludeFromArticulation = 1
-                point3f physics:localPos0 = (0, -0.079555, 0.135545)
-                point3f physics:localPos1 = (0, -0.079555, 0.135545)
+                point3f physics:localPos0 = (0, -0.077337, 0.137723)
+                point3f physics:localPos1 = (0, -0.077337, 0.137723)
                 quatf physics:localRot0 = (0, 0, 0, 1)
                 quatf physics:localRot1 = (0, 0, 0, 1)
             }

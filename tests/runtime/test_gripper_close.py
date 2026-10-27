@@ -43,6 +43,16 @@ _REVOLUTE_2F = Spec(
     close_tol=math.radians(2.0),
     unit="deg",
 )
+# The 2F-140 finger_joint upper limit is 45 deg, and on Newton its fingertip pads touch each
+# other at about 43.5 deg, so the full-close baseline is the 45 deg limit.
+_REVOLUTE_2F_140 = Spec(
+    driven="finger_joint",
+    follower="right_outer_knuckle_joint",
+    target=math.radians(45.0),
+    open_tol=math.radians(1.0),
+    close_tol=math.radians(2.0),
+    unit="deg",
+)
 # Two sliding fingers, 0 (open) to 25 mm each; right_finger_joint mimics the left.
 _PRISMATIC_HAND_E = Spec(
     driven="left_finger_joint",
@@ -57,13 +67,13 @@ _PRISMATIC_HAND_E = Spec(
 CASES = {
     ("Robotiq_2F_85", "Physx_parallel_grip"): _REVOLUTE_2F,
     ("Robotiq_2F_85", "Physx_compliant"): _REVOLUTE_2F,
-    ("Robotiq_2F_140", "Physx_parallel_grip"): _REVOLUTE_2F,
-    ("Robotiq_2F_140", "Physx_compliant"): _REVOLUTE_2F,
+    ("Robotiq_2F_140", "Physx_parallel_grip"): _REVOLUTE_2F_140,
+    ("Robotiq_2F_140", "Physx_compliant"): _REVOLUTE_2F_140,
     ("Robotiq_Hand_E", "PhysX"): _PRISMATIC_HAND_E,
     ("Robotiq_2F_85", "Newton_parallel_grip"): _REVOLUTE_2F,
     ("Robotiq_2F_85", "Newton_compliant"): _REVOLUTE_2F,
-    ("Robotiq_2F_140", "Newton_parallel_grip"): _REVOLUTE_2F,
-    ("Robotiq_2F_140", "Newton_compliant"): _REVOLUTE_2F,
+    ("Robotiq_2F_140", "Newton_parallel_grip"): _REVOLUTE_2F_140,
+    ("Robotiq_2F_140", "Newton_compliant"): _REVOLUTE_2F_140,
     ("Robotiq_Hand_E", "Newton"): _PRISMATIC_HAND_E,
 }
 
