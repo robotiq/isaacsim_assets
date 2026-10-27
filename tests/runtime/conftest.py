@@ -63,6 +63,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--screenshot", default=None, metavar="DIR",
         help="capture the viewport to DIR/<test>.png at the end of each test (works headless too)",
     )
+    parser.addoption(
+        "--renderer", choices=["minimal", "rtx"], default="minimal",
+        help="the viewport renderer: minimal (default, cheapest: RTX - Minimal) or rtx (RTX - Real-Time: lit and "
+             "shaded, slower per frame; the physics and the test results are unchanged)",
+    )
     parser.addoption("--no-view", action="store_true", default=False, help="do not apply the saved view presets")
     parser.addoption(
         "--show-joints", action="store_true", default=False,
@@ -83,7 +88,7 @@ def pytest_configure(config: pytest.Config) -> None:
     global _app
     from isaacsim import SimulationApp
 
-    # Always "RTX - Minimal": the tests are about physics; keep the viewport cheap.
+    # "RTX - Minimal" unless --renderer rtx: the tests are about physics; keep the viewport cheap.
     # minimal_shading_mode 2 (Textured Diffuse) is Kit's own default for
     # /rtx/minimal/mode, i.e. what the viewport menu's "RTX - Minimal" shows in
     # the interactive app. SimulationApp would otherwise force mode 0 ("Real-Time
@@ -93,6 +98,11 @@ def pytest_configure(config: pytest.Config) -> None:
         "renderer": "MinimalRendering",
         "minimal_shading_mode": 2,
     })
+    if config.getoption("--renderer") == "rtx":
+        # Applied by _scene.load_gripper once each test's stage exists: a new stage puts the Minimal mode back.
+        import _scene
+
+        _scene.RENDER_MODE = "RealTimePathTracing"
     # Newton is not loaded by the Python experience: enable the engine and its
     # native tensor backend (what Articulation reads DOFs through). Tests pick
     # the engine per case with SimulationManager.switch_physics_engine.

@@ -15,6 +15,11 @@ from isaacsim.core.simulation_manager import SimulationManager
 REPO = Path(__file__).resolve().parents[2]
 SCENE_LAYER = REPO / "grippers" / "scene" / "Robotiq_Newton_scene_physics.usda"
 
+# The viewport render mode to apply after each test's stage is built (``--renderer rtx``, see conftest.py); None keeps
+# the RTX - Minimal mode the session starts with.
+RENDER_MODE: str | None = None
+
+
 def engine_for(physics: str) -> str:
     """A Physics variant starting with "Newton" runs on Newton, anything else on PhysX."""
     return "newton" if physics.startswith("Newton") else "physx"
@@ -72,6 +77,11 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     simulation_app.update()
     if setup:
         setup(stage_utils.get_current_stage())
+        simulation_app.update()
+    if RENDER_MODE:
+        import carb.settings
+
+        carb.settings.get_settings().set("/rtx/rendermode", RENDER_MODE)
         simulation_app.update()
 
     # The articulation root sits on the inner <gripper> prim, not the asset root.
