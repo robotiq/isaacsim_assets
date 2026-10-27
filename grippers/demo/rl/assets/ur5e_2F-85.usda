@@ -1,0 +1,65 @@
+#usda 1.0
+(
+    doc = """UR5e + Robotiq 2F-85 as a single articulation, for Isaac Lab (reinforcement learning).
+
+Same weld as the teleop scene (demo/teleop/ur5robot_with_2F-85.usda, Gripper = 2F85): the gripper's
+own articulation root is dropped and a FixedJoint welds its base to wrist_3_link. Arm gains and
+the gripper command are set from Isaac Lab (actuators), not authored here."""
+    defaultPrim = "Robot"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Robot" (
+    variants = {
+        string Gripper = "None"
+    }
+    prepend payload = @https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Robots/UniversalRobots/ur5e/ur5e.usd@
+)
+{
+    # the stock UR5e has a gripper joint with no body1 (it expects its own Gripper variant): it would pin the flange
+    over "joints"
+    {
+        over "robot_gripper_joint" (
+            active = false
+        )
+        {
+        }
+    }
+
+    over "wrist_3_link"
+    {
+        def "Robotiq_2F_85_edit" (
+            prepend payload = @../../../Robotiq_2F_85/Robotiq_2F_85.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "Robotiq_2F_85" (
+                delete apiSchemas = ["PhysicsArticulationRootAPI", "PhysxArticulationAPI"]
+            )
+            {
+                over "root_joint" (
+                    active = false
+                )
+                {
+                }
+            }
+        }
+    }
+
+    def PhysicsFixedJoint "FixedJoint"
+    {
+        rel physics:body0 = </Robot/wrist_3_link>
+        rel physics:body1 = </Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85/base_link>
+        float physics:breakForce = 3.4028235e38
+        float physics:breakTorque = 3.4028235e38
+        point3f physics:localPos0 = (-0.3129819, 0.27369457, 0.19359241)
+        point3f physics:localPos1 = (-0.3129819, 0.27369457, 0.19359241)
+        quatf physics:localRot0 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+        quatf physics:localRot1 = (0.008417077, 0.87681663, -0.47042993, 0.09908279)
+    }
+}
