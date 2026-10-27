@@ -129,6 +129,7 @@ STUB = dict(mass=0.01784, com=(-0.0141, -0.0139, 0.0925), dims=(0.0138, 0.0452, 
 TIP = dict(mass=0.0201, com=(-0.0041, -0.0271, 0.1229), dims=(0.0292, 0.0174, 0.0465))  # LEFT Std tip, shared by ALL tips
 QCODE = "Q1340324"  # Wikidata Q-code SimReady SR.003 requires; same gripper concept as the 2F-85 / 2F-140
 GRIP_FRAME_Z = 0.13  # m, provisional TCP between the pads
+MAX_OPENING = 0.050  # m, pad-to-pad at full open (Std tips, Outside mount; = 2 x STROKE)
 
 
 def mirror(v):
@@ -179,9 +180,10 @@ def gen_base():
                 double3 xformOp:translate = (0, 0, {GRIP_FRAME_Z})
                 uniform token[] xformOpOrder = ["xformOp:translate"]
 
-                # FET028 gripper site. forward axis = approach direction (+Z, towards the
-                # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
-                float gripper_maxOpening = 0.0368
+                # FET028 gripper site (discovered through socketType). grip_line is authored pad-to-pad because the
+                # benchmark's fingertip discovery reads it that way; spec GR.003 says tube axis instead. We follow the benchmark.
+                custom token simready:attactment:socketType = "Gripper"
+                float gripper_maxOpening = {MAX_OPENING:g}
                 float gripper_maxPayload = 7.0
 
                 def BasisCurves "gripper_forward_axis"
@@ -195,8 +197,8 @@ def gen_base():
 
                 def BasisCurves "gripper_grip_line"
                 {{
-                    point3f[] points = [(0, -0.0184, 0), (0, 0.0184, 0)]
-                    float3[] extent = [(0, -0.0184, 0), (0, 0.0184, 0)]
+                    point3f[] points = [(0, {-MAX_OPENING / 2:g}, 0), (0, {MAX_OPENING / 2:g}, 0)]
+                    float3[] extent = [(0, {-MAX_OPENING / 2:g}, 0), (0, {MAX_OPENING / 2:g}, 0)]
                     int[] curveVertexCounts = [2]
                     uniform token type = "linear"
                     uniform token purpose = "guide"

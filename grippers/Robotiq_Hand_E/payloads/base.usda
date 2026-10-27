@@ -53,9 +53,10 @@ def Xform "Robotiq_Hand_E" (
                 double3 xformOp:translate = (0, 0, 0.13)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
 
-                # FET028 gripper site. forward axis = approach direction (+Z, towards the
-                # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
-                float gripper_maxOpening = 0.0368
+                # FET028 gripper site (discovered through socketType). grip_line is authored pad-to-pad because the
+                # benchmark's fingertip discovery reads it that way; spec GR.003 says tube axis instead. We follow the benchmark.
+                custom token simready:attactment:socketType = "Gripper"
+                float gripper_maxOpening = 0.05
                 float gripper_maxPayload = 7.0
 
                 def BasisCurves "gripper_forward_axis"
@@ -69,8 +70,8 @@ def Xform "Robotiq_Hand_E" (
 
                 def BasisCurves "gripper_grip_line"
                 {
-                    point3f[] points = [(0, -0.0184, 0), (0, 0.0184, 0)]
-                    float3[] extent = [(0, -0.0184, 0), (0, 0.0184, 0)]
+                    point3f[] points = [(0, -0.025, 0), (0, 0.025, 0)]
+                    float3[] extent = [(0, -0.025, 0), (0, 0.025, 0)]
                     int[] curveVertexCounts = [2]
                     uniform token type = "linear"
                     uniform token purpose = "guide"

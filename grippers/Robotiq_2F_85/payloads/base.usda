@@ -175,8 +175,9 @@ def Xform "Robotiq_2F_85" (
                 double3 xformOp:translate = (0, 0, 0.13371706760793903)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
-                # FET028 gripper site. forward axis = approach direction (+Z, towards the
-                # fingertips); grip line = pad-to-pad at max open, along the closure axis (Y).
+                # FET028 gripper site (discovered through socketType). grip_line is authored pad-to-pad because the
+                # benchmark's fingertip discovery reads it that way; spec GR.003 says tube axis instead. We follow the benchmark.
+                custom token simready:attactment:socketType = "Gripper"
                 float gripper_maxOpening = 0.085
                 float gripper_maxPayload = 5.0
 
