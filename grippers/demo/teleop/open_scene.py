@@ -30,15 +30,18 @@ PHYSICS = os.environ.get("TELEOP_PHYSICS") or {
 }.get(os.environ.get("TELEOP_GRIPPER_VARIANT", ""), "Physx_compliant")
 VARIANTS = {"Physics": PHYSICS, "Gripper": GRIPPER}
 
-# The 2F-85's tactile sensor (TELEOP_SENSORSIM alone implies the TSF-85 fingertip):
-#   TELEOP_FINGERTIP  Standard | Tactile_TSF85
-#   TELEOP_SENSORSIM  None | Raycast | EffectiveResponse   (2F85 only; Raycast needs a PhysX step of at
+# The TSF-85 tactile sensor of the 2F grippers (TELEOP_SENSORSIM alone implies the gripper's TSF fingertip):
+#   TELEOP_FINGERTIP  a Fingertip variant of the mounted 2F85 / 2F140, e.g. Tactile_TSF85 (2F85) | Tactile_TSF140 (2F140)
+#                     (applied on those two grippers only)
+#   TELEOP_SENSORSIM  None | Raycast | EffectiveResponse   (2F85 and 2F140; Raycast needs a PhysX step of at
 #                     least 240 Hz and gets it unless TELEOP_PHYSX_HZ says otherwise; EffectiveResponse is
 #                     the recommended one)
 # With a sensor selected the live heatmap (mcp_bridge/make_tactile_sensor_plot.py) comes up
 # on its own with the contact-force plot.
+TACTILE_GRIPPERS = {"2F85": ("Robotiq_2F_85", "Tactile_TSF85"), "2F140": ("Robotiq_2F_140", "Tactile_TSF140")}
 SENSORSIM = os.environ.get("TELEOP_SENSORSIM", "")
-FINGERTIP = os.environ.get("TELEOP_FINGERTIP") or ("Tactile_TSF85" if SENSORSIM else "")
+FINGERTIP = os.environ.get("TELEOP_FINGERTIP") or (
+    TACTILE_GRIPPERS[GRIPPER][1] if SENSORSIM and GRIPPER in TACTILE_GRIPPERS else "")
 
 # Benchmark knobs, applied BEFORE play so no stop -> play cycle is needed --
 # the PhysX substep rate is only picked up when the scene starts playing, and
@@ -167,13 +170,16 @@ def _select_variant(stage):
 
 
 def _select_sensor(stage):
-    """Select Fingertip / SensorSim on the mounted 2F-85. EffectiveResponse also gets the pads' contact
+    """Select Fingertip / SensorSim on the mounted 2F gripper. EffectiveResponse also gets the pads' contact
     reports now, before play, so it needs no Stop -> Play. Returns a note."""
     if not FINGERTIP and not SENSORSIM:
         return "no tactile sensor requested (TELEOP_SENSORSIM / TELEOP_FINGERTIP)"
-    edit = next((p for p in stage.Traverse() if p.GetName() == "Robotiq_2F_85_edit"), None)
+    if GRIPPER not in TACTILE_GRIPPERS:
+        return "the tactile sensor is supported on 2F85 / 2F140 only (TELEOP_GRIPPER=%s); tactile sensor NOT selected" % GRIPPER
+    asset = TACTILE_GRIPPERS[GRIPPER][0]
+    edit = next((p for p in stage.Traverse() if p.GetName() == asset + "_edit"), None)
     if edit is None:
-        return "no Robotiq_2F_85_edit prim (the tactile sensor is 2F85 only); tactile sensor NOT selected"
+        return "no %s_edit prim; tactile sensor NOT selected" % asset
     notes = []
     for name, want in (("Fingertip", FINGERTIP), ("SensorSim", SENSORSIM)):  # SensorSim is nested in Fingertip
         if not want:
@@ -188,11 +194,11 @@ def _select_sensor(stage):
         try:
             from pxr import Usd
 
-            sys.path.insert(0, os.path.join(_teleop_dir(), "..", "..", "Robotiq_2F_85"))
+            sys.path.insert(0, os.path.join(_teleop_dir(), "..", ".."))
             from tactile.contact_points import ContactPointReader
 
             with Usd.EditContext(stage, stage.GetSessionLayer()):  # keep the scene file clean
-                ContactPointReader("Robotiq_2F_85", str(edit.GetPath()) + "/Robotiq_2F_85", "physx").prepare(stage)
+                ContactPointReader(asset, str(edit.GetPath()) + "/" + asset, "physx").prepare(stage)
             notes.append("pad contact reports enabled")
         except Exception:
             import traceback

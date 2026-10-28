@@ -55,7 +55,7 @@ viewport and drive (see [Controls](#controls)).
 |---|---|---|
 | `TELEOP_GRIPPER` | `2F85`, `2F140`, `HandE` | Gripper variant. |
 | `TELEOP_PHYSICS` | `Physx_compliant`, `Physx_parallel_grip`, `Newton_compliant`, `Newton_parallel_grip` | Physics variant. `Newton_*` needs Isaac Sim's Newton launcher. The Hand-E has one PhysX and one Newton variant. |
-| `TELEOP_SENSORSIM` | `None`, `EffectiveResponse`, `Raycast` | The 2F-85's TSF-85 tactile sensor (also selects `Fingertip=Tactile_TSF85`; `TELEOP_FINGERTIP` overrides it). With one selected and haptics on, the live heatmap (`../mcp_bridge/make_tactile_sensor_plot.py`, the force per taxel in N) comes up with the contact-force plot. `Raycast` needs a PhysX step of at least 240 Hz and sets it unless `TELEOP_PHYSX_HZ` says otherwise; `EffectiveResponse` is recommended. 2F-85 only. |
+| `TELEOP_SENSORSIM` | `None`, `EffectiveResponse`, `Raycast` | The TSF-85 tactile sensor of the 2F-85 and the 2F-140 (also selects the gripper's TSF fingertip, `Tactile_TSF85` / `Tactile_TSF140`; `TELEOP_FINGERTIP` overrides it). With one selected and haptics on, the live heatmap (`../mcp_bridge/make_tactile_sensor_plot.py`, the force per taxel in N) comes up with the contact-force plot. `Raycast` needs a PhysX step of at least 240 Hz and sets it unless `TELEOP_PHYSX_HZ` says otherwise; `EffectiveResponse` is recommended. 2F-85 and 2F-140. |
 | `TELEOP_RENDER` | `RealTimePathTracing`, `keep` | Renderer; `keep` leaves the scene's own. |
 | `TELEOP_KEEP_VIEW` | `0`, `1` | `1` keeps the camera pose saved in the scene. |
 | `TELEOP_INPUT` | `auto`, `keyboard` | `auto` uses a DualSense when one is plugged in, else the keyboard. `keyboard` always uses the keyboard (same as `./run_demo.sh --keyboard`). |
