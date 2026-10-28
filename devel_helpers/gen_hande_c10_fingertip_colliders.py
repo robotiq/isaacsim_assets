@@ -30,8 +30,27 @@ N = "Robotiq_Hand_E_C10"
 THRESHOLD = 0.05  # CoACD concavity threshold
 # Pieces per tip (CoACD hull-count cap). From a sweep of the volume the pieces add over the real tip (11.4 cm3): 4 -> +54%,
 # 6 -> +54%, 8 -> +48%, 12 -> +42%. The stepped tip has fine ridges that any hull fills, so more pieces help little.
-MAX_HULLS = {"stepped": 8}
+# The extender is a flat bar with holes. CoACD output is looser than a plain hull on it (+39 to +42% for 1 to 4 pieces, and its
+# hull stands 0.46 mm proud of the pad face, which breaks a grasp on a 3 mm wide nose), so it gets its exact convex hull
+# (+21% over the 7.24 cm3 part) with the fewest vertices dropped to fit the limit below: None = exact hull.
+MAX_HULLS = {"stepped": 8, "extender": None}
 MAX_HULL_VERTS = 64  # per piece
+PAD_PROTECT = 0.025  # m: hull vertices closer than this to the axis (finger 1 slides along +X) form the pad and are kept
+
+
+def exact_hull(src_path):
+    """One convex piece: the part's convex hull, greedily dropping the vertex whose removal loses the least volume until it
+    has MAX_HULL_VERTS vertices or fewer. The dropped vertices are never on the pad (PAD_PROTECT), so the hull only
+    shrinks away from it."""
+    src = Usd.Stage.Open(src_path)
+    pts = np.array(UsdGeom.Mesh(src.GetPrimAtPath("/World/mesh_0")).GetPointsAttr().Get(), dtype=np.float64)
+    pts = pts[np.unique(ConvexHull(pts).vertices)]
+    while len(pts) > MAX_HULL_VERTS:
+        base = ConvexHull(pts).volume
+        loss = [(base - ConvexHull(np.delete(pts, i, 0)).volume, i) for i in range(len(pts)) if pts[i, 0] >= PAD_PROTECT]
+        pts = np.delete(pts, min(loss)[1], 0)
+        pts = pts[np.unique(ConvexHull(pts).vertices)]
+    return [pts]
 
 
 def _triangles(mesh):
@@ -106,7 +125,8 @@ def _rotate_z(pieces, degrees):
 
 if __name__ == "__main__":
     for key, hulls in MAX_HULLS.items():
-        first = decompose(os.path.join(PARTS, f"{N}_fingertip_{key}_1.usd"), hulls)
+        src = os.path.join(PARTS, f"{N}_fingertip_{key}_1.usd")
+        first = exact_hull(src) if hulls is None else decompose(src, hulls)
         for finger in (1, 2, 3):
             pieces = _rotate_z(first, 120 * (finger - 1))
             n, vol = write(os.path.join(PARTS, f"{N}_fingertip_{key}_{finger}.usd"), pieces)

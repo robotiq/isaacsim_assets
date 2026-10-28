@@ -11,7 +11,7 @@ hold that follows, and after reopening, check:
 1. position: the driven joint stalled short of its target, at rest (position drift), and
    the two followers track it (symmetric close);
 2. contact: all three fingertips touch the puck, penetrating it by at most 1 mm;
-3. force: each fingertip pushes on the puck with at least MIN_FORCE (and below a sanity
+3. force: each fingertip (two of the three for the extender's narrow nose, see TIP_LIMITS) pushes on the puck with at least MIN_FORCE (and below a sanity
    cap) and carries at least MIN_SHARE of the mean pad force. The normal forces are NOT
    required to be equal: with three pads and friction the grasp is statically indeterminate,
    so the pads' friction can carry part of the difference (the two-pad cube test balances
@@ -24,9 +24,10 @@ hold that follows, and after reopening, check:
 from __future__ import annotations
 
 import numpy as np
+import omni.usd
 import pytest
 from isaacsim.core.experimental.prims import RigidPrim
-from pxr import Gf, PhysxSchema, UsdGeom, UsdPhysics
+from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics
 
 from _contacts import ContactReader
 from _scene import engine_for, load_gripper, move_to, step
@@ -53,6 +54,18 @@ SAMPLE_FRAMES = 20  # the last frames of the hold are sampled
 CONTACT_PRESENT = 0.9  # fraction of sampled frames a pad must be in contact
 
 MAX_PENETRATION = 1.0e-3  # m
+# The extender's pad is a 3 mm wide nose, not a 12 mm face: the same squeeze presses it deeper into Newton's soft contact
+# (1.44 mm at 158 N on each nose, against 1.0 mm for the stepped tip), and on PhysX the puck can wedge between two noses
+# by friction while the third stays 0.1 mm clear, so it pushes with nothing. A nose that sinks 1.4 mm also brings the finger
+# stub behind it into touch. Per tip: (penetration cap, pads that must push, extra links allowed to touch).
+# Total gripper mass (kg) per tip: the datasheet's 1.7 kg, plus the manual's +180.22 g for the three extenders (1875.22 g
+# against 1695 g) in the Extender variant.
+GRIPPER_MASS = {"Stepped": 1.7, "Extender": 1.7 + 0.18022}
+MASS_TOL = 1.0e-3  # kg
+TIP_LIMITS = {
+    "Stepped": (MAX_PENETRATION, 3, ()),
+    "Extender": (2.0e-3, 2, ("finger_1", "finger_2", "finger_3")),
+}
 MIN_FORCE = 1.0  # N per fingertip
 MAX_FORCE = 1000.0  # N per fingertip; sanity cap until measured bounds are set
 MIN_SHARE = 0.4  # every pad carries at least this fraction of the mean pad force
@@ -60,9 +73,10 @@ CENTRE_TOL = 1.0e-3  # m, the puck's axis ends up this close to the gripper axis
 PUCK_REST = 0.05e-3  # m, the puck moves less than this over the sampled frames
 PHYSX_HZ = 1000  # PhysX steps the test scene at 60 Hz by default: too coarse for a stiff squeeze (see test_gripper_grasp.py)
 
-# (gripper, Physics variant): the gripper is a parameter so that the test id names it, which is how the saved view
-# presets (tests/runtime/views/<gripper>.json) are found.
-CASES = [(GRIPPER, "PhysX"), (GRIPPER, "Newton")]
+# (gripper, Physics variant, Fingertip variant): the gripper is a parameter so that the test id names it, which is how the
+# saved view presets (tests/runtime/views/<gripper>.json) are found. Both tips present the same 9 mm tall pad (z 114 to 123 mm)
+# whose inner face is 20.2 mm from the axis, so the same puck serves both.
+CASES = [(GRIPPER, ph, tip) for tip in ("Stepped", "Extender") for ph in ("PhysX", "Newton")]
 
 
 def add_puck(stage) -> None:
@@ -78,8 +92,8 @@ def add_puck(stage) -> None:
     UsdPhysics.MassAPI.Apply(cyl.GetPrim()).CreateMassAttr(MASS)
 
 
-@pytest.mark.parametrize(("gripper", "physics"), CASES, ids=[f"{g}-{p}" for g, p in CASES])
-def test_c10_grasps_puck(simulation_app, view, gripper: str, physics: str) -> None:
+@pytest.mark.parametrize(("gripper", "physics", "tip"), CASES, ids=[f"{g}-{p}-{t}" for g, p, t in CASES])
+def test_c10_grasps_puck(simulation_app, view, gripper: str, physics: str, tip: str) -> None:
     reader = ContactReader(GRIPPER, f"/World/Gripper/{GRIPPER}", PUCK_PATH, engine_for(physics))
 
     def setup(stage):
@@ -89,8 +103,15 @@ def test_c10_grasps_puck(simulation_app, view, gripper: str, physics: str) -> No
             scene_prim = next(p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene))
             PhysxSchema.PhysxSceneAPI.Apply(scene_prim).CreateTimeStepsPerSecondAttr().Set(PHYSX_HZ)
 
-    scene = load_gripper(simulation_app, GRIPPER, physics, view, setup=setup)
+    scene = load_gripper(simulation_app, GRIPPER, physics, view, setup=setup, variants=[("Fingertip", tip)])
     robot = scene.robot
+    stage = omni.usd.get_context().get_stage()
+    mass = sum(
+        p.GetAttribute("physics:mass").Get() or 0.0
+        for p in Usd.PrimRange(stage.GetPrimAtPath(f"/World/Gripper/{GRIPPER}"), Usd.TraverseInstanceProxies())
+        if p.HasAPI(UsdPhysics.MassAPI)
+    )
+    assert abs(mass - GRIPPER_MASS[tip]) < MASS_TOL, f"{tip}: the bodies weigh {mass:.4f} kg, expected {GRIPPER_MASS[tip]:.4f} kg"
     step(simulation_app, SETTLE_FRAMES)
     puck = RigidPrim(PUCK_PATH)
     driven = scene.dof(DRIVEN)
@@ -128,7 +149,7 @@ def test_c10_grasps_puck(simulation_app, view, gripper: str, physics: str) -> No
     centre = float(np.linalg.norm(puck_xy[-1]))
     puck_drift = float(np.linalg.norm(np.ptp(np.array(puck_xy), axis=0)))
     print(
-        f"{GRIPPER} {physics}: {DRIVEN}={q[driven] * 1e3:.2f} mm (target {TARGET * 1e3:.2f}), "
+        f"{GRIPPER} {physics} {tip}: {DRIVEN}={q[driven] * 1e3:.2f} mm (target {TARGET * 1e3:.2f}), "
         f"followers={[round(float(q[f]) * 1e3, 2) for f in followers]} mm, drift {drift * 1e3:.3f} mm; "
         f"force per pad {[round(f, 1) for f in force.values()]} N, puck {centre * 1e3:.2f} mm off the axis (moved {puck_drift * 1e3:.3f} mm), "
         f"penetration {[round(p * 1e3, 2) for p in penetration.values()]} mm; reopened to {q_open[driven] * 1e3:.2f} mm"
@@ -138,17 +159,19 @@ def test_c10_grasps_puck(simulation_app, view, gripper: str, physics: str) -> No
     assert drift < REST_DRIFT, f"driven joint not at rest: moved {drift * 1e3:.3f} mm over the sampled frames"
     for name, dof in zip(FOLLOWERS, followers):
         assert abs(q[dof] - q[driven]) < FOLLOW_TOL, f"{name}={q[dof] * 1e3:.2f} mm does not follow {DRIVEN}={q[driven] * 1e3:.2f} mm"
+    max_penetration, pushing_pads, extra_touching = TIP_LIMITS[tip]
     for p in PADS:
         assert present[p] >= CONTACT_PRESENT, f"{p} touches the puck in only {present[p]:.0%} of the sampled frames"
-        assert penetration[p] <= MAX_PENETRATION, f"{p} penetrates the puck by {penetration[p] * 1e3:.2f} mm"
-        assert MIN_FORCE <= force[p] <= MAX_FORCE, (
-            f"{p} pushes with {force[p]:.1f} N, expected {MIN_FORCE} to {MAX_FORCE} N; per sampled frame "
-            f"{[[round(s[q].force, 1) if q in s else None for s in samples] for q in PADS]}, present {present}"
-        )
-    for p in PADS:
-        assert force[p] >= MIN_SHARE * mean_force, f"{p} carries only {force[p]:.1f} N of a mean {mean_force:.1f} N: {force}"
+        assert penetration[p] <= max_penetration, f"{p} penetrates the puck by {penetration[p] * 1e3:.2f} mm"
+        assert force[p] <= MAX_FORCE, f"{p} pushes with {force[p]:.1f} N, over {MAX_FORCE} N: {force}"
+    pushing = [p for p in PADS if force[p] >= MIN_FORCE]
+    assert len(pushing) >= pushing_pads, f"only {pushing} push with at least {MIN_FORCE} N, expected {pushing_pads} pads: {force}"
+    if pushing_pads == len(PADS):
+        for p in PADS:
+            assert force[p] >= MIN_SHARE * mean_force, f"{p} carries only {force[p]:.1f} N of a mean {mean_force:.1f} N: {force}"
     assert centre <= CENTRE_TOL, f"the puck is {centre * 1e3:.2f} mm off the gripper axis"
     assert puck_drift < PUCK_REST, f"the puck is not at rest: moved {puck_drift * 1e3:.3f} mm over the sampled frames"
+    others -= set(extra_touching)
     assert not others, f"links other than the fingertips and the housing touch the puck: {sorted(others)}"
     assert not after, f"a fingertip still touches the puck after reopening: {sorted(after)}"
     assert abs(q_open[driven]) < OPEN_TOL, f"not open after release: {q_open[driven] * 1e3:.2f} mm"

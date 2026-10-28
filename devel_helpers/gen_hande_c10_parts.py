@@ -8,6 +8,8 @@ open) and writes, under grippers/Robotiq_Hand_E_C10/parts/ (one mesh per part, l
     Robotiq_Hand_E_C10_base.usd                      the housing and everything that does not move
     Robotiq_Hand_E_C10_finger_<1|2|3>.usd            finger stub: the slider and its two tip screws
     Robotiq_Hand_E_C10_fingertip_stepped_<1|2|3>.usd the stepped fingertip
+    Robotiq_Hand_E_C10_fingertip_extender_<1|2|3>.usd the finger extender, which replaces the tip (from FINGER_EXTENDER_C10.STEP,
+                                                      the file next to the assembly)
 
 Every part is baked into the asset frame, so every link Xform of the asset is identity: the origin is on the
 gripper axis at the mounting flange (the back face of the housing), +Z toward the fingertips, finger 1 along
@@ -55,12 +57,20 @@ N = "Robotiq_Hand_E_C10"
 # (X0, Z0) is the gripper axis and YF the mounting flange plane, both in CAD millimetres.
 X0, Z0, YF = -32.96, 14.29, -26.1
 M = np.array([[0, 0, -1], [-1, 0, 0], [0, 1, 0]], float)
+ROTATION_SIGN = 1.0  # +120 degrees about the gripper axis in the asset frame is this sign times 120 degrees about CAD +y
 
 # Parts: STEP part number -> which part it belongs to. Moving solids belong to the finger of their sector.
 TIP_PART = "D-033"
 FINGER_PARTS = ("D-038", "Y-140410-A")
 ALUMINIUM_PARTS = ("D-038", "D-033")  # their gray faces are aluminium; the STEP gives them a plastic-looking gray
 ALUMINIUM = "Silver_Rust"  # the library's aluminium (metallic, roughness 0.3)
+
+# The finger extender (FINGER_EXTENDER_C10.STEP, part D-041) replaces the tip. It was placed by hand in the viewport: in the CAD
+# frame it is a pure translation of the STEP file's own frame (the part is drawn in the assembly's orientation). Its bottom face
+# (the STEP's y = 0) seats where the tip seats on the slider (CAD y 87.67; the placement gave 87.69), its long axis runs radially
+# outward from the pad radius (its inner end is 20.2 mm from the axis, as the tip's pad is) and it is centred on the finger.
+EXTENDER_STEP = "FINGER_EXTENDER_C10.STEP"
+EXTENDER_OFFSET_CAD = (X0, 87.69, -5.93)  # mm
 
 
 def to_asset(p_mm):
@@ -245,6 +255,24 @@ def sector_of(shape):
     return int(round((math.degrees(math.atan2(a[1], a[0])) % 360) / 120.0)) % 3
 
 
+def extender_parts(step_dir):
+    """[(finger index 0..2, shape, face colours)]: the extender placed on each finger, turned about the gripper axis."""
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
+    from OCP.gp import gp_Ax1, gp_Dir, gp_Pnt, gp_Trsf, gp_Vec
+
+    out = []
+    for _, shape, faces in solids(load(os.path.join(step_dir, EXTENDER_STEP))):
+        for k in range(3):
+            t = gp_Trsf()
+            t.SetTranslation(gp_Vec(*EXTENDER_OFFSET_CAD))
+            if k:
+                r = gp_Trsf()
+                r.SetRotation(gp_Ax1(gp_Pnt(X0, 0.0, Z0), gp_Dir(0, 1, 0)), math.radians(ROTATION_SIGN * 120.0 * k))
+                t = r.Multiplied(t)
+            out.append((k, BRepBuilderAPI_Transform(shape, t, True).Shape(), faces))
+    return out
+
+
 def main(step):
     _, colors = library()
     moving = FINGER_PARTS + (TIP_PART,)
@@ -256,6 +284,8 @@ def main(step):
             base.append((part, shape, faces))
     os.makedirs(OUT, exist_ok=True)
     jobs = [("base", base)] + [(f"finger_{k + 1}", fingers[k]) for k in range(3)] + [(f"fingertip_stepped_{k + 1}", tips[k]) for k in range(3)]
+    for k, shape, faces in extender_parts(os.path.dirname(os.path.abspath(step))):
+        jobs.append((f"fingertip_extender_{k + 1}", [("D-038", shape, faces)]))  # D-038: the aluminium finger parts' colour rule
     for name, group in jobs:
         n, used = write_part(os.path.join(OUT, f"{N}_{name}.usd"), group, colors)
         print(f"{N}_{name}.usd: {len(group)} solids, {n} triangles, materials {', '.join(used)}")

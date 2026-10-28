@@ -33,8 +33,11 @@ R = f"/{N}/{N}"
 # ---------------------------------------------------------------- single source of truth
 FINGERS = (1, 2, 3)  # finger k sits at 120 * (k - 1) degrees about Z from +X
 # (key, variant name, description). The first row is the default tip: its geometry is authored in base.usda; every
-# other row would get a payload that swaps it in (none yet: the extender and the spacers still have to be placed).
-TIPS = [("stepped", "Stepped", "stepped fingertip")]
+# other row gets a payload that swaps it in. The long and short spacers are not here yet: they still have to be placed.
+TIPS = [
+    ("stepped", "Stepped", "stepped fingertip"),
+    ("extender", "Extender", "finger extender (FINGER_EXTENDER_C10, D-041); the stepped tip stays, mounted on it"),
+]
 BODY_LINKS = ["base_link"] + [f"finger_{k}" for k in FINGERS]  # links that carry a collider on their /Meshes/<name>/mesh_0
 
 # ---- Datasheet (Hand-E C10) ----
@@ -43,7 +46,7 @@ FORCE_PER_FINGER = 175.0  # N, datasheet maximum grip force per finger
 FINGER_SPEED = 0.0535  # m/s per finger: half the datasheet's 107 mm/s closing speed, read as the diameter's
 GRIPPER_MASS = 1.7  # kg, datasheet weight
 MAX_PAYLOAD = 10.0  # kg, datasheet payload
-MAX_OPENING = 0.0404  # m, pad-to-pad diameter at full open: the tip's inner face is 20.2 mm from the axis
+MAX_OPENING = 0.0404  # m, pad-to-pad diameter at full open of the default tip: its inner face is 20.2 mm from the axis
 PAD_WIDTH = 0.015  # m, fingertip pad width (tangential), from the baked tip
 GRIP_FRAME_Z = 0.1343  # m, provisional TCP: the middle of the fingertips' length
 QCODE = "Q1340324"  # Wikidata Q-code SimReady SR.003 requires; same gripper concept as the Hand-E / 2F-85 / 2F-140
@@ -58,6 +61,12 @@ DRIVE_DAMPING = 200.0  # N.s/m
 
 DENSITY_ALU = 2700.0  # kg/m^3, the finger slider and tip (aluminium)
 DENSITY_STEEL = 7850.0  # kg/m^3, the two screws that hold each tip
+
+
+def tip_opening(key):
+    """Pad-to-pad diameter (m) at full open: twice the distance from the axis of the tip's nearest point (finger 1's part)."""
+    p, _ = part_mesh(f"fingertip_{key}_1")
+    return round(2 * float(np.hypot(p[:, 0], p[:, 1]).min()), 4)
 
 
 def drive_force():
@@ -139,6 +148,17 @@ def quat_of(r):
     return tuple(v / n for v in q)
 
 
+# The Extender variant keeps the default tip and mounts it on the extender: the tip moves by this translation (m, finger 1's
+# frame: +X radially outward, +Z toward the fingertips; no rotation), the user's hand placement of the tip on the extender in
+# Isaac Sim. The manual's TCP height with extenders is 8 mm further out (173.75 mm against 165.75 mm).
+TIP_ON_EXTENDER = (0.036454796838537404, 0.0, 0.00801)
+
+
+def _rotated_z(v, degrees):
+    t = math.radians(degrees)
+    return (v[0] * math.cos(t) - v[1] * math.sin(t), v[0] * math.sin(t) + v[1] * math.cos(t), v[2])
+
+
 def masses():
     """Per-link rigid-body properties. The finger slider is the aluminium slider plus two steel screws; the base takes the
     rest of the datasheet weight (the defeatured CAD has no motor inside, so its mass is spread over the visible solids)."""
@@ -150,6 +170,38 @@ def masses():
            "tip": {k: body(f"fingertip_stepped_{k}", mass=tip_mass) for k in FINGERS}}
     out["base"] = body("base", mass=GRIPPER_MASS - 3 * (stub_mass + tip_mass))
     return out
+
+
+EXTENDER_MASS = 0.18022 / 3  # kg: the manual's +180.22 g with the three finger extenders (1875.22 g against 1695 g), with their screws
+
+
+def tip_on_extender(k):
+    """The Extender variant's fingertip body k: the stepped tip, moved onto the extender, plus the extender. The tip keeps its
+    mass; the extender takes the manual's mass spread over its CAD volume (the CAD has no screws; the manual's figure has)."""
+    tip = MASS["tip"][k]
+    shift = np.array(_rotated_z(TIP_ON_EXTENDER, 120 * (k - 1)))
+    ext = body(f"fingertip_extender_{k}", mass=EXTENDER_MASS)
+    parts = [(tip["mass"], np.array(tip["com"]) + shift, tip), (ext["mass"], np.array(ext["com"]), ext)]
+    m = sum(p[0] for p in parts)
+    com = sum(p[0] * p[1] for p in parts) / m
+    inertia = np.zeros((3, 3))
+    for mass, c, d in parts:
+        r = np.array(d["axes"])  # (w, x, y, z) of the principal frame: rebuild the tensor about the part's own CoM
+        rot = _rot_of(r)
+        own = rot @ np.diag(d["diag"]) @ rot.T
+        off = c - com
+        inertia += own + mass * (off @ off * np.eye(3) - np.outer(off, off))
+    w, vecs = np.linalg.eigh(inertia)
+    if np.linalg.det(vecs) < 0:
+        vecs[:, 2] *= -1
+    return dict(mass=m, com=tuple(com), diag=tuple(w), axes=quat_of(vecs))
+
+
+def _rot_of(q):
+    w, x, y, z = q
+    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                     [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                     [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
 
 
 MASS = masses()
@@ -335,18 +387,86 @@ def Scope "Meshes"
 ''')
 
 
-# ---------------------------------------------------------------- physics layers
-def _mass_block(name, d, kind=None, extra=""):
-    k = f'\n            kind = "{kind}"' if kind else ""
-    return f'''        over "{name}" (
-            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]{k}
+# ---------------------------------------------------------------- variant payloads
+def gen_tip_payloads():
+    default = TIPS[0][0]
+    for key, var, desc in TIPS[1:]:
+        t = ""
+        for k in FINGERS:
+            t += f'''    over "fingertip_{k}"
+    {{
+        over "tip_{default}"
+        {{
+            double3 xformOp:translate = ({", ".join(f"{c:.9g}" for c in _rotated_z(TIP_ON_EXTENDER, 120 * (k - 1)))})
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }}
+
+        def Xform "tip_{key}" (
+            instanceable = false
+            kind = "subcomponent"
+            prepend references = @../parts/{N}_fingertip_{key}_{k}.usd@
         )
         {{
-            point3f physics:centerOfMass = {fmt3(d["com"])}
+            def Xform "collision" (
+                prepend references = @../parts/{N}_fingertip_{key}_{k}_collision.usd@
+            )
+            {{
+            }}
+        }}
+    }}
+
+'''
+        w(f"payloads/{N}_fingertip_{key}.usda", HDR + f'''(
+    # "{var}" fingertip variant: reference the {desc}
+    # (parts baked into the asset frame) and move the default tip onto it. Its collider is authored (inert) in {N}_physx_common_physics.usda and
+    # {N}_newton_common_physics.usda, so it composes only under a Physics variant. The tip mass is the shared value from
+    # fingertip_physics (an estimate from the stepped tip).
+    # GENERATED by devel_helpers/gen_hande_c10_layers.py -- do not edit by hand.
+    defaultPrim = "{N}"
+    metersPerUnit = 1
+    subLayers = [
+        @./base.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "Meshes"
+{{
+{t.rstrip()}
+}}
+
+over "{N}"
+{{
+    over "{N}"
+    {{
+        over "base_link"
+        {{
+            over "grip_frame"
+            {{
+                float gripper_maxOpening = {tip_opening(key):g}
+            }}
+        }}
+    }}
+}}
+''')
+
+
+# ---------------------------------------------------------------- physics layers
+def _mass_block(name, d, kind=None, extra="", mass=True, prim_apis=True):
+    """A rigid body's block. mass=False leaves the mass attributes out (they are authored per Fingertip variant);
+    prim_apis=False leaves the schemas and kind out (the block only carries the mass attributes)."""
+    k = f'\n            kind = "{kind}"' if kind else ""
+    head = f'''(
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]{k}
+        )''' if prim_apis else ""
+    attrs = f'''            point3f physics:centerOfMass = {fmt3(d["com"])}
             float3 physics:diagonalInertia = {fmt3(d["diag"])}
             float physics:mass = {d["mass"]:.9g}
             quatf physics:principalAxes = {fmt4(d["axes"])}
-{extra}        }}
+''' if mass else ""
+    return f'''        over "{name}"{" " + head if head else ""}
+        {{
+{attrs}{extra}        }}
 '''
 
 
@@ -393,12 +513,26 @@ def gen_fingertip_physics():
                 quatf physics:localRot1 = {IDQ}
             }}
 '''
-        return _mass_block(f"fingertip_{k}", d, kind="group", extra=joint)
+        return _mass_block(f"fingertip_{k}", d, kind="group", extra=joint, mass=False)
+
+    def tip_mass(variant):
+        return "".join(
+            _mass_block(f"fingertip_{k}", MASS["tip"][k] if variant == TIPS[0][1] else tip_on_extender(k), kind=None, prim_apis=False)
+            for k in FINGERS)
+
+    variants = "".join(f'''        "{v}" {{
+            over "{N}"
+            {{
+{tip_mass(v)}            }}
+        }}
+''' for v in (TIPS[0][1], TIPS[1][1]))
     w(f"payloads/{N}_fingertip_physics.usda", HDR + f'''(
     # Engine-neutral fingertip physics for the Hand-E C10 (UsdPhysics only): the screwed-on fingertip rigid bodies and
     # their PhysicsFixedJoints (welded to the finger stub, rigid like a screw). Sublayered by every Physics variant.
     #
     # Mass is {MASS["tip"][1]["mass"] * 1000:.1f} g per tip (aluminium {DENSITY_ALU:.0f} kg/m^3 x CAD volume); centre of mass and moments from the baked mesh.
+    # With the Extender variant the body is the tip moved onto the extender plus the extender ({EXTENDER_MASS * 1000:.1f} g: the manual's +180.2 g for
+    # the three extenders with their screws): {tip_on_extender(1)["mass"] * 1000:.1f} g.
     # This layer only composes under a Physics variant, never under Physics = "None".
     # GENERATED by devel_helpers/gen_hande_c10_layers.py -- do not edit by hand.
     defaultPrim = "{N}"
@@ -409,8 +543,15 @@ def gen_fingertip_physics():
     upAxis = "Z"
 )
 
-over "{N}"
+over "{N}" (
+    prepend variantSets = ["Fingertip"]
+)
 {{
+    # The mass properties depend on the Fingertip variant (the Extender variant adds the extenders to each tip body), and a
+    # local opinion would beat a variant one, so the two sets of values are both authored in variants.
+    variantSet "Fingertip" = {{
+{variants}    }}
+
     over "{N}"
     {{
 ''' + "\n".join(tip(k) for k in FINGERS) + '''    }
@@ -1004,6 +1145,13 @@ over "{N}" (
 
 
 def gen_root(meta):
+    variants = "".join(
+        f'''        "{var}" (
+            prepend payload = @./payloads/{N}_fingertip_{key}.usda@
+        ) {{
+
+        }}
+''' for key, var, _ in TIPS[1:])
     w(f"{N}.usda", HDR + f'''(
     customLayerData = {{
         # SR.001 requires these identity fields authored DIRECTLY in the root layer's customLayerData (not only nested
@@ -1093,13 +1241,13 @@ def Xform "{N}" (
 
         }}
     }}
-    # Only the stepped fingertip is baked so far: the finger extender and the long and short spacers still have to be
-    # placed on the finger, then each gets a row in TIPS of gen_hande_c10_layers.py.
+    # The default tip is authored in base.usda; every other tip swaps it for its own parts (see gen_tip_payloads). The long
+    # and short spacers still have to be placed on the finger, then each gets a row in TIPS of gen_hande_c10_layers.py.
     variantSet "Fingertip" = {{
         "{TIPS[0][1]}" {{
 
         }}
-    }}
+{variants}    }}
 }}
 ''')
 
@@ -1119,6 +1267,7 @@ if __name__ == "__main__":
     for sub in ("payloads", "configuration"):
         os.makedirs(os.path.join(ROOT, sub), exist_ok=True)
     gen_base()
+    gen_tip_payloads()
     gen_body_mass()
     gen_fingertip_physics()
     gen_kinematics()

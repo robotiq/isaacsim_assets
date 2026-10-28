@@ -8,10 +8,16 @@ joint layout is different, so it cannot be one of its variants.
 | Variant set | Variants |
 | --- | --- |
 | `Physics` | `PhysX` *(default)*, `Newton`, `None` |
-| `Fingertip` | `Stepped` *(default)* |
+| `Fingertip` | `Stepped` *(default)*, `Extender` |
 
-Only the stepped fingertip is baked so far. The C10's finger extender and its long and short spacers are not
-variants yet: they still have to be placed on the finger (see [What is not done](#what-is-not-done)).
+`Extender` mounts the finger extender (FINGER_EXTENDER_C10, D-041) on the finger and the stepped tip on the extender: the
+extender is a 12 mm wide, 9 mm tall bar that runs radially from 20.2 mm to 104.2 mm from the axis, its inner end (a 3 mm
+wide nose at z 114 to 123 mm) being the pad for small objects, and the stepped tip sits at its outer end, 36.5 mm further
+out and 8.0 mm higher than on the bare finger, which moves the tip's step to a larger diameter. Both placements were
+set by hand in Isaac Sim and decoded to pure translations (no rotation). The manual puts the TCP 8 mm further out with
+extenders, as here. The
+long and short spacers are not variants yet: they still have to be placed on the finger (see
+[What is not done](#what-is-not-done)).
 
 ## Frame and joints
 
@@ -48,7 +54,8 @@ to 32.1 mm from the axis); the datasheet's 40 mm of diameter stroke would give 2
 - **Drive.** A position drive on `finger_1_joint`, stiffness 50000 N/m and damping 200 N.s/m, the Hand-E's values: the
   force is stiffness x the remaining stroke up to the cap, so a fully closed command applies the cap on any object.
 - **Colliders.** Each body link has one convex hull. Each stepped tip has 8 convex pieces (CoACD), which add 48% to the
-  tip's volume: its fine ridges are filled by any hull. The pad itself is the lowest 9 mm of the tip (z 114 to 123 mm); the
+  tip's volume: its fine ridges are filled by any hull. Each extender has its exact convex hull (64 vertices, +21% over its 7.24 cm3 part;
+  CoACD pieces were looser, +39 to +42%, and stood 0.46 mm proud of the pad face). The pad itself is the lowest 9 mm of the tip (z 114 to 123 mm); the
   tip steps back above it.
 - **Pad friction.** 1.0, static and dynamic, with combine mode `max` on PhysX, as on the Hand-E.
 - **Grip frame** (`grip_frame`, the FET028 gripper site): on the axis, at z 0.1343 m, the middle of the tips' length. This
@@ -58,9 +65,14 @@ to 32.1 mm from the axis); the datasheet's 40 mm of diameter stroke would give 2
 
 ## What is not done
 
-- The finger extender (D-041) and the long and short spacers (D-042, D-043) are in Robotiq's CAD set but not baked: how they
-  mount on the finger has to be confirmed first.
+- The long and short spacers (D-042, D-043) are in Robotiq's CAD set but not baked: how they mount on the finger has to be
+  confirmed first.
 - The Newton drive and MuJoCo solver values are copied from the Hand-E and have been checked only by the runtime tests below.
+- In the `Extender` variant each fingertip body is the stepped tip moved onto the extender plus the extender: 30.7 g + 60.1 g.
+  The extender's mass is the manual's +180.22 g for the three extenders with their screws (1875.22 g against 1695 g),
+  spread over the CAD volume (the CAD has no screws, so the density comes out at 8.3 g/cm3, above steel's 7.85). The
+  centre of mass and the moments are those of the two meshes together. The base mass is unchanged, so the variant weighs
+  1.88 kg.
 - A per-tip mass and a measured grip force are not available: the force is the datasheet's maximum.
 
 ## Generated files and tests

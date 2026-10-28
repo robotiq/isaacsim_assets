@@ -88,10 +88,15 @@ def Xform "Robotiq_Hand_E_C10" (
 
         }
     }
-    # Only the stepped fingertip is baked so far: the finger extender and the long and short spacers still have to be
-    # placed on the finger, then each gets a row in TIPS of gen_hande_c10_layers.py.
+    # The default tip is authored in base.usda; every other tip swaps it for its own parts (see gen_tip_payloads). The long
+    # and short spacers still have to be placed on the finger, then each gets a row in TIPS of gen_hande_c10_layers.py.
     variantSet "Fingertip" = {
         "Stepped" {
+
+        }
+        "Extender" (
+            prepend payload = @./payloads/Robotiq_Hand_E_C10_fingertip_extender.usda@
+        ) {
 
         }
     }

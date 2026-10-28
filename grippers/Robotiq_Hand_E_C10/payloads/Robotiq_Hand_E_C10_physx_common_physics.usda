@@ -192,6 +192,21 @@ over "Meshes"
                 }
             }
         }
+
+        over "tip_extender"
+        {
+            over "collision"
+            {
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Physics/GripMaterial>
+                }
+            }
+        }
     }
 
     over "fingertip_2"
@@ -273,6 +288,21 @@ over "Meshes"
                 }
             }
         }
+
+        over "tip_extender"
+        {
+            over "collision"
+            {
+                over "hull_0" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Physics/GripMaterial>
+                }
+            }
+        }
     }
 
     over "fingertip_3"
@@ -345,6 +375,21 @@ over "Meshes"
                 }
 
                 over "hull_7" (
+                    prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
+                )
+                {
+                    uniform token physics:approximation = "convexHull"
+                    bool physics:collisionEnabled = 1
+                    rel material:binding:physics = </Robotiq_Hand_E_C10/Robotiq_Hand_E_C10/Physics/GripMaterial>
+                }
+            }
+        }
+
+        over "tip_extender"
+        {
+            over "collision"
+            {
+                over "hull_0" (
                     prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI", "MaterialBindingAPI"]
                 )
                 {

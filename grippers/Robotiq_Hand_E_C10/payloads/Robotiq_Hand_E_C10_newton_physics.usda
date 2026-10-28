@@ -249,6 +249,22 @@ over "Meshes"
                 }
             }
         }
+
+        over "tip_extender"
+        {
+            over "collision"
+            {
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.002, 2]
+                }
+            }
+        }
     }
 
     over "fingertip_2"
@@ -338,6 +354,22 @@ over "Meshes"
                 }
             }
         }
+
+        over "tip_extender"
+        {
+            over "collision"
+            {
+                over "hull_0" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.002, 2]
+                }
+            }
+        }
     }
 
     over "fingertip_3"
@@ -417,6 +449,22 @@ over "Meshes"
                 }
 
                 over "hull_7" (
+                    prepend apiSchemas = ["MjcCollisionAPI"]
+                )
+                {
+                    uniform int mjc:group = 3
+                    uniform int mjc:priority = 1
+                    uniform double[] mjc:solimp = [0.95, 0.99, 0.001, 0.5, 2]
+                    uniform double[] mjc:solref = [0.002, 2]
+                }
+            }
+        }
+
+        over "tip_extender"
+        {
+            over "collision"
+            {
+                over "hull_0" (
                     prepend apiSchemas = ["MjcCollisionAPI"]
                 )
                 {
