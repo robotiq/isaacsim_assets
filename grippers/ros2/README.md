@@ -1,6 +1,6 @@
-# Driving the simulated 2F gripper from ROS 2
+# Driving a simulated Robotiq gripper from ROS 2
 
-The simulated 2F-85 and 2F-140 answer the [`robotiq/robotiq-ros`](https://github.com/robotiq/robotiq-ros/tree/main/grippers)
+The simulated 2F-85, 2F-140 and Hand-E C10 answer the [`robotiq/robotiq-ros`](https://github.com/robotiq/robotiq-ros/tree/main/grippers)
 stack like the real gripper: same launch file, same `gripper_cmd` action, same `/joint_states`.
 Switching between the real gripper and the simulation is one launch argument. Until a ros release
 carries the fix of [robotiq/robotiq-ros#118](https://github.com/robotiq/robotiq-ros/issues/118) there is one
@@ -38,11 +38,11 @@ The one-joint contract is the intended one, and it depends on
 [robotiq/robotiq-ros#118](https://github.com/robotiq/robotiq-ros/issues/118) being fixed on the ros side (declare the
 URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
 
-- **`/joint_states` shows the five mimic joints at 0.** The description declares them as state
+- **`/joint_states` shows the mimic joints at 0** (five on a 2F, the two other fingers on the C10). The description declares them as state
   interfaces, nothing publishes them, and `robot_state_publisher` takes those zeros instead of
-  deriving them from `<mimic>`: RViz, MoveIt and TF show the fingers frozen while the knuckle moves
+  deriving them from `<mimic>`: RViz, MoveIt and TF show the fingers frozen while the driven joint moves
   ([#89](https://github.com/robotiq/isaacsim_assets/issues/89)). On the real gripper `/joint_states`
-  carries the knuckle alone. Once ros#118 is fixed, the simulation's `/joint_states` is the
+  carries the driven joint alone. Once ros#118 is fixed, the simulation's `/joint_states` is the
   hardware's, with nothing to change here.
 - **The command names the mimic joints too, with a position for the driven joint only**, so its
   arrays differ in length and Isaac's `ROS2SubscribeJointState` node discards it. The graph reads
@@ -107,9 +107,9 @@ URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
    ```
 
    The gripper moves in the viewport and both goals succeed. `position` is the driven joint in
-   radians, from 0 (open) to the closed position in the table above; on a 2F-140 the joint is
-   `finger_joint`. See "Commanding the gripper" in the `robotiq/robotiq-ros` README for the goal fields.
-   `/joint_states` carries the knuckle (and, up to ros 1.3, the mimic joints at 0: see
+   radians (metres on the C10), from 0 (open) to the closed position in the table above; on a 2F-140 the joint is
+   `finger_joint`, on a C10 `hande_c10_finger_1_joint`. See "Commanding the gripper" in the `robotiq/robotiq-ros` README for the goal fields.
+   `/joint_states` carries the driven joint (and, up to ros 1.3, the mimic joints at 0: see
    [Known limitation](#known-limitation-ros--13)).
 
 ## Options
@@ -118,7 +118,7 @@ URDF mimic joints for Gazebo only). Up to ros 1.3, under `sim_topic_based`:
 
 | Argument | Default | |
 |---|---|---|
-| `model` | `"2f_85"` | `"2f_85"` or `"2f_140"`, as the launch's `gripper_model` |
+| `model` | `"2f_85"` | `"2f_85"`, `"2f_140"` or `"hand_e_c10"`, as the launch's `gripper_model` |
 | `articulation_root` | found in the stage | the prim carrying the articulation root |
 | `prefix` | `""` | the URDF's `prefix` xacro argument, for several grippers on one robot |
 | `command_topic` | `"/sim/joint_commands"` | match `sim_joint_commands_topic` |
@@ -156,7 +156,7 @@ Isaac Sim reports most graph mistakes only in the log, if at all.
 
 ## Tests
 
-`tests/runtime/test_gripper_ros2.py` builds the graph for every 2F gripper and Physics variant,
+`tests/runtime/test_gripper_ros2.py` builds the graph for every 2F gripper and the Hand-E C10 on each of their Physics variants,
 sends the command the plugin sends from a separate ROS 2 process, and checks the driven joint
 reaches the target and is reported under its URDF name. It needs a system ROS 2 and, like the
 other runtime tests, a local Isaac Sim: it is not part of the GitHub CI.
