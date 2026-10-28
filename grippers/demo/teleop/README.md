@@ -27,7 +27,7 @@ DualSense also starts the haptics (see [Haptics](#haptics-dualsense)).
 with `open_scene.py` yourself, from PowerShell:
 
 ```powershell
-$env:TELEOP_GRIPPER = "2F85"              # 2F85, 2F140 or HandE
+$env:TELEOP_GRIPPER = "2F85"              # 2F85, 2F140, HandE or HandE_C10
 $env:TELEOP_PHYSICS = "Physx_compliant"   # see Gripper and Physics variants
 C:\isaacsim\isaac-sim.bat --exec "C:\path\to\grippers\demo\teleop\open_scene.py"
 ```
@@ -53,7 +53,7 @@ viewport and drive (see [Controls](#controls)).
 
 | Variable | Values (default first) | Effect |
 |---|---|---|
-| `TELEOP_GRIPPER` | `2F85`, `2F140`, `HandE` | Gripper variant. |
+| `TELEOP_GRIPPER` | `2F85`, `2F140`, `HandE`, `HandE_C10` | Gripper variant. The C10 is not officially supported: its three fingers are driven by `finger_1_joint` and the contact-force plot and R2 rumble read nothing for it. |
 | `TELEOP_PHYSICS` | `Physx_compliant`, `Physx_parallel_grip`, `Newton_compliant`, `Newton_parallel_grip` | Physics variant. `Newton_*` needs Isaac Sim's Newton launcher. The Hand-E has one PhysX and one Newton variant. |
 | `TELEOP_SENSORSIM` | `None`, `EffectiveResponse`, `Raycast` | The TSF-85 tactile sensor of the 2F-85 and the 2F-140 (also selects the gripper's TSF fingertip, `Tactile_TSF85` / `Tactile_TSF140`; `TELEOP_FINGERTIP` overrides it). With one selected and haptics on, the live heatmap (`../mcp_bridge/make_tactile_sensor_plot.py`, the force per taxel in N) comes up with the contact-force plot. `Raycast` needs a PhysX step of at least 240 Hz and sets it unless `TELEOP_PHYSX_HZ` says otherwise; `EffectiveResponse` is recommended. 2F-85 and 2F-140. |
 | `TELEOP_RENDER` | `RealTimePathTracing`, `keep` | Renderer; `keep` leaves the scene's own. |
@@ -161,6 +161,7 @@ physics. `TELEOP_GRIPPER` and `TELEOP_PHYSICS` select them at start.
 | `2F85` *(default)* | `Robotiq_2F_85/Robotiq_2F_85.usda` |
 | `2F140` | `Robotiq_2F_140/Robotiq_2F_140.usda` |
 | `HandE` | `Robotiq_Hand_E/Robotiq_Hand_E.usda` |
+| `HandE_C10` | `Robotiq_Hand_E_C10/Robotiq_Hand_E_C10.usda` |
 
 The Hand-E has one PhysX and one Newton variant, so the scene's `Physx_*`
 physics select its `PhysX` variant and `Newton_*` its `Newton` variant. The

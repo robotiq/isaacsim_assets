@@ -12,6 +12,7 @@
 #
 #   TELEOP_GRIPPER=2F140 ./run_demo.sh                 # the 2F-140 (default 2F85)
 #   TELEOP_GRIPPER=HandE ./run_demo.sh                 # the Hand-E (PhysX / Newton)
+#   TELEOP_GRIPPER=HandE_C10 ./run_demo.sh             # the Hand-E C10 (three fingers; no contact-force plot yet)
 #   TELEOP_PHYSICS=Newton_compliant ./run_demo.sh      # the Newton gripper
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 #   TELEOP_SENSORSIM=EffectiveResponse ./run_demo.sh   # the 2F-85 with the TSF-85 tactile sensor
@@ -26,7 +27,7 @@
 # READY_TIMEOUT counts from the launch, including any time the launcher spends
 # before Isaac starts. MCP_EXT_ROOT defaults to ../mcp_bridge/isaacsim-mcp-server.
 #
-# TELEOP_GRIPPER picks the scene's Gripper variant (2F85 | 2F140 | HandE) and
+# TELEOP_GRIPPER picks the scene's Gripper variant (2F85 | 2F140 | HandE | HandE_C10) and
 # TELEOP_PHYSICS its Physics variant (Physx_compliant | Physx_parallel_grip |
 # Newton_compliant | Newton_parallel_grip, default Physx_compliant). The Hand-E has
 # one PhysX and one Newton variant, so any Physx_* / Newton_* maps onto those. The
