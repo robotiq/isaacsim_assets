@@ -144,11 +144,8 @@ class TactilePickSceneCfg(InteractiveSceneCfg):
     sphere_9 = _sphere(9)
 
     # tactile: both pads' force on the spheres and on the box, as 7 x 4 taxel maps (grippers/tactile_sensors)
-    # max_contact_distance=None: the sensor the shipped policy was trained with. The library's default 8 mm gate (contacts
-    # off the taxel array read nothing) costs this policy ~10 % single-pick speed: it learned to use back/side contacts.
     tactile = TactileSensorCfg(
         prim_path="{ENV_REGEX_NS}/Robot/wrist_3_link/Robotiq_2F_85_edit/Robotiq_2F_85",
-        max_contact_distance=None,
         filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Sphere_{i}" for i in range(NUM_SPHERES)]
         + [f"{{ENV_REGEX_NS}}/Box/{part}" for part in ("floor", "wall_n", "wall_s", "wall_e", "wall_w")],
     )
