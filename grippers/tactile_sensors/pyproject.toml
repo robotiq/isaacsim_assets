@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robotiq_tactile_sensors"
+version = "0.1.0"
+description = "Simulated Robotiq TSF tactile sensors: taxel layouts, per-gripper mounts and an Isaac Lab sensor"
+requires-python = ">=3.10"
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+# the torch parts (force spreading, the Isaac Lab sensor); Isaac Lab brings its own torch
+torch = ["torch"]
+
+[tool.setuptools.packages.find]
+include = ["robotiq_tactile_sensors*"]
