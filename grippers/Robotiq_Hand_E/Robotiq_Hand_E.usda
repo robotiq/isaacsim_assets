@@ -37,13 +37,15 @@ def Xform "Robotiq_Hand_E" (
     kind = "component"
     prepend references = @./payloads/base.usda@
     variants = {
+        string Stroke = "Stroke50"
         string FingertipMount = "Outside"
         string Fingertip = "Std"
         string Physics = "PhysX"
     }
-    # FingertipMount is listed first: it must be stronger than Fingertip, whose payloads
-    # re-sublayer base.usda (translate = 0) and would otherwise cancel the Inside offset.
-    prepend variantSets = ["FingertipMount", "Fingertip", "Physics"]
+    # Stroke is listed first so its payloads (Stroke100) win over every other variant set's. FingertipMount
+    # comes next: it must be stronger than Fingertip, whose payloads re-sublayer base.usda (translate = 0) and
+    # would otherwise cancel the Inside offset.
+    prepend variantSets = ["Stroke", "FingertipMount", "Fingertip", "Physics"]
 )
 {
     string isaac:namespace (
@@ -127,6 +129,59 @@ def Xform "Robotiq_Hand_E" (
             prepend payload = @./payloads/Robotiq_Hand_E_fingertip_binpick.usda@
         ) {
 
+        }
+    }
+    # Total opening: "Stroke50" (default, the original Hand-E, 25 mm per finger) or "Stroke100" (100 mm, 50 mm per
+    # finger, own base and fingers). Stroke100 carries its own Physics and Fingertip deltas, as nested variant sets
+    # selected by the same names.
+    variantSet "Stroke" = {
+        "Stroke50" {
+
+        }
+        "Stroke100" (
+            prepend payload = @./payloads/Robotiq_Hand_E_s100.usda@
+            prepend variantSets = ["Fingertip", "Physics"]
+        ) {
+            variantSet "Physics" = {
+                "None" {
+
+                }
+                "PhysX" (
+                    prepend payload = @./payloads/Robotiq_Hand_E_s100_physx_physics.usda@
+                ) {
+
+                }
+                "Newton" (
+                    prepend payload = @./payloads/Robotiq_Hand_E_s100_newton_physics.usda@
+                ) {
+
+                }
+            }
+            variantSet "Fingertip" = {
+                "Std" {
+
+                }
+                "Flat_Overmolded" (
+                    prepend payload = @./payloads/Robotiq_Hand_E_s100_fingertip_flat_overmolded.usda@
+                ) {
+
+                }
+                "Support" (
+                    prepend payload = @./payloads/Robotiq_Hand_E_s100_fingertip_support.usda@
+                ) {
+
+                }
+                "Extender" (
+                    prepend payload = @./payloads/Robotiq_Hand_E_s100_fingertip_extender.usda@
+                ) {
+
+                }
+                "Bin_Picking" (
+                    prepend payload = @./payloads/Robotiq_Hand_E_s100_fingertip_binpick.usda@
+                ) {
+
+                }
+            }
         }
     }
 }

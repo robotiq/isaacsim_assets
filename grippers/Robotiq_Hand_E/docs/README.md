@@ -1,19 +1,21 @@
 # Robotiq Hand-E
 
 Isaac Sim asset for the Robotiq Hand-E: two sliding fingers (25 mm each, 50 mm stroke) on prismatic
-joints. `Robotiq_Hand_E.usda` is the entry point.
+joints, or 50 mm each, 100 mm stroke, with the `Stroke100` variant. `Robotiq_Hand_E.usda` is the entry point.
 
 | Variant set | Variants |
 | --- | --- |
+| `Stroke` | `Stroke50` *(default)*, `Stroke100` — see [Stroke100](#stroke100-100-mm-stroke) |
 | `Physics` | `PhysX` *(default)*, `Newton`, `None` |
 | `Fingertip` | `Std` *(default)*, `Flat_Overmolded`, `Support`, `Extender`, `Bin_Picking` |
 | `FingertipMount` | `Outside` *(default)*, `Inside` — which fingertip screw-hole row is used; `Inside` moves every tip 9 mm towards the centerline |
 
 Only `left_finger_joint` is driven; `right_finger_joint` follows it rigidly (a PhysX mimic joint, or
-a stiff MuJoCo joint equality on Newton), and both close with a positive position, 0 (open) to 25 mm.
+a stiff MuJoCo joint equality on Newton), and both close with a positive position, 0 (open) to 25 mm (50 mm on `Stroke100`).
 
 Most of the repetitive layers under `payloads/` and the fingertip collision pieces are generated:
-see `devel_helpers/gen_hande_layers.py` and `devel_helpers/gen_hande_fingertip_colliders.py`.
+see `devel_helpers/gen_hande_layers.py` and `devel_helpers/gen_hande_fingertip_colliders.py`
+(the `Stroke100` parts: `devel_helpers/gen_hande_s100_parts.py`).
 
 ## Source of the specifications
 
@@ -81,3 +83,42 @@ does not respect that limit**: do not use the simulated force as a statement of 
 apply. To get the manual's values back (cap 200 N), set `EXTRA_TIP_FORCE_FOR_SIM = 0.0` and regenerate the
 layers (`python3 devel_helpers/gen_hande_layers.py`, which needs the `pxr` USD bindings); the Newton lift
 test then fails on slip.
+
+## Stroke100 (100 mm stroke)
+
+`Stroke = Stroke100` is the same gripper with 100 mm total opening: 50 mm per finger. `Stroke50` is the
+default and is the asset described above; nothing about it changes with this variant set.
+
+| | `Stroke50` | `Stroke100` |
+| --- | --- | --- |
+| Finger travel (`physics:upperLimit` of both joints) | 25 mm | 50 mm |
+| Pad-to-pad opening, Std tips (`gripper_maxOpening`) | 50 mm | 100 mm (other tips: their `Stroke50` value + 50 mm) |
+| Base | the Hand-E CAD | the P7L CAD: a 125 mm rack plate along the finger axis, mass 0.9253 kg (was 0.8633 kg) |
+| Finger body | 45 mm long, 17.8 g | 70 mm long, 28.5 g |
+| Fingertips | stock | the same stock tips (all five), 25 mm further out each |
+| Drive, speed, forces, fingertip masses | | unchanged: the datasheet is the same, only the stroke changes |
+
+How it is built:
+
+- The base and the two finger bodies are baked from `ROBOTIQ_HAND-E-P7L_DEFEATURE.STEP` (fingers open) by
+  `devel_helpers/gen_hande_s100_parts.py`. That STEP is one assembly of 33 shells, not named parts, so the
+  script tells them apart by face count and checks them against the geometry (see its docstring). Open versus
+  closed, the moving shells travel exactly 50.0 mm each.
+- The fingertips of the P7L open model are not the Std tip: their volume (shells 4 + 5, 9445 mm³) matches the
+  stock Flat_Overmolded tip (9440 mm³). The stock tips fit the longer fingers shifted 25 mm along Y (to within
+  about 1 mm), so `Stroke100` reuses them all, rather than baking new ones, and the `Fingertip` and
+  `FingertipMount` variant sets work as before.
+- `Stroke` is the first variant set, so its payloads win over those of the other sets. `Stroke100` sits next to
+  the stroke-50 meshes (each link's `mesh_0` is deactivated, the new part is `mesh_s100`) and carries its own
+  `Physics` and `Fingertip` deltas as nested variant sets, so none of the `Stroke50` layers is touched.
+- Mass, centre of mass and box inertia are estimated like the stroke-50 ones: 2800 kg/m³ × baked mesh volume,
+  bounding-box centre. The fingertip centres of mass move 25 mm with the tips. The grasp is the stroke-50
+  one: the same `drive:linear:physics:*` values and per-tip force caps (the tips are at the same height above
+  the housing, so the spec-sheet force curves apply as they are).
+
+What has been checked: the composed stage of every `Stroke50` combination (Physics × Fingertip × FingertipMount,
+30 of them) is identical, attribute for attribute, to the one before this variant set existed; on `Stroke100`
+the composed pad-to-pad gap measured on the meshes equals `gripper_maxOpening` for all five tips, and the
+colliders, masses and joint limits compose on PhysX, Newton and `None`. The runtime tests have `PhysX_Stroke100`
+and `Newton_Stroke100` rows in `test_gripper_close.py`, `test_gripper_grasp.py` and `test_gripper_lift.py`
+(the existing cube preset is reused: the cube sits on the centreline between the pads at the same height).
