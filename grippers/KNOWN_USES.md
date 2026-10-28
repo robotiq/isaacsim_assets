@@ -126,7 +126,22 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
   - The docs also note NVIDIA's Isaac Lab 3.0 beta release notes list a known Robotiq 2F-85 issue, so the DROID and Kinova grippers need extra smoke testing.
 - The gripper is described to the model in the prompt: finger-pad offsets, jaw geometry, and interpolated geometry tables that map closure to pad separation distance. This is prompt-side modeling of the gripper, not a change to the asset.
 
+- **Gripper geometry prompt (section 3.1.2 of the page):** the prompt variants add gripper geometry, camera geometry, or both, and the gripper geometry text defines:
+  - Pose frame: the action pose and `ee_pos`/`ee_quat` locate the Robotiq `base_link` mounting flange. The finger pads extend along flange-local +X, and the two opposing pads are separated along flange-local Y. Closing reduces that separation.
+  - Closure: `g` is `gripper_pos[0]`, normalized closure (0 = open, 1 = fully closed), distinct from the binary gripper action that requests open or closed.
+  - Approximate linkage geometry table: `d` is the midpoint between the pad centers along flange-local X, in metres, and the gap is the inner-face gap.
+
+    | g | d (m) | inner-face gap (m) |
+    |---|---|---|
+    | 0.00 | 0.13010 | 0.0850 |
+    | 0.25 | 0.13651 | 0.0666 |
+    | 0.50 | 0.14101 | 0.0461 |
+    | 0.75 | 0.14343 | 0.0242 |
+
+    The screenshot cuts off before g = 1.00, so that row is missing here.
+
 ### Findings / feedback for us
+- The geometry table shows the pad midpoint moving out along the flange X axis as the gripper closes (d grows from 0.130 m to 0.143 m by g = 0.75), while the gap shrinks from 85 mm. It is nonlinear in g. We could check our asset's pad frames against these numbers.
 - The policy reasons about pad separation as a function of normalized closure. An asset that exposes closure (0-1) and pad separation consistently would make that table easy to derive and verify.
 - Users hit instanceable-visual-prototype rendering problems with the 2F-85 on Isaac Sim 6. Worth checking our asset for the same issue.
 - They leave the finger-joint drive gains to the USD (`stiffness=None`) and only cap velocity, so the drive values authored in the asset matter directly for them.
