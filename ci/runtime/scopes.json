@@ -1,0 +1,27 @@
+{
+  "isaac_sim_versions": ["6.2"],
+  "shared": [
+    "tests/runtime",
+    "grippers/scene",
+    "grippers/tactile",
+    "grippers/tactile_sensors",
+    "grippers/ros2"
+  ],
+  "per_gripper": [
+    "tests/runtime/*/{scope}.json",
+    "tests/runtime/*/{scope}_*.json"
+  ],
+  "gripper_roots": ["grippers/Robotiq_*"],
+  "ignore": [
+    "*.md",
+    "*/.thumbs/*",
+    "tests/runtime/views/*",
+    "*/__pycache__/*"
+  ],
+  "scopes": {
+    "Robotiq_2F_85": {"paths": ["grippers/Robotiq_2F_85"]},
+    "Robotiq_2F_140": {"paths": ["grippers/Robotiq_2F_140"]},
+    "Robotiq_Hand_E": {"paths": ["grippers/Robotiq_Hand_E"]},
+    "Robotiq_Hand_E_C10": {"paths": ["grippers/Robotiq_Hand_E_C10"]}
+  }
+}
