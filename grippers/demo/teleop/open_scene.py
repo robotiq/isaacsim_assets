@@ -133,6 +133,13 @@ def _raise_newton_contact_limit():
         if ns is None:
             return "Newton stage not acquired; contact limit left at default"
         cfg = ns.cfg.solver_cfg
+        if not hasattr(cfg, "nconmax"):
+            # Isaac Sim 6.2: before the first init the config is still the
+            # solver-agnostic base class. Newton keeps a config that already
+            # is the scene's solver type, so install the MuJoCo one ourselves
+            # or the raised limits are lost when it swaps it in.
+            from isaacsim.physics.newton import MuJoCoSolverConfig
+            cfg = ns.cfg.solver_cfg = MuJoCoSolverConfig()
         was_n, was_j = cfg.nconmax, cfg.njmax
         cfg.nconmax = max(was_n or 0, NEWTON_NCONMAX)
         cfg.njmax = max(was_j or 0, NEWTON_NJMAX)

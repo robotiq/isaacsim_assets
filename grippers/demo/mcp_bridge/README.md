@@ -151,7 +151,7 @@ includes the `isaac-sim` entry. On the first tool call, expect:
 
 ```
 mcp__isaac-sim__get_scene_info → {
-  "assets_root_path": "…/Isaac/6.0",
+  "assets_root_path": "…/Isaac/6.2",
   "stage_path": "/.../your_scene.usd",
   "prim_count": …
 }

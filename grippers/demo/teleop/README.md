@@ -63,7 +63,7 @@ viewport and drive (see [Controls](#controls)).
 | `TELEOP_FULL_FORCE_N` | `200` | Average pad force (N) at which R2 reaches full stiffness. |
 | `READY_TIMEOUT` | `240` | Seconds `run_demo.sh` waits for the scene, counted from the launch. |
 | `MCP_EXT_ROOT` | `../mcp_bridge/isaacsim-mcp-server` | Where the Isaac Sim MCP extension is (needed for the haptics). |
-| `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim` / derived from physics | Isaac Sim install and launcher override. |
+| `ISAACSIM_ROOT` / `ISAACSIM_LAUNCHER` | `~/isaacsim-6.2.0` (else `~/isaacsim`) / derived from physics | Isaac Sim install and launcher override. |
 
 ## Controls
 
