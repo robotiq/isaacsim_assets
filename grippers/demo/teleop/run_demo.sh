@@ -45,7 +45,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-ISAACSIM_ROOT="${ISAACSIM_ROOT:-$HOME/isaacsim}"
+# Isaac Sim 6.2 is the supported version; fall back to a plain ~/isaacsim.
+if [[ -z "${ISAACSIM_ROOT:-}" ]]; then
+  if [[ -d "$HOME/isaacsim-6.2.0" ]]; then ISAACSIM_ROOT="$HOME/isaacsim-6.2.0"
+  else ISAACSIM_ROOT="$HOME/isaacsim"; fi
+fi
 # The scene used to have one combined Gripper variant (physx | newton, both the
 # 2F-85); keep the old TELEOP_GRIPPER_VARIANT working by mapping it onto the
 # two variant sets.
