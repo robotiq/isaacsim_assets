@@ -122,7 +122,7 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
 - The project page describes no simulation tuning of the gripper. The public RoboLab code (`robolab/robots/droid.py`, read via the GitHub API, not run) shows this:
   - **Actuator:** a single Isaac Lab `ImplicitActuatorCfg` on `finger_joint` only, with `stiffness=None` and `damping=None` (so the USD drive values are kept) and `velocity_limit=5.0`. The effort limit and alternative stiffness/damping values are commented out, which suggests they were tried. The other 2F-85 joints (`right_outer.*`, `left_inner.*`, `right_inner.*`) have no actuator and start at 0.
   - **Solver:** articulation self-collisions disabled, 64 position iterations, 0 velocity iterations; rigid bodies with gravity disabled and `max_depenetration_velocity=5.0`; contact sensors activated. Contact detection is on the `left_inner_finger` link.
-  - **Asset patch for Isaac Sim 6:** Isaac Sim 6 did not reliably render the Robotiq meshes while their visual prototype roots stayed instanceable. They de-instanced exactly eight Robotiq visual prototype roots and left bodies, joints, collision prims and meshes unchanged, locked by `tests/test_droid_isaac60_asset.py`.
+  - **Asset patch for Isaac Sim 6 (rendering only):** their docs say Isaac Sim 6 "can otherwise omit [the Robotiq visuals] from RTX renders" while the visual prototype roots stay instanceable. They de-instanced exactly eight Robotiq visual prototype roots and left bodies, joints, collision prims and meshes unchanged, locked by `tests/test_droid_isaac60_asset.py`. The repo does not explain the root cause.
   - The docs also note NVIDIA's Isaac Lab 3.0 beta release notes list a known Robotiq 2F-85 issue, so the DROID and Kinova grippers need extra smoke testing.
 - The gripper is described to the model in the prompt: finger-pad offsets, jaw geometry, and interpolated geometry tables that map closure to pad separation distance. This is prompt-side modeling of the gripper, not a change to the asset.
 
@@ -137,12 +137,14 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
     | 0.25 | 0.13651 | 0.0666 |
     | 0.50 | 0.14101 | 0.0461 |
     | 0.75 | 0.14343 | 0.0242 |
+    | 1.00 | 0.14366 | 0.0018 |
 
-    The screenshot cuts off before g = 1.00, so that row is missing here.
+  - The prompt calls these "approximate linkage geometry" and "geometric reference values, not exact contact locations or a grasp detector", since contact can deflect the linkage. Intermediate openings are interpolated.
+  - Pad pose: `p_pad = p_flange + R(ee_quat) * t_pad` with `t_pad = [d, 0, 0]`, and the flange target is `p_flange_target = desired_pad_position - R(target_quaternion) * t_pad`.
 
 ### Findings / feedback for us
-- The geometry table shows the pad midpoint moving out along the flange X axis as the gripper closes (d grows from 0.130 m to 0.143 m by g = 0.75), while the gap shrinks from 85 mm. It is nonlinear in g. We could check our asset's pad frames against these numbers.
+- The geometry table shows the pad midpoint moving out along the flange X axis as the gripper closes (d grows from 0.130 m to 0.144 m at g = 1.00), while the gap shrinks from 85 mm to 1.8 mm. It is nonlinear in g. We could check our asset's pad frames against these numbers.
 - The policy reasons about pad separation as a function of normalized closure. An asset that exposes closure (0-1) and pad separation consistently would make that table easy to derive and verify.
-- Users hit instanceable-visual-prototype rendering problems with the 2F-85 on Isaac Sim 6. Worth checking our asset for the same issue.
+- Users hit a rendering problem with instanceable Robotiq visuals on Isaac Sim 6. Our default composition has the same structure: 11 instanceable `visuals` prims (one per link, including the fingertips) over 6 prototypes, with one mesh each. This is a static check only; whether our asset actually fails to render on Isaac Sim 6 has not been tested.
 - They leave the finger-joint drive gains to the USD (`stiffness=None`) and only cap velocity, so the drive values authored in the asset matter directly for them.
 - Open questions: the friction and contact material on the pads, and which grip mode the flattened USD uses. I did not inspect the USD, and I did not read the `ai_native` policy code beyond the robot config.
