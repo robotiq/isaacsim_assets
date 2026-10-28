@@ -1,7 +1,8 @@
 # Runtime tests (manual, Isaac Sim)
 
 Tests that load the gripper assets into a running Isaac Sim and simulate them.
-They need an NVIDIA RTX GPU and a local Isaac Sim install, so they are **not**
+They need an NVIDIA RTX GPU and a local **Isaac Sim 6.2 or later** (the session stops with a clear
+message on an older one), so they are **not**
 part of the GitHub CI (which only runs the static SimReady validation). Run them
 by hand before merging an asset change.
 
