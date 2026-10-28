@@ -84,6 +84,21 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
+# With --gui, the Hand-E cases (every Hand-E version: the node id has "Robotiq_Hand_E") render in "RTX - Real-Time"
+# whatever --renderer says, for the better lighting and shadows; every other case follows --renderer. The mode is
+# handed to _scene.load_gripper, which applies it once each test's stage exists (a new stage puts Minimal back), and
+# is set per test so a held session (--hold) that alternates grippers follows. Headless runs are unaffected.
+HAND_E_ID = "Robotiq_Hand_E"
+REALTIME_RENDER_MODE = "RealTimePathTracing"
+
+
+def _set_render_mode(config: pytest.Config, item: pytest.Item) -> None:
+    import _scene
+
+    realtime = config.getoption("--renderer") == "rtx" or HAND_E_ID in item.nodeid
+    _scene.RENDER_MODE = REALTIME_RENDER_MODE if realtime else None
+
+
 def pytest_configure(config: pytest.Config) -> None:
     global _app
     from isaacsim import SimulationApp
@@ -102,7 +117,7 @@ def pytest_configure(config: pytest.Config) -> None:
         # Applied by _scene.load_gripper once each test's stage exists: a new stage puts the Minimal mode back.
         import _scene
 
-        _scene.RENDER_MODE = "RealTimePathTracing"
+        _scene.RENDER_MODE = REALTIME_RENDER_MODE
     # Newton is not loaded by the Python experience: enable the engine and its
     # native tensor backend (what Articulation reads DOFs through). Tests pick
     # the engine per case with SimulationManager.switch_physics_engine.
@@ -173,6 +188,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     config._isaac_last_item = item
     if config.getoption("--gui"):
         _show_test_name(item.nodeid.split("::")[-1])
+        _set_render_mode(config, item)
     out = config.getoption("--record")
     if out and config.getoption("--gui"):
         from pathlib import Path
