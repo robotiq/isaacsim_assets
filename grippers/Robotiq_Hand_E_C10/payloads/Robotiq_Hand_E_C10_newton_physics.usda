@@ -52,9 +52,9 @@ over "Robotiq_Hand_E_C10"
                 prepend apiSchemas = ["MjcJointAPI", "PhysicsDriveAPI:linear"]
             )
             {
-                float drive:linear:physics:damping = 200
+                float drive:linear:physics:damping = 283
                 float drive:linear:physics:maxForce = 525
-                float drive:linear:physics:stiffness = 50000
+                float drive:linear:physics:stiffness = 100000
                 float drive:linear:physics:targetPosition = 0
                 uniform double mjc:armature = 0.001
                 uniform double mjc:damping = 1

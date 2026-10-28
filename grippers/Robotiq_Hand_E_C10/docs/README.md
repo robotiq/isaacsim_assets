@@ -1,7 +1,7 @@
 # Robotiq Hand-E C10
 
 Isaac Sim asset for the Robotiq Hand-E C10: **three concentric fingers**, 120 degrees apart, that slide
-radially toward the gripper axis (19.2 mm each, 38.5 mm of diameter between the pads). `Robotiq_Hand_E_C10.usda`
+radially toward the gripper axis (19.2 mm each, 38.4 mm of diameter between the pads). `Robotiq_Hand_E_C10.usda`
 is the entry point. It is a separate asset from the two-finger [Hand-E](../../Robotiq_Hand_E/docs/README.md): the
 joint layout is different, so it cannot be one of its variants.
 
@@ -51,8 +51,13 @@ to 32.1 mm from the axis); the datasheet's 40 mm of diameter stroke would give 2
   the baked CAD meshes (aluminium 2700 kg/m3, steel 7850 kg/m3). The base takes the rest of the 1.7 kg (1559.7 g). The
   defeatured CAD has no motor inside, so the base mass is spread over the visible solids and its real centre of mass is
   probably deeper. Centre of mass and principal moments come from the closed meshes.
-- **Drive.** A position drive on `finger_1_joint`, stiffness 50000 N/m and damping 200 N.s/m, the Hand-E's values: the
-  force is stiffness x the remaining stroke up to the cap, so a fully closed command applies the cap on any object.
+- **Drive.** A position drive on `finger_1_joint`, stiffness 100000 N/m and damping 283 N.s/m (the Hand-E's damping ratio),
+  capped at 525 N: three times the datasheet's 175 N per finger, as the three fingers share the driven joint's force. The
+  drive pushes with stiffness x the remaining stroke up to the cap, and a finger stopped by an object of diameter d is left
+  with d/2 - 1 mm of it (a closed command is 19.2 mm of travel, the open pads are 40.4 mm apart). So a fully closed command
+  applies the cap, 175 N per pad, on objects wider than 12.5 mm; on a narrower one the force is less, and depends on the
+  diameter: roughly 100 to 135 N per pad on a 10 mm pin, depending on how far the pads sink into it. The Hand-E's 50000 N/m reached the cap only above 23 mm. A stiffer drive
+  (262500 N/m, the cap from 6 mm) was tried and made both engines unstable.
 - **Colliders.** Each body link has one convex hull. Each stepped tip has 8 convex pieces (CoACD), which add 48% to the
   tip's volume: its fine ridges are filled by any hull. Each extender has its exact convex hull (64 vertices, +21% over its 7.24 cm3 part;
   CoACD pieces were looser, +39 to +42%, and stood 0.46 mm proud of the pad face). The pad itself is the lowest 9 mm of the tip (z 114 to 123 mm); the
