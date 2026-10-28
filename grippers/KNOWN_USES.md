@@ -105,11 +105,11 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
 
 ## Astranomy: An Empirical Study of GPT-6 Astra as a Native Robot Policy (Yang, Khetan, Zhang, NVIDIA Seattle Robotics Lab, 2026)
 
-- **Link:** [project page](https://research.nvidia.com/labs/srl/projects/astranomy/). The page lists the code on GitLab and says the arXiv link is coming soon.
+- **Link:** [project page](https://research.nvidia.com/labs/srl/projects/astranomy/) (arXiv link listed as coming soon). The page's Code link points to NVIDIA's internal GitLab, which is probably not public. The same policy code is in the public [NVlabs/RoboLab](https://github.com/NVlabs/RoboLab) repo under `policies/ai_native`.
 - **Gripper(s):** Robotiq 2F-85 on the DROID robot (Franka Panda arm)
 - **Variant:** not stated
-- **Simulator / physics engine:** RoboLab, a simulation environment run on NVIDIA L40s GPUs. The page does not name the physics engine. Control runs at 15 Hz with simulation paused during inference.
-- **Asset source:** not stated. The page does not say it uses this repo's asset.
+- **Simulator / physics engine:** [RoboLab](https://github.com/NVlabs/RoboLab), built on Isaac Lab (Isaac Sim 5.1, with an Isaac Sim 6 / Isaac Lab 3.0 beta path), run on NVIDIA L40s GPUs. PhysX by default (an Isaac Lab `ArticulationCfg`). Control runs at 15 Hz with simulation paused during inference.
+- **Asset source:** not this repo's asset. RoboLab ships its own `assets/robots/franka_robotiq_2f_85_flattened.usd` (a flattened Franka + Robotiq 2F-85), plus an Isaac Sim 6 derivative `franka_robotiq_2f_85_isaac60.usd`. The repo's notices license `assets/robots` as CC BY-NC-SA 4.0 (c) NVIDIA. Its Kinova Gen3 + 2F-85 asset derives from `ros2_kortex` and PickNik `ros2_robotiq_gripper` (BSD-3).
 
 ### How the gripper was used
 - A general-purpose multimodal language model is evaluated as a native robot policy for language-conditioned manipulation, without robot-specific finetuning. Three policy configurations are compared on 120 tasks (RoboLab-120).
@@ -119,9 +119,15 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
 - Reported results: the agentic policy reaches 74.8 % success and the direct policy 66.3 %.
 
 ### How the asset was tuned
-- No simulation tuning of the gripper is described on the project page.
+- The project page describes no simulation tuning of the gripper. The public RoboLab code (`robolab/robots/droid.py`, read via the GitHub API, not run) shows this:
+  - **Actuator:** a single Isaac Lab `ImplicitActuatorCfg` on `finger_joint` only, with `stiffness=None` and `damping=None` (so the USD drive values are kept) and `velocity_limit=5.0`. The effort limit and alternative stiffness/damping values are commented out, which suggests they were tried. The other 2F-85 joints (`right_outer.*`, `left_inner.*`, `right_inner.*`) have no actuator and start at 0.
+  - **Solver:** articulation self-collisions disabled, 64 position iterations, 0 velocity iterations; rigid bodies with gravity disabled and `max_depenetration_velocity=5.0`; contact sensors activated. Contact detection is on the `left_inner_finger` link.
+  - **Asset patch for Isaac Sim 6:** Isaac Sim 6 did not reliably render the Robotiq meshes while their visual prototype roots stayed instanceable. They de-instanced exactly eight Robotiq visual prototype roots and left bodies, joints, collision prims and meshes unchanged, locked by `tests/test_droid_isaac60_asset.py`.
+  - The docs also note NVIDIA's Isaac Lab 3.0 beta release notes list a known Robotiq 2F-85 issue, so the DROID and Kinova grippers need extra smoke testing.
 - The gripper is described to the model in the prompt: finger-pad offsets, jaw geometry, and interpolated geometry tables that map closure to pad separation distance. This is prompt-side modeling of the gripper, not a change to the asset.
 
 ### Findings / feedback for us
 - The policy reasons about pad separation as a function of normalized closure. An asset that exposes closure (0-1) and pad separation consistently would make that table easy to derive and verify.
-- Open questions: which 2F-85 asset and variant RoboLab uses, the physics engine, and the friction and drive settings. These may be in the code or the paper (not yet on arXiv). I only read the project page.
+- Users hit instanceable-visual-prototype rendering problems with the 2F-85 on Isaac Sim 6. Worth checking our asset for the same issue.
+- They leave the finger-joint drive gains to the USD (`stiffness=None`) and only cap velocity, so the drive values authored in the asset matter directly for them.
+- Open questions: the friction and contact material on the pads, and which grip mode the flattened USD uses. I did not inspect the USD, and I did not read the `ai_native` policy code beyond the robot config.
