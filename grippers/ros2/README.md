@@ -26,10 +26,11 @@ one, under its URDF name.** The asset keeps its own joint name and the graph rem
 |---|---|---|---|---|
 | `2f_85` | `robotiq_85_left_knuckle_joint` | `finger_joint` | 0.7929 rad | 47° (0.820 rad) |
 | `2f_140` | `finger_joint` | `finger_joint` | 0.695 rad | 45° (0.785 rad) |
+| `hand_e_c10` | `hande_c10_finger_1_joint` | `finger_1_joint` | 0.0192 m | 0.0192 m |
 
 The asset closes a little further than the position the driver calls closed, so every position
 the controller commands is reachable; a goal beyond the asset's limit stops at the limit. The
-rest of the four-bar linkage is the simulator's business.
+rest of the four-bar linkage is the simulator's business. The C10's fingers 2 and 3 follow `finger_1_joint` (PhysX mimic, a joint equality on Newton) and are not exposed, like the 2F mimic joints; there the asset's upper limit is the driver's closed position.
 
 ### Known limitation (ros ≤ 1.3)
 

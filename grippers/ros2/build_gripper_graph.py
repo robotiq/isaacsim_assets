@@ -1,6 +1,6 @@
 """
 Build the ROS 2 Action Graph that lets a Robotiq 2F gripper in Isaac Sim be driven
-by the `robotiq/robotiq-ros` stack like the real gripper.
+by the `robotiq/robotiq-ros` stack like the real gripper (the 2F-85, the 2F-140 and the Hand-E C10).
 
     ros2 launch robotiq_description robotiq_control.launch.py sim_topic_based:=true
 
@@ -43,6 +43,8 @@ Physics variant.
 DRIVEN_JOINTS = {
     "2f_85": ("robotiq_85_left_knuckle_joint", "finger_joint"),
     "2f_140": ("finger_joint", "finger_joint"),
+    # The C10's two other fingers mimic finger_1_joint; like the 2F mimic joints they are not exposed.
+    "hand_e_c10": ("hande_c10_finger_1_joint", "finger_1_joint"),
 }
 
 # robotiq_control.launch.py defaults; the plugin's topic names are relative to the root.
