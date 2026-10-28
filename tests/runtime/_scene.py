@@ -19,10 +19,21 @@ SCENE_LAYER = REPO / "grippers" / "scene" / "Robotiq_Newton_scene_physics.usda"
 # the RTX - Minimal mode the session starts with.
 RENDER_MODE: str | None = None
 
+STROKE100_SUFFIX = "_Stroke100"
+
 
 def engine_for(physics: str) -> str:
     """A Physics variant starting with "Newton" runs on Newton, anything else on PhysX."""
     return "newton" if physics.startswith("Newton") else "physx"
+
+
+def variant_selections(physics: str) -> list[tuple[str, str]]:
+    """The variant selections a test's Physics label stands for. A label ending in ``_Stroke100`` is the
+    Hand-E's 100 mm stroke on the Physics variant before the suffix ("PhysX_Stroke100", "Newton_Stroke100");
+    the Stroke set is selected first, as it is the strongest."""
+    if physics.endswith(STROKE100_SUFFIX):
+        return [("Stroke", "Stroke100"), ("Physics", physics.removesuffix(STROKE100_SUFFIX))]
+    return [("Physics", physics)]
 
 
 @dataclass
@@ -57,7 +68,7 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     stage_utils.add_reference_to_stage(
         usd_path=str(REPO / "grippers" / gripper / f"{gripper}.usda"),
         path="/World/Gripper",
-        variants=[("Physics", physics)],
+        variants=variant_selections(physics),
     )
     prim = stage.GetPrimAtPath("/World/Gripper")
     for variant_set, selection in variants or []:

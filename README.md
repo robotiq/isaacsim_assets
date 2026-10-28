@@ -15,7 +15,7 @@ grippers/                         Gripper assets
   images/                         Figures used by the guide
   Robotiq_2F_85/                  2F-85 gripper (PhysX + Newton solver variants)
   Robotiq_2F_140/                 2F-140 gripper (PhysX + Newton solver variants)
-  Robotiq_Hand_E/                 Hand-E gripper (PhysX, Fingertip + FingertipMount variants)
+  Robotiq_Hand_E/                 Hand-E gripper (PhysX, Stroke + Fingertip + FingertipMount variants)
   Robotiq_Hand_E_C10/             Hand-E C10 gripper, three concentric fingers (PhysX + Newton)
   tactile/                        TSF-85 tactile sensor of the 2F grippers (readers, payload generator)
   demo/                           Demos, incl. the UR5e teleop for either gripper

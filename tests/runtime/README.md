@@ -71,6 +71,8 @@ lights are written to the file of that scope (`case` when omitted).
 ~/isaacsim/python.sh -m pytest tests/runtime -v --gui --hold --save-view gripper -k 2F_140
 ```
 
+With `--gui`, the Hand-E cases (all Hand-E versions) always use `RTX - Real-Time` (`REALTIME_RENDER_MODE` in `conftest.py`), whatever `--renderer` says.
+
 The viewport uses the `RTX - Minimal` render mode by default (`conftest.py`; `--renderer rtx` switches to the lit, slower `RTX - Real-Time` mode for watching: only the frame rate changes, not the physics or the results) in
 Kit's default Minimal shading mode (Textured Diffuse, the look the viewport
 menu's "RTX - Minimal" gives in the interactive app); the tests are about
