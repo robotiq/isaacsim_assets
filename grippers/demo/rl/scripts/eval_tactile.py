@@ -15,6 +15,8 @@ parser.add_argument("--steps", type=int, default=600)
 parser.add_argument("--policy", required=True)
 parser.add_argument("--task", default="Robotiq-Tactile-Sphere-Pick-UR5e-2F85")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
+parser.add_argument("--seed", type=int, default=None, help="seed the layouts and the noise")
+parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
 parser.add_argument("--ablate_tactile", action="store_true", help="zero the tactile observations: does the policy need to feel?")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
@@ -29,6 +31,11 @@ from robotiq_rl.tactile_pick.env_cfg import RIM_Z, TASK  # noqa: E402
 
 def main():
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, overrides=hydra_overrides)
+    if args_cli.seed is not None:
+        torch.manual_seed(args_cli.seed)
+        env_cfg.seed = args_cli.seed
+    if args_cli.gate is not None:
+        env_cfg.scene.tactile.max_contact_distance = None if args_cli.gate < 0 else args_cli.gate
     if args_cli.video:
         env_cfg.video_recorders = [VideoRecorderCfg(source="viz", output_dir=args_cli.video, video_length=args_cli.steps)]
     with launch_simulation(env_cfg, args_cli):

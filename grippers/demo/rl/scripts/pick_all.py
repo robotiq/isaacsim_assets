@@ -26,6 +26,9 @@ parser.add_argument("--give_up", type=int, default=900, help="steps without a pi
 parser.add_argument("--layout", choices=("reachable", "floor"), default="reachable", help="reachable: all spheres where the tool tip can go; floor: spread over the whole floor (as in training, about half out of reach)")
 parser.add_argument("--slow", type=float, default=1.0, help="scale the policy's tool-tip motion by this near the floor (gentler contact)")
 parser.add_argument("--slow_below", type=float, default=0.10, help="tool-tip height below which --slow applies")
+parser.add_argument("--seed", type=int, default=None, help="seed the layouts and the noise, so two runs start from the same boxes")
+parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
+parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
@@ -53,6 +56,11 @@ def drop_point(k: torch.Tensor) -> torch.Tensor:
 def main():
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, overrides=hydra_overrides)
     env_cfg.episode_length_s = 3600.0  # no time-out reset: this is one long run
+    if args_cli.seed is not None:
+        torch.manual_seed(args_cli.seed)
+        env_cfg.seed = args_cli.seed
+    if args_cli.gate is not None:
+        env_cfg.scene.tactile.max_contact_distance = None if args_cli.gate < 0 else args_cli.gate
     reset = env_cfg.events.reset_spheres.params
     reset["num_active_range"] = None  # all ten spheres are in the box
     reset["p_zone_only"] = 1.0 if args_cli.layout == "reachable" else 0.0
@@ -72,6 +80,23 @@ def main():
         active = torch.ones(n, dtype=torch.bool, device=dev)
         act = torch.zeros(n, env.action_manager.total_action_dim, device=dev)
         centre = torch.tensor(BOX_CENTER, device=dev)
+        meas = {"steps": 0, "contact": 0, "gate_changes": 0, "removed": 0.0, "total": 0.0, "max_gate": 0.0, "max_geom": 0.0}
+        if args_cli.measure_gate:
+            import numpy as np
+            from robotiq_tactile_sensors.sensing import taxel_force_map
+
+            sensor = env.scene["tactile"]
+            # the taxel grid as it was when the policy was trained: rounded pitches (5.5 x 6 mm) and origin
+            old_local = torch.tensor(
+                np.stack(
+                    [
+                        np.stack([[-0.009 + 0.006 * c, y, 0.1489 - 0.0055 * r] for r in range(7) for c in range(4)])
+                        for y in (-0.0416, 0.0416)
+                    ]
+                ),
+                dtype=torch.float32,
+                device=dev,
+            )
 
         reach = torch.tensor(REACH_HALF, device=dev)
 
@@ -152,6 +177,23 @@ def main():
                 print(f"t={t:5d} envs stopped (no pick for {args_cli.give_up} steps): {giving_up.nonzero().flatten().tolist()}")
             if not active.any():
                 break
+            if args_cli.measure_gate:
+                d = sensor.data
+                args = (d.pos_w.torch, d.quat_w.torch, d.normal_force_matrix_w.torch, d.contact_pos_w.torch)
+                kw = dict(pad_order=sensor._pad_order, force_floor=sensor.cfg.force_floor, sigma=sensor.cfg.sigma)
+                gated = taxel_force_map(*args, taxels_local=sensor._taxels_local, max_distance=0.008, **kw)
+                plain = taxel_force_map(*args, taxels_local=sensor._taxels_local, max_distance=None, **kw)
+                old = taxel_force_map(*args, taxels_local=old_local, max_distance=None, **kw)
+                live = active.clone()
+                touching = plain.sum((-1, -2)) > 0
+                meas["steps"] += int(live.sum())
+                meas["contact"] += int((touching & live).sum())
+                changed = ((plain - gated).abs().amax((-1, -2)) > 0.01) & live
+                meas["gate_changes"] += int(changed.sum())
+                meas["removed"] += float(((plain - gated).sum((-1, -2)) * live).sum())
+                meas["total"] += float((plain.sum((-1, -2)) * live).sum())
+                meas["max_gate"] = max(meas["max_gate"], float((plain - gated).abs().max()))
+                meas["max_geom"] = max(meas["max_geom"], float((plain - old).abs().max()))
             obs, *_ = env.step(act)
         left = spheres_in_box()
         s = tp.get_state(env, TASK)
@@ -163,6 +205,12 @@ def main():
                 in_zone = bool((r.abs() < reach).all())
                 print(f"left in box: sphere {i} at x {r[0]:+.3f} y {r[1]:+.3f} from the centre ({'reachable zone' if in_zone else 'out of reach, ' + f'{BOX_INNER / 2 - r.abs().max():.3f} m from the nearest wall'})")
         outside = ((s.sphere_pos[..., :2] - centre).abs() >= BOX_INNER / 2 + 0.02).any(-1)
+        if args_cli.measure_gate:
+            print(f"RESULT gate: env-steps {meas['steps']}, with any tactile contact {meas['contact']} ({100 * meas['contact'] / max(meas['steps'], 1):.1f} %)")
+            print(f"RESULT gate: env-steps where it changes the map by > 0.01 N: {meas['gate_changes']} ({100 * meas['gate_changes'] / max(meas['contact'], 1):.2f} % of the steps with contact)")
+            print(f"RESULT gate: share of the total tactile force it removes: {100 * meas['removed'] / max(meas['total'], 1e-9):.3f} %; largest change of one taxel {meas['max_gate']:.2f} N")
+            print(f"RESULT geometry: largest difference of one taxel between the old rounded grid and the exact one: {meas['max_geom']:.3f} N")
+        print("RESULT per-env picked:", picked.tolist())
         print("RESULT envs", n, "steps", t + 1)
         print("RESULT spheres lying outside the box per env (mean/min/max):", f"{outside.sum(-1).float().mean().item():.1f} / {int(outside.sum(-1).min())} / {int(outside.sum(-1).max())}")
         print("RESULT spheres picked per env (mean/min/max):", f"{picked.float().mean().item():.1f} / {int(picked.min())} / {int(picked.max())}")
