@@ -1,0 +1,8 @@
+#usda 1.0
+# Canonical SimReady "geometries" layer (ISA.001 layout slot). The render/collision
+# geometry is authored as the invisible `/Meshes` scope inside ./base.usda; this layer
+# is intentionally empty so it does not alter that authoring.
+(
+    metersPerUnit = 1
+    upAxis = "Z"
+)

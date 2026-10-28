@@ -58,6 +58,10 @@ FINGER_JOINT = "finger_joint"
 _HANDE = os.environ.get("TELEOP_GRIPPER", "") == "HandE"
 if _HANDE:
     FINGER_JOINT = "left_finger_joint"
+# The Hand-E C10 (three radial fingers) is driven the same way: finger_1_joint, in metres; the other two follow it.
+_C10 = os.environ.get("TELEOP_GRIPPER", "") == "HandE_C10"
+if _C10:
+    FINGER_JOINT = "finger_1_joint"
 
 # ur_description UR5e joint origins (xyz, rpy); every joint axis is local Z.
 ORIGINS = [((0, 0, 0.1625), (0, 0, 0)),
@@ -90,7 +94,7 @@ ORI_GAIN = 12.0
 # arm moves even with the sticks at rest, which is what makes "point tool down"
 # a command rather than a preference that only takes effect once you jog.
 ORI_TOL = math.radians(0.4)
-GRIP_OPEN, GRIP_CLOSED = (0.0, 0.025) if _HANDE else (0.0, 0.80)
+GRIP_OPEN, GRIP_CLOSED = (0.0, 0.0192) if _C10 else (0.0, 0.025) if _HANDE else (0.0, 0.80)
 # rad/s, in SIM time. The target is ramped rather than stepped because a step
 # input destabilises the four-bar.
 #
@@ -100,7 +104,7 @@ GRIP_OPEN, GRIP_CLOSED = (0.0, 0.025) if _HANDE else (0.0, 0.80)
 # where the four-bar is not loaded. The measurement was right and the change
 # was still wrong.
 # Hand-E: 25 mm stroke per finger at 0.04 m/s (~0.6 s open to closed; published 20-150 mm/s).
-GRIP_RATE = 0.04 if _HANDE else 0.8
+GRIP_RATE = 0.04 if (_HANDE or _C10) else 0.8
 
 AXIS_LX, AXIS_LY, AXIS_L2, AXIS_RX, AXIS_RY, AXIS_R2, AXIS_DX, AXIS_DY = range(8)
 # Analog yaw, past the pad's 8 axes (both input classes keep 12). The pad yaws
@@ -167,7 +171,7 @@ ZOOM_MIN_HEIGHT = 0.20   # m; never let the camera sink to bench level
 # The gripper's rendered bounds do reach the right place: projected onto the
 # tool axis they extend 0.1609 m. That is measured at startup, with this as the
 # fallback when the bounds cannot be read.
-TOOL_LENGTH = 0.150 if _HANDE else 0.155
+TOOL_LENGTH = 0.134 if _C10 else 0.150 if _HANDE else 0.155
 TOOL_LENGTH_RANGE = (0.05, 0.30)     # reject a nonsense measurement
 GRIPPER_PRIM = "Robotiq_2F_85_edit"
 

@@ -15,6 +15,11 @@ from isaacsim.core.simulation_manager import SimulationManager
 REPO = Path(__file__).resolve().parents[2]
 SCENE_LAYER = REPO / "grippers" / "scene" / "Robotiq_Newton_scene_physics.usda"
 
+# The viewport render mode to apply after each test's stage is built (``--renderer rtx``, see conftest.py); None keeps
+# the RTX - Minimal mode the session starts with.
+RENDER_MODE: str | None = None
+
+
 def engine_for(physics: str) -> str:
     """A Physics variant starting with "Newton" runs on Newton, anything else on PhysX."""
     return "newton" if physics.startswith("Newton") else "physx"
@@ -73,6 +78,11 @@ def load_gripper(simulation_app, gripper: str, physics: str, view=None, setup=No
     if setup:
         setup(stage_utils.get_current_stage())
         simulation_app.update()
+    if RENDER_MODE:
+        import carb.settings
+
+        carb.settings.get_settings().set("/rtx/rendermode", RENDER_MODE)
+        simulation_app.update()
 
     # The articulation root sits on the inner <gripper> prim, not the asset root.
     root = f"/World/Gripper/{gripper}"
@@ -94,11 +104,14 @@ FRAME_DT = 1.0 / 60.0  # simulation_app.update() advances one 60 Hz frame
 
 # Datasheet maximum finger speed, 150 mm/s, as a rate on the driven DOF:
 # 2F: 85 mm <-> 49 deg at finger_joint (guide 4.5) -> 86 deg/s; Hand-E: the
-# prismatic finger joint moves at the finger speed itself.
+# prismatic finger joint moves at the finger speed itself. Hand-E C10: the
+# datasheet's 107 mm/s closing speed is read as the diameter's, so each of the
+# three radial fingers moves at half of it.
 FINGER_RATE = {
     "Robotiq_2F_85": math.radians(86.0),
     "Robotiq_2F_140": math.radians(86.0),
     "Robotiq_Hand_E": 0.150,
+    "Robotiq_Hand_E_C10": 0.0535,
 }
 
 

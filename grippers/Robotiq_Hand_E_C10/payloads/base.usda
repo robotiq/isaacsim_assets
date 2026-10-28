@@ -1,0 +1,242 @@
+#usda 1.0
+(
+    # Kinematic body tree + geometry for the Robotiq Hand-E C10. Same layout as the Hand-E: the visible body links live
+    # under /Robotiq_Hand_E_C10/Robotiq_Hand_E_C10, and the geometry is referenced from the invisible /Meshes scope (one part per link). The per-link
+    # CAD parts are baked into the final Isaac frame (approach +Z, gripper axis on Z, base flange at z=0, finger 1 along
+    # +X), so every link Xform is identity.
+    customLayerData = {
+        dictionary omni_layer = {
+            string authoring_layer = "./base.usda"
+        }
+    }
+    defaultPrim = "Robotiq_Hand_E_C10"
+    metersPerUnit = 1
+    subLayers = [
+        @./geometries.usda@,
+        @./instances.usda@
+    ]
+    upAxis = "Z"
+)
+
+def Xform "Robotiq_Hand_E_C10" (
+    kind = "assembly"
+)
+{
+    def Xform "Robotiq_Hand_E_C10" (
+        kind = "assembly"
+    )
+    {
+        # DISP.001: every renderable GPrim must resolve a display color.
+        color3f[] primvars:displayColor = [(0.1, 0.1, 0.1)]
+        quatd xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Xform "base_link" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/base_link>
+            )
+            {
+            }
+
+            # Tool center point (grasp frame) on the gripper axis, in the middle of the fingertips' length.
+            # Provisional: the pad faces are not marked in the CAD.
+            def Xform "grip_frame"
+            {
+                double3 xformOp:translate = (0, 0, 0.1343)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                # FET028 gripper site. forward is the approach axis (Z); grip_line is the width of finger 1's pad
+                # (along Y), so the closure, forward x grip_line, is toward the axis along -X. The C10's other two
+                # fingers close at 120 and 240 degrees; the site describes the first.
+                custom token simready:attactment:socketType = "Gripper"
+                float gripper_maxOpening = 0.0404
+                float gripper_maxPayload = 10
+
+                def BasisCurves "gripper_forward_axis"
+                {
+                    point3f[] points = [(0, 0, 0), (0, 0, 0.05)]
+                    float3[] extent = [(0, 0, 0), (0, 0, 0.05)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }
+
+                def BasisCurves "gripper_grip_line"
+                {
+                    point3f[] points = [(0, -0.0075, 0), (0, 0.0075, 0)]
+                    float3[] extent = [(0, -0.0075, 0), (0, 0.0075, 0)]
+                    int[] curveVertexCounts = [2]
+                    uniform token type = "linear"
+                    uniform token purpose = "guide"
+                }
+            }
+        }
+
+        def Xform "finger_1" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/finger_1>
+            )
+            {
+            }
+        }
+
+        def Xform "finger_2" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/finger_2>
+            )
+            {
+            }
+        }
+
+        def Xform "finger_3" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/finger_3>
+            )
+            {
+            }
+        }
+
+        def Xform "fingertip_1" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_1>
+            )
+            {
+            }
+        }
+
+        def Xform "fingertip_2" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_2>
+            )
+            {
+            }
+        }
+
+        def Xform "fingertip_3" (
+            kind = "group"
+        )
+        {
+            def Xform "visuals" (
+                instanceable = true
+                kind = "subcomponent"
+                prepend references = </Meshes/fingertip_3>
+            )
+            {
+            }
+        }
+    }
+}
+
+def Scope "Meshes"
+{
+    token visibility = "invisible"
+
+    def Xform "base_link" (
+        prepend references = @../parts/Robotiq_Hand_E_C10_base.usd@
+    )
+    {
+    }
+
+    def Xform "finger_1" (
+        prepend references = @../parts/Robotiq_Hand_E_C10_finger_1.usd@
+    )
+    {
+    }
+
+    def Xform "finger_2" (
+        prepend references = @../parts/Robotiq_Hand_E_C10_finger_2.usd@
+    )
+    {
+    }
+
+    def Xform "finger_3" (
+        prepend references = @../parts/Robotiq_Hand_E_C10_finger_3.usd@
+    )
+    {
+    }
+
+    # Fingertip geometry groups. The active tip child is chosen by the "Fingertip" variantSet ("tip_stepped" is the
+    # default, authored here).
+    def Xform "fingertip_1" (
+        kind = "group"
+    )
+    {
+        def Xform "tip_stepped" (
+            prepend references = @../parts/Robotiq_Hand_E_C10_fingertip_stepped_1.usd@
+        )
+        {
+            # Collision pieces (convex, purpose=guide): the tip's colliders; see gen_hande_c10_fingertip_colliders.py.
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_C10_fingertip_stepped_1_collision.usd@
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "fingertip_2" (
+        kind = "group"
+    )
+    {
+        def Xform "tip_stepped" (
+            prepend references = @../parts/Robotiq_Hand_E_C10_fingertip_stepped_2.usd@
+        )
+        {
+            # Collision pieces (convex, purpose=guide): the tip's colliders; see gen_hande_c10_fingertip_colliders.py.
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_C10_fingertip_stepped_2_collision.usd@
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "fingertip_3" (
+        kind = "group"
+    )
+    {
+        def Xform "tip_stepped" (
+            prepend references = @../parts/Robotiq_Hand_E_C10_fingertip_stepped_3.usd@
+        )
+        {
+            # Collision pieces (convex, purpose=guide): the tip's colliders; see gen_hande_c10_fingertip_colliders.py.
+            def Xform "collision" (
+                prepend references = @../parts/Robotiq_Hand_E_C10_fingertip_stepped_3_collision.usd@
+            )
+            {
+            }
+        }
+    }
+}

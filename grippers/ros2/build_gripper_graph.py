@@ -1,6 +1,6 @@
 """
-Build the ROS 2 Action Graph that lets a Robotiq 2F gripper in Isaac Sim be driven
-by the `robotiq/robotiq-ros` stack like the real gripper.
+Build the ROS 2 Action Graph that lets a Robotiq gripper (2F-85, 2F-140 or Hand-E C10)
+in Isaac Sim be driven by the `robotiq/robotiq-ros` stack like the real gripper.
 
     ros2 launch robotiq_description robotiq_control.launch.py sim_topic_based:=true
 
@@ -18,12 +18,12 @@ one, under its URDF name (#88, option 2: the asset keeps `finger_joint`, the gra
 This one-joint contract is the intended one, and it depends on robotiq/robotiq-ros#118 being fixed
 on the ros side (declare the URDF mimic joints for Gazebo only). Until a ros release carries
 that fix (ros <= 1.3), under sim_topic_based:
-  * the plugin's command also names the five mimic joints, with a position for the driven
-    one only. Isaac's ROS2SubscribeJointState discards such a message (its arrays differ in
+  * the plugin's command also names the mimic joints (five on a 2F, the two other fingers on the C10),
+    with a position for the driven one only. Isaac's ROS2SubscribeJointState discards such a message (its arrays differ in
     length), so this graph reads it with the generic ROS2Subscriber and filters it. Once
     ros#118 is fixed the command carries the driven joint alone and the filter can go.
   * /joint_states shows the mimic joints at 0, since nothing publishes them; RViz shows
-    the fingers frozen while the knuckle moves (#89). A known limitation of those ros
+    the fingers frozen while the driven joint moves (#89). A known limitation of those ros
     releases, not of this graph.
 
 Run it from the Script Editor (Window > Script Editor > Open > Run) in a stage that
@@ -43,6 +43,8 @@ Physics variant.
 DRIVEN_JOINTS = {
     "2f_85": ("robotiq_85_left_knuckle_joint", "finger_joint"),
     "2f_140": ("finger_joint", "finger_joint"),
+    # The C10's two other fingers mimic finger_1_joint; like the 2F mimic joints they are not exposed.
+    "hand_e_c10": ("hande_c10_finger_1_joint", "finger_1_joint"),
 }
 
 # robotiq_control.launch.py defaults; the plugin's topic names are relative to the root.
