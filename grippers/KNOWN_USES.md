@@ -100,3 +100,28 @@ Pad friction was the only gripper parameter the paper reports tuning (Appendix C
 - The 100 ms command latency is a measured number we could document or offer as an optional delay in the asset or demo.
 - Follow up on the ÉTS digital twin: how it relates to the pad contact model used in this paper, and whether it builds on our 2F-85 asset.
 - Open questions: which 2F-85 asset they used, the gripper-dynamics and friction ranges they randomized, and how the TSF-85 pads were attached to the asset.
+
+---
+
+## Astranomy: An Empirical Study of GPT-6 Astra as a Native Robot Policy (Yang, Khetan, Zhang, NVIDIA Seattle Robotics Lab, 2026)
+
+- **Link:** [project page](https://research.nvidia.com/labs/srl/projects/astranomy/). The page lists the code on GitLab and says the arXiv link is coming soon.
+- **Gripper(s):** Robotiq 2F-85 on the DROID robot (Franka Panda arm)
+- **Variant:** not stated
+- **Simulator / physics engine:** RoboLab, a simulation environment run on NVIDIA L40s GPUs. The page does not name the physics engine. Control runs at 15 Hz with simulation paused during inference.
+- **Asset source:** not stated. The page does not say it uses this repo's asset.
+
+### How the gripper was used
+- A general-purpose multimodal language model is evaluated as a native robot policy for language-conditioned manipulation, without robot-specific finetuning. Three policy configurations are compared on 120 tasks (RoboLab-120).
+- Three synchronized RGB views (left shoulder, right shoulder, wrist) at 384x216.
+- The policy outputs absolute end-effector poses in the robot-root frame, `[x, y, z, qw, qx, qy, qz, gripper]`, in action chunks of 1-5 or 3-15 steps. The gripper value is normalized closure (0 = open, 1 = closed).
+- Motion is limited to 0.02 m translation and 0.1 rad rotation per step.
+- Reported results: the agentic policy reaches 74.8 % success and the direct policy 66.3 %.
+
+### How the asset was tuned
+- No simulation tuning of the gripper is described on the project page.
+- The gripper is described to the model in the prompt: finger-pad offsets, jaw geometry, and interpolated geometry tables that map closure to pad separation distance. This is prompt-side modeling of the gripper, not a change to the asset.
+
+### Findings / feedback for us
+- The policy reasons about pad separation as a function of normalized closure. An asset that exposes closure (0-1) and pad separation consistently would make that table easy to derive and verify.
+- Open questions: which 2F-85 asset and variant RoboLab uses, the physics engine, and the friction and drive settings. These may be in the code or the paper (not yet on arXiv). I only read the project page.
