@@ -14,6 +14,7 @@ Options (see README.md):
                (fixed-cube test), on R and on close; for the fixed-cylinder test,
                the cylinder's size and position to fixed_cylinders/; for the
                pusher test, the plate and its end marker to pushers/
+  --gripper NAME  run only the cases of this gripper (exact match; used by ci/runtime/stamp.py)
   --record DIR  capture the viewport every other frame of each test to
                DIR/<test id>/NNNNN.png (make videos with tests/runtime/make_videos.py)
   --record-baseline  the fixed-cube / fixed-cylinder / pusher tests record the stalled
@@ -95,6 +96,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--renderer", choices=["minimal", "rtx"], default="minimal",
         help="the viewport renderer: minimal (default, cheapest: RTX - Minimal) or rtx (RTX - Real-Time: lit and "
              "shaded, slower per frame; the physics and the test results are unchanged)",
+    )
+    parser.addoption(
+        "--gripper", default=None, metavar="NAME",
+        help="run only the cases of this gripper (the exact `gripper` parameter, e.g. Robotiq_Hand_E, which "
+             "-k would also match against Robotiq_Hand_E_C10); used by ci/runtime/stamp.py",
     )
     parser.addoption("--no-view", action="store_true", default=False, help="do not apply the saved view presets")
     parser.addoption(
@@ -209,6 +215,13 @@ def _show_joints(on: bool) -> None:
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     # Everything collected, before -k deselects: the hold server runs any of them.
     config._isaac_all_items = list(items)
+    gripper = config.getoption("--gripper")
+    if gripper:
+        keep = [i for i in items if getattr(getattr(i, "callspec", None), "params", {}).get("gripper") == gripper]
+        if not keep:
+            raise pytest.UsageError(f"--gripper {gripper}: no test case has this gripper")
+        config.hook.pytest_deselected(items=[i for i in items if i not in keep])
+        items[:] = keep
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
