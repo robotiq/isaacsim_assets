@@ -77,6 +77,17 @@ Not done: spheres of different sizes (the spawner makes one size), friction rand
 mode is `max`, so a lower sphere friction changes nothing), a real-pad calibration of the simulated taxels (the
 sensor model is uncalibrated, see `Robotiq_2F_85/tactile/README.md`), and a check on the Newton backend.
 
+## Tactile contact-distance gate
+
+The tactile library defaults to an 8 mm gate (`max_contact_distance`: a contact farther than that from every taxel reads nothing). This demo turns it off (`max_contact_distance=None`), because the shipped policy was trained without it. Same policy, same seeded boxes, 256 envs x 600 steps (`scripts/eval_tactile.py --seed 31/32 --gate -1|0.008`):
+
+| Sensor | Successes (seed 31 / 32) |
+|---|---|
+| gate off (trained with) | 1225 / 1286 |
+| gate on | 1095 / 1150 |
+
+The full emptying routine is unchanged (no significant difference), only single-pick speed drops ~10%: the policy learned to use back/side contacts that are not on the array. A 4-chunk fine-tune with the gate on did not recover the speed; a from-scratch training with the gate on has not been done.
+
 ## Emptying the box (`scripts/pick_all.py`)
 
 A supervisor around the trained policy: the policy picks, and when the pads sense a held sphere above the rim (pad force
