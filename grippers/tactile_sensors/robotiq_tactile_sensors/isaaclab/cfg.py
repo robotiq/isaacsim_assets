@@ -34,6 +34,12 @@ class TactileSensorCfg(ContactSensorCfg):
     force_floor: float = 0.05
     """Contact forces below this [N] are ignored (solver noise)."""
 
+    max_contact_distance: float | None = 0.008
+    """A contact farther than this [m] from every taxel centre adds nothing: it is not on the sensing area (the back or the sides
+    of the finger, the part of the pad outside the array), where the real sensor reads nothing. The taxel centres are 2 mm behind
+    the contact surface, and the nearest taxel of a contact at the edge of the array is about 3 mm away. ``None`` reports every
+    contact on the nearest taxels."""
+
     def __post_init__(self):
         # the pad poses place the taxels; the contact points locate the force on them
         self.track_pose = True

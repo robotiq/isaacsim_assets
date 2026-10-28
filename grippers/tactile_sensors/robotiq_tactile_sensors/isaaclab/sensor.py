@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import torch
-from isaaclab.utils.math import quat_apply
 from isaaclab_physx.sensors.contact_sensor import ContactSensor
 
-from ..spread import spread_forces
+from ..sensing import pad_object_forces, taxel_force_map, taxel_positions_world
 from ..tsf import taxel_positions
 from .cfg import TactileSensorCfg
 
@@ -46,27 +45,28 @@ class TactileSensor(ContactSensor):
     @property
     def taxel_positions_w(self) -> torch.Tensor:
         data = self.data
-        pos = data.pos_w.torch[:, self._pad_order]  # (E, 2, 3)
-        quat = data.quat_w.torch[:, self._pad_order]  # (E, 2, 4)
-        e, t = pos.shape[0], self._taxels_local.shape[1]
-        local = self._taxels_local[None].expand(e, -1, -1, -1)
-        rotated = quat_apply(quat[:, :, None].expand(-1, -1, t, -1).reshape(-1, 4), local.reshape(-1, 3))
-        return pos[:, :, None] + rotated.view(e, 2, t, 3)
+        return taxel_positions_world(data.pos_w.torch, data.quat_w.torch, self._taxels_local, self._pad_order)
 
     @property
     def object_force(self) -> torch.Tensor:
         """Normal force [N] of each pad on each filtered object, ``(num_envs, 2, num_objects)``: pads in (left, right)
         order, objects in the order of ``filter_prim_paths_expr``. Forces below ``force_floor`` read 0."""
-        force = torch.linalg.norm(self.data.normal_force_matrix_w.torch, dim=-1)[:, self._pad_order]
-        return torch.where(force > self.cfg.force_floor, force, torch.zeros_like(force))
+        return pad_object_forces(self.data.normal_force_matrix_w.torch, self._pad_order, self.cfg.force_floor)
 
     @property
     def taxel_force(self) -> torch.Tensor:
         data = self.data
-        order = self._pad_order
-        force = self.object_force  # (E, 2, F) per touched object
-        contact_pos = torch.nan_to_num(data.contact_pos_w.torch)[:, order]  # (E, 2, F, 3)
-        taxel = spread_forces(self.taxel_positions_w, contact_pos, force, self.cfg.sigma)  # (E, 2, T)
+        taxel = taxel_force_map(
+            data.pos_w.torch,
+            data.quat_w.torch,
+            data.normal_force_matrix_w.torch,
+            data.contact_pos_w.torch,
+            self._taxels_local,
+            self._pad_order,
+            self.cfg.force_floor,
+            self.cfg.sigma,
+            self.cfg.max_contact_distance,
+        )
         spec = self.cfg.mount.spec
         return taxel.view(-1, 2, spec.rows, spec.cols)
 
