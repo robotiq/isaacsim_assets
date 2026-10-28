@@ -94,7 +94,10 @@ ORI_GAIN = 12.0
 # arm moves even with the sticks at rest, which is what makes "point tool down"
 # a command rather than a preference that only takes effect once you jog.
 ORI_TOL = math.radians(0.4)
-GRIP_OPEN, GRIP_CLOSED = (0.0, 0.0192) if _C10 else (0.0, 0.025) if _HANDE else (0.0, 0.80)
+# The Hand-E's Stroke100 variant (TELEOP_STROKE=100) travels 50 mm per finger instead of 25 mm.
+_STROKE100 = os.environ.get("TELEOP_STROKE", "") in ("100", "Stroke100")
+GRIP_OPEN, GRIP_CLOSED = (
+    (0.0, 0.0192) if _C10 else (0.0, 0.050 if _STROKE100 else 0.025) if _HANDE else (0.0, 0.80))
 # rad/s, in SIM time. The target is ramped rather than stepped because a step
 # input destabilises the four-bar.
 #
