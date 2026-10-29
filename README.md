@@ -81,6 +81,16 @@ git clone https://github.com/robotiq/isaacsim_assets.git
 
 `.usda` files are plain-text USD and are kept diffable (not in LFS).
 
+## Publishing to the SimReady Catalog
+
+The grippers are published in NVIDIA's [SimReady Catalog](https://huggingface.co/spaces/nvidia/simready-central)
+(Hugging Face dataset [`Robotiq-Official/simready-assets`](https://huggingface.co/datasets/Robotiq-Official/simready-assets),
+listed through [`NVIDIA-Omniverse/simready-central`](https://github.com/NVIDIA-Omniverse/simready-central)).
+The procedure — one-time setup, tests, checks, submission, after the merge — is in
+[`ci/simready/README.md`](ci/simready/README.md). With Claude Code, ask it to
+"submit the grippers to SimReady": the project skill
+[`.claude/skills/submit-simready`](.claude/skills/submit-simready/SKILL.md) runs it.
+
 ## License
 
 Original work in this repository (documentation, scripts, and Robotiq-authored

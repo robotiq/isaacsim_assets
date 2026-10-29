@@ -19,6 +19,8 @@ every rejection cites an id from it (`SUB.*`, `SCAN.*`, `REVIEW.*`).
 |---|---|
 | `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected/<asset>.json`, one per gripper). |
 | `stage_package.sh` | Copies an asset into the one intermediate folder SimReady requires (`<asset>/simready_usd/…`, NP.005), keeping the organized subfolders. Used to stage an asset before `simready-manage submit`. |
+| `run_pre_submit_tests.sh` | Runs every repo test (unit, all Isaac Sim runtime tests, the ROS 2 runtime test) before a submission; must pass. |
+| `submit.sh` | Preflight checks + staging + `simready-manage submit` for several grippers in one run (one pull request). `--dry-run` uploads nothing. |
 | `expected/author_mesh_extents_normals.py` | Dev helper: fills in `extent` + `normals` on CAD-imported meshes (the 2F-140 parts needed it for VG.002/VG.027). |
 
 ## Pipeline overview
@@ -70,95 +72,127 @@ validation, the same thing the gate runs, or folder-structure requirements (e.g.
 materials (VM.PS.002), and `RB.COL.004` (a rigid body's `principalAxes` and
 `diagonalInertia` must be both-or-neither authored).
 
-## 2. Submit to the SimReady Catalog — `simready-manage submit` (local)
+## 2. Submit to the SimReady Catalog (local)
 
-This is the only accepted submission path: since the October 2026 release the
-catalog requires each package to carry a **bill of materials** and the
-**validation + benchmark** sidecars (`SUB.028`, `REVIEW.001`, `REVIEW.003`), which
-only `simready-manage submit` produces. It runs locally because the benchmark
-drives **Isaac Sim** (GPU, ~15 min per asset). Follow NVIDIA's OEM guide; the
-summary below is what we run for the 2F-85.
+This is the only accepted submission path: the catalog requires each package to
+carry a **bill of materials** and the **validation + benchmark** sidecars
+(`SUB.028`, `REVIEW.001`, `REVIEW.003`), which only NVIDIA's
+`simready-manage submit` produces. It runs locally because the benchmark drives
+**Isaac Sim** (RTX GPU).
 
-### One-time setup
+> **With Claude Code:** ask it to *"submit the grippers to SimReady"* (or to update
+> one). The project skill [`.claude/skills/submit-simready`](../../.claude/skills/submit-simready/SKILL.md)
+> runs the whole procedure below — tests, preflight, submit, reviewer notes — and
+> stops for your OK before anything is uploaded. Without Claude Code, follow the
+> same steps by hand.
 
-1. **Create the public HF dataset** `Robotiq-Official/simready-assets` with a
-   `README.md` whose front-matter declares `license: cc-by-4.0` (must match the
-   `--license` passed to `submit`). `simready-manage submit` uploads into it; it
-   must be public and ungated by the time the PR is opened (SUB.018).
-2. Complete NVIDIA **OEM onboarding** and get access to
-   `NVIDIA-Omniverse/simready-central`.
-3. **`<SimreadyDir>` toolchain** (per the guide's *One-time setup*, Linux — we use
-   `~/robotiq/devel/nvidia/SimreadyDir`). Creates **two** venvs (several GB):
-   - `.venv-submit` (py3.12): the Foundation tier packages + `simready-manage` +
-     `simready-validate`/`-package` + `simready-benchmark`/`-engine-kit` + HF CLI,
-     all `~=2026.8.0`. **Isaac Sim is NOT installed here.**
-   - `.venv-isaac` (py3.12): `isaacsim[all,extscache]==6.1.0.0` from
-     `https://pypi.nvidia.com`.
-   - `~/.simready-benchmark/engines.toml` pointing `isaac_sim` + `isaac_sim_newton`
-     at `.venv-isaac`; verify with `simready-benchmark --show-config` → **both
-     engines `[ok]`**.
-   - `<SimreadyDir>/workspace/project_config.toml` (empty `[validate]` so the
-     installed tier profiles are used).
-   - `hf auth login` (your HF credentials) and a `GITHUB_TOKEN` with write access
-     to `simready-central`.
+### Access and contacts
 
-### Prepare the asset
+- **Hugging Face:** write access to the [`Robotiq-Official`](https://huggingface.co/Robotiq-Official)
+  organisation (`hf auth login` with your account). The dataset
+  `Robotiq-Official/simready-assets` is public and declares `license: cc-by-4.0`
+  in its card (must match `--license`).
+- **GitHub:** write access to `NVIDIA-Omniverse/simready-central` (NVIDIA OEM
+  onboarding) and `gh auth login`.
+- **NVIDIA contact** for the program: John Kosnik (`@jkosnik11` on the
+  simready-central pull requests).
 
-`submit` takes an asset folder containing **one** intermediate folder with the
-root USD named after the asset (`Robotiq_2F_85/simready_usd/Robotiq_2F_85.usda`)
-plus `.thumbs/256x256/<root>.png`. Stage it with `stage_package.sh`, then **strip
-files SCAN.004 forbids** — only `USD / image / audio / .glb / .mdl / .toml /
-.json / .txt` are allowed inside a submitted folder. For the 2F-85 that means
-removing the dev-only `newton/*.py`, `newton/README.md`, and the `*/LICENSE`
-files from the staged copy (the repo is untouched).
+### One-time setup (`SIMREADY_DIR`)
 
-### Run
+Follow the OEM guide's *One-time setup* (Linux) in a directory of your choice,
+exported as `SIMREADY_DIR`. It creates **two** venvs (several GB):
 
-```bash
-source <SimreadyDir>/.venv-submit/bin/activate         # tools must be on PATH
-GITHUB_TOKEN=<token> simready-manage \
-  --project-config <SimreadyDir>/workspace/project_config.toml \
-  submit <staged-asset-folder> \
-  --hf-dataset Robotiq-Official/simready-assets \
-  --profile Robot-Gripper \
-  --asset-version 2026.10.07 \
-  --license cc-by-4.0 \
-  --central-index-repo https://github.com/NVIDIA-Omniverse/simready-central \
-  --central-index-branch main --open-pr \
-  --oem-org Robotiq --oem-contact "l-t.schreiber@robotiq.com" \
-  --commit-author-name "Louis-Thomas" --commit-author-email "l-t.schreiber@robotiq.com" \
-  --url-file <SimreadyDir>/submission-<version>.txt
-```
+- `.venv-submit` (py3.12): the Foundation tier packages + `simready-manage` +
+  `simready-validate`/`-package` + `simready-benchmark`/`-engine-kit` + HF CLI, at
+  the versions the guide pins (2026.8.0 at the time of writing). **No Isaac Sim here.**
+- `.venv-isaac` (py3.12): `isaacsim[all,extscache]` at the version the guide pins
+  (6.1.0.0), from `https://pypi.nvidia.com`. This is the Isaac the **benchmark**
+  uses; it is independent of the Isaac Sim 6.2+ the runtime tests need.
+- `~/.simready-benchmark/engines.toml` pointing `isaac_sim` + `isaac_sim_newton`
+  at `.venv-isaac`; `simready-benchmark --show-config` must list **both engines `[ok]`**.
+- `$SIMREADY_DIR/workspace/project_config.toml` (empty `[validate]`, so the
+  installed tier profiles are used).
 
-It validates → benchmarks → packages (with BOM + validation + benchmark sidecars)
-→ uploads version `<asset-version>_NN` to the HF dataset → opens a PR on SimReady
-Central pointing at the new immutable commit URL. Then edit the PR's **"Notes for
-reviewers"** placeholder (one sentence on the asset set, any `--skip-*`/`--ignore-*`
-flags, and any failed benchmark tests + why they're acceptable), changing nothing
-else in the generated body.
+### Procedure
 
-Failed **benchmark** tests do **not** block the submission — they're uploaded and
-NVIDIA reads them (note them in the PR). Failed **validation** of a *required*
-feature does block it. Do not pass `--skip-benchmark` / `--ignore-*` for a real
-submission.
+1. **Read NVIDIA's current guide** (links at the top). If it changed since this
+   README, follow the guide and update this file.
+2. **Pick the grippers and the version.** All grippers go in **one** run: the
+   catalog allows only one open pull request per dataset. Submit the ones that
+   changed since their latest listed version. Version = today's date
+   `YYYY.MM.DD` (`simready-manage` appends `_NN`); a version already listed for a
+   gripper cannot be reused.
+3. **Run every test** from an up-to-date `main`:
+   ```bash
+   ci/simready/run_pre_submit_tests.sh        # --gui to watch
+   ```
+   Unit tests, every runtime test on Isaac Sim 6.2+ (all grippers and physics
+   variants, see [`tests/runtime`](../../tests/runtime/README.md)), and the ROS 2
+   runtime test in Isaac's ROS environment. It must print
+   `ALL PRE-SUBMISSION TESTS PASSED` (about 25 minutes on an RTX workstation:
+   150 runtime cases + 10 ROS 2 cases). Do not submit otherwise.
+4. **Preflight** (nothing is uploaded):
+   ```bash
+   SIMREADY_DIR=<dir> ci/simready/submit.sh --dry-run Robotiq_2F_85 Robotiq_2F_140 ...
+   ```
+   Fails on: uncommitted gripper changes, a Kit/system MDL reference
+   (`@OmniPBR.mdl@`: NVIDIA's content audit rejected that in simready-central#15),
+   a thumbnail that is not 256x256 on a **black** background (`REVIEW.004`;
+   NVIDIA flagged our `#1a1a1a` ones), any blocking `simready-validate` failure,
+   an already open pull request, or a version already listed. It then stages each
+   gripper (`stage_package.sh`) and deletes every file the package scan rejects
+   (`SCAN.004`: only USD, images, audio, `.glb`, `.mdl`, `.toml`, `.json`, `.txt`
+   may ship; our `newton/` helpers, `docs/` and `LICENSE` files are dropped from
+   the staged copy, the repo is untouched).
+5. **Submit:**
+   ```bash
+   SIMREADY_DIR=<dir> ci/simready/submit.sh Robotiq_2F_85 Robotiq_2F_140 ...
+   ```
+   Runs `simready-manage submit` for all of them: validation, the Isaac benchmark
+   (roughly 6-15 min per gripper), packaging, the Hugging Face upload and the
+   SimReady Central pull request, which keeps every earlier version listed and
+   adds the new ones. The pull request contact/author default to your git
+   identity (`OEM_CONTACT`, `COMMIT_AUTHOR_NAME`, `COMMIT_AUTHOR_EMAIL` override).
+   Where the Isaac lock (`~/robotiq/devel/isaac-lock`) is installed, the run
+   queues for the GPU instead of starting next to another Isaac.
+6. **Reviewer notes.** Replace the pull request's *"Notes for reviewers"*
+   placeholder (and nothing else): what the asset set is, what changed per
+   gripper since its previous version, that validation is 0 blocking with no
+   `--skip`/`--ignore` flags, and every non-passing benchmark test with why it is
+   acceptable. Failed benchmark tests do not block a submission; NVIDIA reads them.
+   Known and accepted: Hand-E `display_color_response` / `preview_surface_renders`
+   (waived in simready-central#38, NVIDIA/simready-foundation#35).
+   `gh pr edit` fails on old `gh`; use
+   `gh api -X PATCH repos/NVIDIA-Omniverse/simready-central/pulls/<n> -f body="$(cat body.md)"`.
+7. **Never merge** the pull request: NVIDIA reviews it, comments there, and
+   merges or closes it. A closed one is fixed and submitted again as a new pull
+   request (the same version may be reused, nothing reached the catalog).
 
-### Gotchas (local environment)
+### After the merge
 
-- **Activate `.venv-submit`.** `simready-manage` shells out to `simready-validate`
-  by name; without the venv on `PATH` it fails with "simready-validate not found".
-- **`gh` 2.4.0 on this host has no `gh auth token`.** Read the token from
-  `~/.config/gh/hosts.yml` (`oauth_token`) instead. `gh pr edit` also fails here
-  (deprecated Projects-classic GraphQL) — edit the PR body via
-  `gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f body="$(cat body.md)"`.
-- **SCAN.004 sweep** before uploading (see *Prepare the asset*) — `submit` uploads
-  whatever is present and SCAN.004 only fails *after* publication.
-- One **open PR per dataset**: close/merge an existing one before submitting again.
+Merged is not yet visible. NVIDIA publishes merged submissions on **Mondays**:
+then the assets appear in Isaac Sim under **SimReady > OEMs > Robotiq-Official**
+(`omniverse-content-production…/Assets/Isaac/<version>/Isaac/SimReady/OEMs/Robotiq-Official/`,
+a publicly listable bucket) and on the
+[SimReady Central Space](https://huggingface.co/spaces/nvidia/simready-central).
+The legacy NVIDIA-built `Isaac/Robots/Robotiq/2F-85` is hidden from Isaac Sim 6.3.
+
+### Gotchas
+
+- **Activate `.venv-submit`** when calling `simready-manage` yourself: it shells
+  out to `simready-validate` by name (`submit.sh` does this for you).
+- **`gh` < 2.7 has no `gh auth token`.** `submit.sh` falls back to
+  `~/.config/gh/hosts.yml`.
+- **A ROS sourced in the shell** breaks Isaac's pytest (`No module named 'lark'`);
+  `run_pre_submit_tests.sh` unsets `PYTHONPATH`.
+- **The runtime tests need Isaac Sim 6.2+**; the helper picks the newest
+  `~/isaacsim*` at 6.2 or later (`ISAAC_SIM` overrides).
 
 ## Versioning model
 
 - **Human version:** `--asset-version YYYY.MM.DD`; `submit` appends `_NN`, baked
   into the package ID
-  `simready.hf.Robotiq-Official.simready-assets.Robotiq_2F_85.<version>`.
+  `simready.hf.Robotiq-Official.simready-assets.<asset>.<version>`.
 - **Immutable pin:** the Hugging Face commit SHA in the `resolve/<sha>/` URL. That
   URL is what SimReady Central records; a changed asset needs a new version + SHA
   once a PR is merged. While iterating (or after a rejected PR), the same version
