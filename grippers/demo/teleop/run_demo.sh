@@ -12,6 +12,7 @@
 #
 #   TELEOP_GRIPPER=2F140 ./run_demo.sh                 # the 2F-140 (default 2F85)
 #   TELEOP_GRIPPER=HandE ./run_demo.sh                 # the Hand-E (PhysX / Newton)
+#   TELEOP_GRIPPER=HandE TELEOP_STROKE=100 ./run_demo.sh   # the Hand-E with the 100 mm stroke (default 50)
 #   TELEOP_GRIPPER=HandE_C10 ./run_demo.sh             # the Hand-E C10 (three fingers; no contact-force plot yet)
 #   TELEOP_PHYSICS=Newton_compliant ./run_demo.sh      # the Newton gripper
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
@@ -64,7 +65,8 @@ if [[ -n "${TELEOP_GRIPPER_VARIANT:-}" ]]; then
 fi
 TELEOP_GRIPPER="${TELEOP_GRIPPER:-2F85}"
 TELEOP_PHYSICS="${TELEOP_PHYSICS:-Physx_compliant}"
-export TELEOP_GRIPPER TELEOP_PHYSICS
+TELEOP_STROKE="${TELEOP_STROKE:-}"
+export TELEOP_GRIPPER TELEOP_PHYSICS TELEOP_STROKE
 # The Physics variant and the physics engine are two halves of one choice, so
 # the launcher is derived from the Physics variant. An explicit
 # ISAACSIM_LAUNCHER still wins.
@@ -175,7 +177,7 @@ if [[ "$START_ISAAC" == "1" ]]; then
   : >"$ISAAC_LOG"
   (
     export TELEOP_DIR="$SCRIPT_DIR" TELEOP_TICK=1
-    export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER TELEOP_GRIPPER TELEOP_PHYSICS TELEOP_INPUT
+    export MCP_EXT_ROOT ISAACSIM_ROOT ISAACSIM_LAUNCHER TELEOP_GRIPPER TELEOP_PHYSICS TELEOP_STROKE TELEOP_INPUT
     # --exec is greedy, so it goes last. launch_isaac_with_mcp.sh forwards
     # trailing arguments to the Isaac launcher unchanged.
     exec "${ISAAC_CMD[@]}" "${ISAAC_EXTRA[@]}" --exec "$SCRIPT_DIR/open_scene.py"

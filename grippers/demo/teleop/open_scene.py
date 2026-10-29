@@ -39,6 +39,10 @@ VARIANTS = {"Physics": PHYSICS, "Gripper": GRIPPER}
 # With a sensor selected the live heatmap (mcp_bridge/make_tactile_sensor_plot.py) comes up
 # on its own with the contact-force plot.
 TACTILE_GRIPPERS = {"2F85": ("Robotiq_2F_85", "Tactile_TSF85"), "2F140": ("Robotiq_2F_140", "Tactile_TSF140")}
+# The Hand-E's stroke (TELEOP_GRIPPER=HandE): 50 (default) or 100 mm total opening, the asset's Stroke variant.
+# Chosen before play, with the other variants: switching it in the viewport on a live session can crash Isaac.
+STROKE = {"50": "Stroke50", "100": "Stroke100", "Stroke50": "Stroke50", "Stroke100": "Stroke100"}.get(
+    os.environ.get("TELEOP_STROKE", ""), "")
 SENSORSIM = os.environ.get("TELEOP_SENSORSIM", "")
 FINGERTIP = os.environ.get("TELEOP_FINGERTIP") or (
     TACTILE_GRIPPERS[GRIPPER][1] if SENSORSIM and GRIPPER in TACTILE_GRIPPERS else "")
@@ -174,6 +178,23 @@ def _select_variant(stage):
             vset.SetVariantSelection(want)
             notes.append("%s variant %r -> %r" % (name, was, want))
     return "; ".join(notes)
+
+
+def _select_stroke(stage):
+    """Select the Hand-E's Stroke variant on the mounted Hand-E. Returns a note."""
+    raw = os.environ.get("TELEOP_STROKE", "")
+    if raw and not STROKE:
+        return "TELEOP_STROKE=%r not recognised (50 | 100); stroke left at the asset default" % raw
+    if not STROKE:
+        return "no Hand-E stroke requested (TELEOP_STROKE)"
+    edit = next((p for p in stage.Traverse() if p.GetName() == "Robotiq_Hand_E_edit"), None)
+    if edit is None:
+        return "no Robotiq_Hand_E_edit prim (TELEOP_STROKE is Hand-E only); stroke NOT selected"
+    vset = edit.GetVariantSets().GetVariantSet("Stroke")
+    if not vset or STROKE not in vset.GetVariantNames():
+        return "Stroke %r not available (%s); left alone" % (STROKE, list(vset.GetVariantNames()) if vset else None)
+    vset.SetVariantSelection(STROKE)
+    return "Stroke -> %r" % STROKE
 
 
 def _select_sensor(stage):
@@ -366,6 +387,7 @@ def install():
                     print("[physx-autostart] scene already open")
 
                 print("[physx-autostart] " + _select_variant(ctx.get_stage()))
+                print("[physx-autostart] " + _select_stroke(ctx.get_stage()))
                 print("[physx-autostart] " + _select_sensor(ctx.get_stage()))
                 for note in _apply_timing(ctx.get_stage()):
                     print("[physx-autostart] " + note)

@@ -94,7 +94,12 @@ ORI_GAIN = 12.0
 # arm moves even with the sticks at rest, which is what makes "point tool down"
 # a command rather than a preference that only takes effect once you jog.
 ORI_TOL = math.radians(0.4)
-GRIP_OPEN, GRIP_CLOSED = (0.0, 0.0192) if _C10 else (0.0, 0.025) if _HANDE else (0.0, 0.80)
+# The Hand-E's Stroke100 variant (TELEOP_STROKE=100) travels 50 mm per finger instead of 25 mm. This only sets the
+# fallback closed position: the tick reads the composed driven joint's upper limit when it can (see Tick.__init__), so
+# the trigger always spans the stroke that actually loaded.
+_STROKE100 = os.environ.get("TELEOP_STROKE", "") in ("100", "Stroke100")
+GRIP_OPEN, GRIP_CLOSED = (
+    (0.0, 0.0192) if _C10 else (0.0, 0.050 if _STROKE100 else 0.025) if _HANDE else (0.0, 0.80))
 # rad/s, in SIM time. The target is ramped rather than stepped because a step
 # input destabilises the four-bar.
 #
@@ -103,7 +108,8 @@ GRIP_OPEN, GRIP_CLOSED = (0.0, 0.0192) if _C10 else (0.0, 0.025) if _HANDE else 
 # failure the ramp exists to prevent -- the speed was measured in free air,
 # where the four-bar is not loaded. The measurement was right and the change
 # was still wrong.
-# Hand-E: 25 mm stroke per finger at 0.04 m/s (~0.6 s open to closed; published 20-150 mm/s).
+# Hand-E: 25 mm stroke per finger at 0.04 m/s (~0.6 s open to closed; ~1.25 s for Stroke100's 50 mm;
+# published 20-150 mm/s).
 GRIP_RATE = 0.04 if (_HANDE or _C10) else 0.8
 
 AXIS_LX, AXIS_LY, AXIS_L2, AXIS_RX, AXIS_RY, AXIS_R2, AXIS_DX, AXIS_DY = range(8)
@@ -731,6 +737,21 @@ class Teleop:
         names = list(self.art.dof_names)
         self.idx = [names.index(n) for n in ARM_JOINTS]
         self.fj = names.index(FINGER_JOINT) if FINGER_JOINT in names else None
+        # Where a fully pressed trigger closes the gripper. The Hand-E takes it from the driven joint's upper limit and
+        # re-reads it on every timeline Play, so it follows the Stroke variant that composed (25 mm / 50 mm) even if
+        # the variant is switched by hand while stopped; GRIP_CLOSED is the fallback.
+        self.grip_closed = GRIP_CLOSED
+        self._limit_path = None
+        if _HANDE and self.fj is not None:
+            from pxr import Usd
+
+            joint = next((p for p in Usd.PrimRange(self.stage.GetPrimAtPath(ARM)) if p.GetName() == FINGER_JOINT), None)
+            self._limit_path = joint.GetPath() if joint else None
+            upper = self._joint_upper()
+            if upper:
+                self.grip_closed = upper
+            print("[physx_teleop] gripper closes at %.1f mm per finger (%s)"
+                  % (self.grip_closed * 1000, "joint limit" if upper else "fallback"))
 
         q = self._read(self.art.get_joint_positions())
         # Seed the target from the CURRENT measured pose, then integrate it
@@ -1223,6 +1244,13 @@ class Teleop:
             if self._restart is not None:
                 return
             if e.type == int(omni.timeline.TimelineEventType.PLAY):
+                # A Stroke variant switched by hand while stopped changes the joint's limit; read it before the trigger
+                # is next used (a USD read, it does not touch the articulation).
+                if _HANDE:
+                    try:
+                        self._refresh_grip_closed()
+                    except Exception:
+                        pass   # never let it skip the re-attach below
                 self._recover = 0
         except Exception:
             pass
@@ -1249,6 +1277,22 @@ class Teleop:
             print("[physx_teleop] re-attach FAILED:\n" + traceback.format_exc())
         finally:
             self._recover = None       # never wedge the controller
+
+    def _joint_upper(self):
+        """The driven finger joint's current upper limit in metres (the Stroke variant that composed), or None."""
+        if self._limit_path is None:
+            return None
+        prim = self.stage.GetPrimAtPath(self._limit_path)
+        value = prim.GetAttribute("physics:upperLimit").Get() if prim and prim.IsValid() else None
+        return float(value) if value else None
+
+    def _refresh_grip_closed(self):
+        """Follow the joint limit if it changed (Stroke switched by hand while stopped); log it once. Called on
+        timeline Play, the only time a variant switch takes effect on the simulation."""
+        upper = self._joint_upper()
+        if upper and abs(upper - self.grip_closed) > 1e-6:
+            self.grip_closed = upper
+            print("[physx_teleop] gripper now closes at %.1f mm per finger (joint limit)" % (upper * 1000))
 
     def _clamp_to_actual(self):
         """Keep the target within MAX_LAG of the measured pose (anti-windup)."""
@@ -1413,7 +1457,7 @@ class Teleop:
                 self.r2_rest = r2
                 print("[physx_teleop] R2 rest calibrated at %+.2f" % r2)
             amt = 0.0 if self.r2_rest is None else min(1.0, abs(r2 - self.r2_rest) * 0.5)
-            want = GRIP_OPEN + amt * (GRIP_CLOSED - GRIP_OPEN)
+            want = GRIP_OPEN + amt * (self.grip_closed - GRIP_OPEN)
             lim = GRIP_RATE * dt
             delta = max(-lim, min(lim, want - self.grip))
             if self.fj is not None and abs(delta) > 1e-5:
