@@ -27,6 +27,14 @@ fingertip/mass welds remain in their existing layers.
 
 def Xform "Robotiq_2F_85"
 {
+    # Both inner knuckles share one symmetric range (CAD collision sweep, rounded
+    # inward), so it is authored once here and inherited by the two joints.
+    class "_InnerKnuckleLimits"
+    {
+        float physics:lowerLimit = -51.9
+        float physics:upperLimit = 51.9
+    }
+
     def Xform "Robotiq_2F_85" (
         prepend apiSchemas = ["PhysicsArticulationRootAPI"]
     )
@@ -103,6 +111,7 @@ def Xform "Robotiq_2F_85"
 
             def PhysicsRevoluteJoint "left_inner_knuckle_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+                prepend inherits = </Robotiq_2F_85/_InnerKnuckleLimits>
             )
             {
                 uniform token physics:axis = "Z"
@@ -112,14 +121,13 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
 
             def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+                prepend inherits = </Robotiq_2F_85/_InnerKnuckleLimits>
             )
             {
                 uniform token physics:axis = "Z"
@@ -129,12 +137,14 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
 
+            # inner_finger / inner_finger_knuckle limits: CAD collision sweep from
+            # gripper_joint_limits_report, rounded inward. The right side mirrors the left.
+            # The inner_finger end at -79.5 deg (left; mirrored on the right) is
+            # unresolved in the report: a lower bound, not a measured contact angle.
             def PhysicsRevoluteJoint "left_inner_finger_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
             )
@@ -146,8 +156,8 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.06776, 0.09809)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -79.5
+                float physics:upperLimit = 74.2
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -163,12 +173,14 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.06776, 0.09809)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -74.2
+                float physics:upperLimit = 79.5
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
 
+            # Hinge limits are the report's values NEGATED (left and right): this joint has
+            # body0=inner_finger, body1=inner_knuckle, reversed vs the URDF. Do not "fix" back.
             def PhysicsRevoluteJoint "left_inner_finger_knuckle_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
             )
@@ -180,8 +192,8 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.04986, 0.1046)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -53.4
+                float physics:upperLimit = 76.9
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -197,8 +209,8 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.04986, 0.1046)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -76.9
+                float physics:upperLimit = 53.4
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
