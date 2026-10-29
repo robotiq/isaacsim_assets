@@ -116,8 +116,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, -0.0127, 0.06142)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -52.1
+                float physics:upperLimit = 52.1
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -133,8 +133,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, 0.0127, 0.06142)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -52.1
+                float physics:upperLimit = 52.1
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -150,8 +150,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, -0.095238, 0.131208)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -99.3
+                float physics:upperLimit = 54.4
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -167,8 +167,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, 0.095238, 0.131208)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -54.4
+                float physics:upperLimit = 99.3
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -184,8 +184,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, -0.077337, 0.137723)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -53.6
+                float physics:upperLimit = 59.8
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -201,8 +201,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, 0.077337, 0.137723)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -180
-                float physics:upperLimit = 180
+                float physics:lowerLimit = -59.8
+                float physics:upperLimit = 53.6
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
