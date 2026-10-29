@@ -544,7 +544,9 @@ def test_effective_rigid_pad(simulation_app, view, gripper: str) -> None:
 @pytest.mark.parametrize("gripper", _cases())
 def test_sensorsim_variants(simulation_app, gripper: str) -> None:
     """The two methods are variants: Raycast (compliant pad, ray parameters) and EffectiveResponse
-    (rigid pad), both tagging the shared taxel grid with their method and the Eq. 1 parameters."""
+    (rigid pad), both tagging the shared taxel grid with their method and the Eq. 1 parameters. The 2F-85 has a third,
+    Precise (the deformable pad of the ETS CoRo lab), which tags the grid and adds the pads and their backings
+    (tests/runtime/test_tactile_precise.py runs it)."""
     asset = Usd.Stage.Open(str(REPO / "grippers" / gripper / f"{gripper}.usda"))
     prim = asset.GetDefaultPrim()
     tsf = FINGERTIPS[gripper][0]
@@ -552,7 +554,16 @@ def test_sensorsim_variants(simulation_app, gripper: str) -> None:
         prim.GetVariantSet("Fingertip").SetVariantSelection(other)
         assert "SensorSim" not in prim.GetVariantSets().GetNames(), f"SensorSim should only exist under {tsf}"
     prim.GetVariantSet("Fingertip").SetVariantSelection(tsf)
-    assert set(prim.GetVariantSet("SensorSim").GetVariantNames()) == {"None", "Raycast", "EffectiveResponse"}
+    precise = gripper == "Robotiq_2F_85"
+    assert set(prim.GetVariantSet("SensorSim").GetVariantNames()) == \
+        {"None", "Raycast", "EffectiveResponse"} | ({"Precise"} if precise else set())
+    if precise:  # the grid is tagged and the deformable pads and their backings are there
+        prim.GetVariantSet("SensorSim").SetVariantSelection("Precise")
+        markers = asset.GetPrimAtPath(f"{prim.GetPath()}/{gripper}/left_inner_finger/tactile_zone_visuals")
+        assert markers.GetAttribute("robotiq:tactile:method").Get() == "precise"
+        for side in ("left", "right"):
+            assert asset.GetPrimAtPath(f"{prim.GetPath()}/{side}_tsf_pad/simulation_mesh"), side
+            assert asset.GetPrimAtPath(f"{prim.GetPath()}/{gripper}/{side}_pad_backing"), side
     expected = {"None": None, "Raycast": "raycast", "EffectiveResponse": "effectiveResponse"}
     for variant, method in expected.items():
         prim.GetVariantSet("SensorSim").SetVariantSelection(variant)
