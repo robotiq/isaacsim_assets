@@ -14,6 +14,8 @@
 #   5. no submission pull request is already open for the dataset (only one may
 #      be open at a time, so all grippers go in ONE run / ONE pull request)
 #   6. the version is not already listed for any of the grippers
+#   7. the Hugging Face token can write to the dataset's organisation (a
+#      read-only token would only fail at the first upload, after the benchmark)
 #
 # then stages each gripper (stage_package.sh), deletes every file type the
 # catalog's package scan rejects (SCAN.004: anything but USD, images, audio,
@@ -163,9 +165,32 @@ else
   echo "  no submission file yet (first submission)"
 fi
 
+step "7. Hugging Face token can write to ${DATASET%%/*}"
+"$PY" - "${DATASET%%/*}" <<'PY' || fail=1
+import sys
+from huggingface_hub import HfApi
+org = sys.argv[1]
+try:
+    who = HfApi().whoami()
+except Exception as e:
+    print(f"  FAIL: no usable Hugging Face login ({type(e).__name__}): run `hf auth login`", file=sys.stderr); sys.exit(1)
+token = who.get("auth", {}).get("accessToken", {})
+role = token.get("role")
+in_org = {o.get("name"): o.get("roleInOrg") for o in who.get("orgs", [])}
+if role == "fineGrained":
+    ok = any(s.get("entity", {}).get("name") == org and "repo.write" in s.get("permissions", [])
+             for s in (token.get("fineGrained") or {}).get("scoped", []))
+else:  # a classic write or OAuth token writes wherever the account can
+    ok = role != "read" and in_org.get(org) in ("admin", "write", "contributor")
+if not ok:
+    print(f"  FAIL: {who.get('name')}'s {role} token cannot write to {org} "
+          f"(org role: {in_org.get(org)}); log in with a token that has repo.write there", file=sys.stderr); sys.exit(1)
+print(f"  {who.get('name')}: {role} token, {org} role {in_org.get(org)}")
+PY
+
 [ "$fail" = 0 ] || { echo; echo "Preflight failed: nothing was staged or uploaded." >&2; exit 1; }
 
-step "7. stage + strip (SCAN.004)"
+step "8. stage + strip (SCAN.004)"
 STAGE="$SIMREADY_DIR/submit/$VERSION"
 rm -rf "$STAGE"; mkdir -p "$STAGE"
 DIRS=()
@@ -181,7 +206,7 @@ done
 
 if [ "$DRY_RUN" = 1 ]; then echo; echo "Dry run: all checks passed and $STAGE is staged. Nothing was uploaded."; exit 0; fi
 
-step "8. simready-manage submit (validate, benchmark, package, upload$([ "$OPEN_PR" = 1 ] && echo ', pull request'))"
+step "9. simready-manage submit (validate, benchmark, package, upload$([ "$OPEN_PR" = 1 ] && echo ', pull request'))"
 if [ -z "${GITHUB_TOKEN:-}" ]; then
   GITHUB_TOKEN=$(gh auth token 2>/dev/null) || GITHUB_TOKEN=""
   # gh < 2.7 has no `gh auth token`; it printed usage instead of a token
