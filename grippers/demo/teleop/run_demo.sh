@@ -18,7 +18,7 @@
 #   TELEOP_GRIPPER=2F140 TELEOP_PHYSICS=Newton_parallel_grip ./run_demo.sh
 #   TELEOP_SENSORSIM=EffectiveResponse ./run_demo.sh   # the 2F-85 with the TSF-85 tactile sensor
 #   TELEOP_GRIPPER=2F140 TELEOP_SENSORSIM=EffectiveResponse ./run_demo.sh   # the same on the 2F-140
-#                                                      # (Raycast | EffectiveResponse) and its live heatmap
+#                                                      # (Raycast | EffectiveResponse | Precise on the 2F-85, PhysX only) and its live heatmap
 #   TELEOP_HAPTICS=0 ./run_demo.sh                     # no plot, no R2 rumble
 #   TELEOP_INPUT=keyboard ./run_demo.sh                # same as --keyboard
 #   TELEOP_FULL_FORCE_N=100 ./run_demo.sh              # R2 at full stiffness from 100 N (default 200)
