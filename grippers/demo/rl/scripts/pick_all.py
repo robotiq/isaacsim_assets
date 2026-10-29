@@ -30,12 +30,17 @@ parser.add_argument("--seed", type=int, default=None, help="seed the layouts and
 parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
+parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera (needs --enable_cameras), 1920 x 1080")
+parser.add_argument("--hq_fps", type=int, default=60, help="frame rate of --hq_video: a frame every 120 / hq_fps physics steps (120, 60 or 30)")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
 
 import isaaclab_tasks  # noqa: E402, F401
 import robotiq_rl  # noqa: E402, F401  (registers our tasks; entry points are only loaded by the isaaclab CLI)
 import torch  # noqa: E402
+from isaaclab.sensors.camera import CameraCfg  # noqa: E402
+from isaaclab.sim import PinholeCameraCfg  # noqa: E402
+from isaaclab.utils.math import quat_from_matrix  # noqa: E402
 from isaaclab_tasks.utils import parse_env_cfg  # noqa: E402
 from robotiq_rl.tactile_pick import mdp as tp  # noqa: E402
 from robotiq_rl.tactile_pick.env_cfg import BOX_CENTER, BOX_INNER, REACH_HALF, RIM_Z, TASK  # noqa: E402
@@ -67,8 +72,37 @@ def main():
     total = args_cli.steps
     if args_cli.video:
         env_cfg.video_recorders = [VideoRecorderCfg(source="viz", output_dir=args_cli.video, video_length=total)]
+    if args_cli.hq_video:
+        env_cfg.sim.render_interval = 120 // args_cli.hq_fps  # a render (and a frame) every this many physics steps
+        eye, target = torch.tensor([1.15, -0.75, 0.75]), torch.tensor([0.5, 0.0, 0.1])  # the viewer's camera
+        fwd = (target - eye) / (target - eye).norm()
+        right = torch.linalg.cross(fwd, torch.tensor([0.0, 0.0, 1.0]))
+        right = right / right.norm()
+        up = torch.linalg.cross(right, fwd)
+        quat = quat_from_matrix(torch.stack([right, up, -fwd], dim=-1)).tolist()  # OpenGL camera: looks along -Z, up +Y
+        env_cfg.scene.hq_cam = CameraCfg(
+            prim_path="{ENV_REGEX_NS}/HqCam",
+            update_period=0.0,
+            height=1080,
+            width=1920,
+            data_types=["rgb"],
+            spawn=PinholeCameraCfg(focal_length=18.0, horizontal_aperture=20.955, clipping_range=(0.05, 20.0)),
+            offset=CameraCfg.OffsetCfg(pos=tuple(eye.tolist()), rot=tuple(quat), convention="opengl"),
+        )
     with launch_simulation(env_cfg, args_cli):
         env = instantiate(env_cfg)
+        if args_cli.hq_video:
+            import imageio
+
+            hq_cam, hq_writer, hq_render = env.scene["hq_cam"], imageio.get_writer(args_cli.hq_video, fps=args_cli.hq_fps, codec="libx264", quality=9, macro_block_size=1), env.sim.render
+
+            def render_and_capture(*a, **k):
+                out = hq_render(*a, **k)
+                hq_cam.update(1 / 120, force_recompute=True)
+                hq_writer.append_data(hq_cam.data.output["rgb"][0, ..., :3].cpu().numpy())
+                return out
+
+            env.sim.render = render_and_capture
         policy = torch.jit.load(args_cli.policy, map_location=env.device)
         obs, _ = env.reset()
         n, dev = env.num_envs, env.device
@@ -217,6 +251,8 @@ def main():
         print("RESULT spheres left in the box per env (mean/min/max):", f"{left.float().mean().item():.1f} / {int(left.min())} / {int(left.max())}")
         print("RESULT spheres left inside the reachable zone per env (mean/min/max):", f"{spheres_in_box(True).float().mean().item():.1f} / {int(spheres_in_box(True).min())} / {int(spheres_in_box(True).max())}")
         print("RESULT envs with an empty box:", f"{(left == 0).float().mean().item():.2f}")
+        if args_cli.hq_video:
+            hq_writer.close()
         env.close()
 
 

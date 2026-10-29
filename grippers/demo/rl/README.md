@@ -97,6 +97,9 @@ A supervisor around the trained policy: the policy picks, and when the pads sens
 and tool-tip height only, no privileged state) a scripted routine carries it to the table beside the box, opens the
 gripper and returns above the box before handing control back to the policy for the next sphere.
 
+[**Video: the policy empties the box** (`docs/emptying_the_box.mp4`, 1080p, 60 fps, RTX render, tactile gate on)](docs/emptying_the_box.mp4): 8 of 10 spheres picked and dropped beside the box; the last 2 sit against the walls, out of the gripper's reach. Recorded with
+`pick_all.py --policy <policy.pt> --num_envs 1 --layout reachable --seed 41 --hq_video out.mp4` (`--hq_fps 120|60|30`).
+
 | Policy | Spheres picked of 10 (mean, min-max) | Boxes fully emptied |
 |---|---|---|
 | `tp8`, trained on single picks | 3.4 - 4.2 (2 - 8) | 0 % |
