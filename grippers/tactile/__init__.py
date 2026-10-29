@@ -8,7 +8,7 @@ _EXPORTS = {
     "effective_response": "effective_response", "pad_maps": "effective_response", "patch_force": "effective_response",
     "TactilePlot": "plot",
     "COLS": "readers", "ROWS": "readers", "SIDES": "readers", "PAD_LINKS": "readers", "EffectiveTactile": "readers",
-    "RaycastTactile": "readers", "TactileSensor": "readers", "make_tactile_sensor": "readers",
+    "RaycastTactile": "readers", "PreciseTactile": "readers", "TactileSensor": "readers", "make_tactile_sensor": "readers",
     "markers_path": "readers",
 }
 __all__ = list(_EXPORTS)
