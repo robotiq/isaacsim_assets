@@ -33,6 +33,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "grippers"))
 
 _app = None
 
+# The oldest Isaac Sim the runtime tests run on. Older versions do not fail cleanly: the Newton variants rely on the
+# solver options and the friction gain that newer Newton reads from USD, so they show up as slip, floppy-finger or
+# DOF-count assertions that do not say why.
+MIN_ISAAC_SIM = (6, 2)
+
+
+def _require_isaac_sim() -> None:
+    """Stop the session with a clear message when Isaac Sim is older than ``MIN_ISAAC_SIM``."""
+    global _app
+    import omni.kit.app
+
+    omni.kit.app.get_app().get_extension_manager().set_extension_enabled_immediate("isaacsim.core.version", True)
+    from isaacsim.core.version import get_version
+
+    _, _, major, minor, *_ = get_version()  # ("",) * 8 when the VERSION file is missing
+    if major and (int(major), int(minor)) >= MIN_ISAAC_SIM:
+        return
+    found = f"{major}.{minor}" if major else "an unknown version"
+    msg = f"the runtime tests need Isaac Sim {MIN_ISAAC_SIM[0]}.{MIN_ISAAC_SIM[1]} or later, found {found}."
+    if (major, minor) == ("6", "0"):
+        msg += " The last commit that supports Isaac Sim 6.0 is the git tag last-isaac-6.0-supported."
+    # SimulationApp.close() ends the process itself (fast shutdown), before pytest could report an exit, so say it
+    # here and hand the exit code to close().
+    print(f"ERROR: {msg}", file=sys.stderr, flush=True)
+    app, _app = _app, None  # pytest_unconfigure has nothing left to close or hold
+    app.close(exit_code=2)
+    pytest.exit(msg, returncode=2)  # only reached if close() returns
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--gui", action="store_true", default=False, help="run with the Isaac Sim window (default: headless)")
@@ -113,6 +141,7 @@ def pytest_configure(config: pytest.Config) -> None:
         "renderer": "MinimalRendering",
         "minimal_shading_mode": 2,
     })
+    _require_isaac_sim()
     if config.getoption("--renderer") == "rtx":
         # Applied by _scene.load_gripper once each test's stage exists: a new stage puts the Minimal mode back.
         import _scene
