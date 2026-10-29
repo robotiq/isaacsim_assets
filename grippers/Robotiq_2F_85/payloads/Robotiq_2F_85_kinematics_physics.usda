@@ -27,6 +27,14 @@ fingertip/mass welds remain in their existing layers.
 
 def Xform "Robotiq_2F_85"
 {
+    # Both inner knuckles share one symmetric range (CAD collision sweep, rounded
+    # inward), so it is authored once here and inherited by the two joints.
+    class "_InnerKnuckleLimits"
+    {
+        float physics:lowerLimit = -51.9
+        float physics:upperLimit = 51.9
+    }
+
     def Xform "Robotiq_2F_85" (
         prepend apiSchemas = ["PhysicsArticulationRootAPI"]
     )
@@ -103,6 +111,7 @@ def Xform "Robotiq_2F_85"
 
             def PhysicsRevoluteJoint "left_inner_knuckle_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+                prepend inherits = </Robotiq_2F_85/_InnerKnuckleLimits>
             )
             {
                 uniform token physics:axis = "Z"
@@ -112,14 +121,13 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -51.9
-                float physics:upperLimit = 51.9
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
 
             def PhysicsRevoluteJoint "right_inner_knuckle_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
+                prepend inherits = </Robotiq_2F_85/_InnerKnuckleLimits>
             )
             {
                 uniform token physics:axis = "Z"
@@ -129,8 +137,6 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, 0.0127, 0.06118)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -51.9
-                float physics:upperLimit = 51.9
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
