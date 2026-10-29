@@ -86,7 +86,10 @@ The demo uses the library's default 8 mm gate (`max_contact_distance`: a contact
 | gate off (trained with) | 1225 / 1286 |
 | gate on (default) | 1095 / 1150 |
 
-Single-pick speed drops ~10%; the full emptying routine is unchanged (no significant difference). A 4-chunk fine-tune with the gate on did not recover the speed, and a from-scratch training with the gate on has not been done. `--gate -1` evaluates without the gate.
+Single-pick speed drops ~10%; the full emptying routine is unchanged (no significant difference). Retraining with the gate on did not help, so the shipped policy is kept:
+- from scratch (1200 iterations): never enters the box;
+- warm start from the single-pick policy, gate on, 3000 to 4800 iterations (also with no entropy bonus and a lower learning rate): single-pick successes per 64 envs 272 at best, then falling to 190 - 260 (the ungated policy: ~306);
+- the emptying routine (`pick_all.py`, 64 envs, floor layout, gate on, seeds 41 / 42), picks per box: shipped policy **8.0 / 7.8**, best retrained **7.3 / 6.7** and **7.3 / 6.6**. `--gate -1` evaluates without the gate.
 
 ## Emptying the box (`scripts/pick_all.py`)
 

@@ -24,6 +24,9 @@ LOGS=logs/rsl_rl/tactile_sphere_pick
 for k in $(seq 1 "$CHUNKS"); do
   args=(--rl_library rsl_rl --task $TASK --num_envs "$ENVS" --max_iterations "$CHUNK" --run_name "${NAME}_c$k")
   [ -n "$CKPT" ] && args+=(--checkpoint "$CKPT")
+  # TRAIN_ARGS: extra train.py / hydra overrides, e.g. "agent.algorithm.entropy_coef=0.0"
+  # shellcheck disable=SC2206
+  args+=(${TRAIN_ARGS:-})
   echo "[$(date +%T)] chunk $k: training ${args[*]}"
   "$LOCK" run --wait --label "tactile-$NAME-train-c$k" -- $PY scripts/reinforcement_learning/train.py "${args[@]}" > "$HOME/.isaaclab/logs/tp-$NAME-c$k.log" 2>&1
   run=$(ls -td $LOGS/*_"${NAME}_c$k" 2>/dev/null | head -1)
