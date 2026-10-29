@@ -9,3 +9,4 @@ grippers/Robotiq_2F_140/materials/materials.usd !filter !diff !merge text
 
 # demo videos
 grippers/demo/rl/docs/*.mp4 filter=lfs diff=lfs merge=lfs -text
+grippers/demo/rl/**/*.pt filter=lfs diff=lfs merge=lfs -text

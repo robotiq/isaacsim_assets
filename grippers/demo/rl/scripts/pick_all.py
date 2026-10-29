@@ -29,9 +29,10 @@ parser.add_argument("--slow_below", type=float, default=0.10, help="tool-tip hei
 parser.add_argument("--seed", type=int, default=None, help="seed the layouts and the noise, so two runs start from the same boxes")
 parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
+parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera (needs --enable_cameras), 1920 x 1080")
-parser.add_argument("--hq_fps", type=int, default=60, help="frame rate of --hq_video: a frame every 120 / hq_fps physics steps (120, 60 or 30)")
+parser.add_argument("--hq_fps", type=int, choices=(120, 60, 30), default=60, help="frame rate of --hq_video: a frame every 120 / hq_fps physics steps (120, 60 or 30)")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
 
@@ -105,6 +106,10 @@ def main():
             env.sim.render = render_and_capture
         policy = torch.jit.load(args_cli.policy, map_location=env.device)
         obs, _ = env.reset()
+        if not args_cli.env_completes_picks:
+            # the env's state holds its own copy of TASK: without home_ranges it no longer completes a pick (teleports the
+            # sphere, homes the arm) while the supervisor is still carrying it
+            tp.get_state(env, TASK).cfg["home_ranges"] = None
         n, dev = env.num_envs, env.device
         phase = torch.full((n,), PICK, device=dev)
         held_count = torch.zeros(n, device=dev)
@@ -245,6 +250,8 @@ def main():
             print(f"RESULT gate: share of the total tactile force it removes: {100 * meas['removed'] / max(meas['total'], 1e-9):.3f} %; largest change of one taxel {meas['max_gate']:.2f} N")
             print(f"RESULT geometry: largest difference of one taxel between the old rounded grid and the exact one: {meas['max_geom']:.3f} N")
         print("RESULT per-env picked:", picked.tolist())
+        completed = tp.get_state(env, TASK).n_picked
+        print(f"RESULT picks completed by the task itself, per env (mean/max): {completed.float().mean().item():.2f} / {int(completed.max())} (0 = the supervisor's count is the only one)")
         print("RESULT envs", n, "steps", t + 1)
         print("RESULT spheres lying outside the box per env (mean/min/max):", f"{outside.sum(-1).float().mean().item():.1f} / {int(outside.sum(-1).min())} / {int(outside.sum(-1).max())}")
         print("RESULT spheres picked per env (mean/min/max):", f"{picked.float().mean().item():.1f} / {int(picked.min())} / {int(picked.max())}")

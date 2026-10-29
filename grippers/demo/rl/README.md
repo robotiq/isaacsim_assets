@@ -29,8 +29,8 @@ move until the pads feel a sphere, grasp it, judge the grasp, lift it out.
 ## Setup
 
 ```bash
-git clone https://github.com/isaac-sim/IsaacLab.git ~/robotiq/devel/IsaacLab   # v3.0.0, Isaac Sim 6.2
-cd ~/robotiq/devel/IsaacLab && uv sync --extra isaacsim
+git clone https://github.com/isaac-sim/IsaacLab.git ~/IsaacLab   # v3.0.0, Isaac Sim 6.2 (the path is an example; scripts read it from ISAACLAB)
+cd ~/IsaacLab && uv sync --extra isaacsim
 uv pip install --python .venv/bin/python --no-deps -e <this repo>/grippers/tactile_sensors -e <this repo>/grippers/demo/rl
 uv pip install --python .venv/bin/python moviepy imageio-ffmpeg                      # only for --video
 export OMNI_KIT_ACCEPT_EULA=YES   # after accepting NVIDIA's Omniverse license agreement
@@ -41,9 +41,12 @@ when `robotiq_rl` is imported: Isaac Lab's `train.py`/`play.py` find it through 
 
 ## Train and evaluate
 
-Trained policies are not in the repo (about 5 h of training on an 8 GB GPU for the one described below).
+The policy behind the multi-pick numbers below is in the repo: `robotiq_rl/tactile_pick/policy/policy.pt` (the exported actor, TorchScript, 0.5 MB, Git LFS),
+run `tp20` chunk 3, with that run's `env.yaml` and `agent.yaml` next to it (the observation layout it expects). It is what "the shipped policy" means
+here. Training checkpoints (`model_*.pt`, with critic and optimizer) are not in the repo (about 5 h of training on an 8 GB GPU for this one).
+`tp8`, in the next section, is an earlier single-pick policy and is not in the repo.
 
-Train in chunks, with an evaluation and a single-env video after each (the training holds the GPU lock; `PICK_ALL=1` also scores
+Train in chunks, with an evaluation and a single-env video after each (on a shared machine it can queue behind a GPU lock, `ISAAC_LOCK=<wrapper>`, optional; `PICK_ALL=1` also scores
 each chunk with the emptying routine of `pick_all.py`):
 
 ```bash
@@ -55,7 +58,7 @@ Scripted checks of the pieces (they drive the real controller with the sphere's 
 `scripts/probe_tactile.py`, `probe_grasp.py`, `show_scene.py` (a clip of the scene); `eval_tactile.py --ablate_tactile` zeroes the
 tactile observations to show whether the policy needs to feel.
 
-## Results of the single-pick policy
+## Results of the single-pick policy (historical: `tp8`, the earlier single-pick environment; the current multi-pick environment does not reproduce this table)
 
 Final policy (`tp8`, 3091 PPO iterations in total, 2048 envs, ~4.5 h on an 8 GB laptop GPU), evaluated on 256 envs x 20 s
 with the observation noise and the sphere mass randomization on, the tool tip starting at a random point:
@@ -86,10 +89,10 @@ The demo uses the library's default 8 mm gate (`max_contact_distance`: a contact
 | gate off (trained with) | 1225 / 1286 |
 | gate on (default) | 1095 / 1150 |
 
-Single-pick speed drops ~10%; the full emptying routine is unchanged (no significant difference). Retraining with the gate on did not help, so the shipped policy is kept:
+Single-pick speed drops ~10%. On the emptying routine (see the next section for how it is measured; reachable layout, 64 envs, seeds 41 / 42) the gate makes little difference: 4.0 / 3.9 picks per box with the gate against 4.1 / 4.4 without. Retraining with the gate on did not help, so the policy in the repo is kept:
 - from scratch (1200 iterations): never enters the box;
 - warm start from the single-pick policy, gate on, 3000 to 4800 iterations (also with no entropy bonus and a lower learning rate): single-pick successes per 64 envs 272 at best, then falling to 190 - 260 (the ungated policy: ~306);
-- the emptying routine (`pick_all.py`, 64 envs, floor layout, gate on, seeds 41 / 42), picks per box: shipped policy **8.0 / 7.8**, best retrained **7.3 / 6.7** and **7.3 / 6.6**. `--gate -1` evaluates without the gate.
+- the retrained candidates did not beat the policy in the repo on the routine either (measured with the task completing the picks, as in training: 8.0 / 7.8 against 7.3 / 6.7 and 7.3 / 6.6). `--gate -1` evaluates without the gate.
 
 ## Emptying the box (`scripts/pick_all.py`)
 
@@ -97,16 +100,22 @@ A supervisor around the trained policy: the policy picks, and when the pads sens
 and tool-tip height only, no privileged state) a scripted routine carries it to the table beside the box, opens the
 gripper and returns above the box before handing control back to the policy for the next sphere.
 
-[**Video: the policy empties the box** (`docs/emptying_the_box.mp4`, 1080p, 60 fps, RTX render, tactile gate on)](docs/emptying_the_box.mp4): 8 of 10 spheres picked and dropped beside the box; the last 2 sit against the walls, out of the gripper's reach. Recorded with
-`pick_all.py --policy <policy.pt> --num_envs 1 --layout reachable --seed 41 --hq_video out.mp4` (`--hq_fps 120|60|30`).
+<video src="docs/emptying_the_box.mp4" controls width="800"></video>
 
-| Policy | Spheres picked of 10 (mean, min-max) | Boxes fully emptied |
+[**Video: the routine empties the box** (`docs/emptying_the_box.mp4`, 1080p, 60 fps, RTX render, tactile gate on)](docs/emptying_the_box.mp4): one run (seed 41, one env) that picked 8 of 10 and dropped them beside the box; it is a good run, the mean over 64 envs is 4.0 (range 1 - 7), see below. Recorded with
+`pick_all.py --policy robotiq_rl/tactile_pick/policy/policy.pt --num_envs 1 --layout reachable --seed 41 --hq_video out.mp4` (`--hq_fps 120|60|30`; the camera is picked up from the scene, no extra flag).
+
+**How the picks are counted matters.** In training the task itself completes a pick once a sphere has been held out of the box for a second: it parks the sphere and puts the arm at a random start with the gripper open. Earlier versions of this README (and `pick_all.py`) measured the routine with that still on, so it fired while the scripted carry was under way and teleported almost every sphere (7.7 - 8.0 completions per box, for 7.8 - 8.1 picks counted): those 7.6 - 8.1 picks per box were mostly the task's, not the carry's. `pick_all.py` now turns it off (`--env_completes_picks` brings it back) and counts only spheres the supervisor really carried and dropped. Measured that way, with the policy in the repo (64 envs, seeds 41 / 42, gate on):
+
+| Layout | Picks per box of 10 (mean, min - max) | Fully emptied |
 |---|---|---|
-| `tp8`, trained on single picks | 3.4 - 4.2 (2 - 8) | 0 % |
-| `tp20` (chunk 3), trained as a sequence of picks | **7.6** (4 - 10), spheres within reach, 32 envs | 9 % |
-| | **8.1** (5 - 10), spheres spread over the whole floor as in training, 16 envs | 12 % |
+| spheres within reach (`--layout reachable`) | **4.0 / 3.9** (1 - 7) | 0 % |
+| spheres spread over the whole floor, as in training (`--layout floor`) | **4.1 / 4.0** (1 - 7) | 0 % |
+| for comparison, the task completing the picks (`--env_completes_picks`), reachable | 8.1 / 7.8 | 12 % / 14 % |
 
-The remaining 1-3 spheres are those the gripper cannot straddle (against a wall, in a corner: the box is unchanged, see
+Envs stop after 900 steps without a pick (`--give_up`), usually with spheres still inside the reachable zone (0.7 - 1.1 per box on average, a few envs with many): after the scripted carry the policy often does not find the next sphere. That is the open problem of this demo; the policy was trained with the task's teleport-and-home pick completion, not with the supervisor's carry and drop. `tp8` (single picks only) got 3.4 - 4.2 with the old counting.
+
+With the task completing the picks, the remaining 1-3 spheres are those the gripper cannot straddle (against a wall, in a corner: the box is unchanged, see
 the geometry above), or ones shoved there. Almost none are left inside the reachable zone.
 
 What made the difference was training the actual task: a successful lift parks the sphere outside, puts the arm back
