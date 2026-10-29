@@ -9,7 +9,7 @@ and a SensorSim, and the timeline playing:
 
     python3 make_tactile_sensor_plot.py                  # create / recreate
     python3 make_tactile_sensor_plot.py --off            # remove
-    python3 make_tactile_sensor_plot.py --quantity response   # force (N, default) | response (r) | depth (mm, Raycast)
+    python3 make_tactile_sensor_plot.py --quantity response   # force (N, default) | response (r) | depth (mm, Raycast) | cnn (Precise, its default)
     python3 make_tactile_sensor_plot.py --if-present     # quietly do nothing without a tactile sensor
     python3 make_tactile_sensor_plot.py --restart        # Stop -> Play after attaching (see below)
 
@@ -44,9 +44,9 @@ def send(cmd, t=70):
     return {}
 
 
-QUANTITY = sys.argv[sys.argv.index("--quantity") + 1] if "--quantity" in sys.argv else "force"
-if QUANTITY not in ("force", "response", "depth"):
-    sys.exit(f"--quantity must be force, response or depth, not {QUANTITY!r}")
+QUANTITY = sys.argv[sys.argv.index("--quantity") + 1] if "--quantity" in sys.argv else None  # None: the sensor's own default
+if QUANTITY not in (None, "force", "response", "depth", "cnn"):
+    sys.exit(f"--quantity must be force, response, depth or cnn, not {QUANTITY!r}")
 
 if "--off" in sys.argv:
     code = r'''
