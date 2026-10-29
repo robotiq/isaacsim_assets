@@ -21,7 +21,6 @@ every rejection cites an id from it (`SUB.*`, `SCAN.*`, `REVIEW.*`).
 | `stage_package.sh` | Copies an asset into the one intermediate folder SimReady requires (`<asset>/simready_usd/…`, NP.005), keeping the organized subfolders. Used to stage an asset before `simready-manage submit`. |
 | `run_pre_submit_tests.sh` | Runs every repo test (unit, all Isaac Sim runtime tests, the ROS 2 runtime test) before a submission; must pass. |
 | `submit.sh` | Preflight checks + staging + `simready-manage submit` for several grippers in one run (one pull request). `--dry-run` uploads nothing. |
-| `expected/author_mesh_extents_normals.py` | Dev helper: fills in `extent` + `normals` on CAD-imported meshes (the 2F-140 parts needed it for VG.002/VG.027). |
 
 ## Pipeline overview
 
