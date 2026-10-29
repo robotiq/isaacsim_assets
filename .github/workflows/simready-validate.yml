@@ -9,13 +9,12 @@
 # NVIDIA/simready-foundation spec repo. No container image, no registry, no
 # secrets.
 #
-# Targets the Robot-Gripper profile from SimReady Foundations 2026.07.1. In that
-# profile the PhysX/Isaac/Newton/MuJoCo features are optional, and the 2026.07.1
-# rules no longer hard-require PhysxSchema or the Isaac schema, so a plain-PyPI
-# runner reproduces the same verdict as a full Isaac Sim runtime (verified: the
-# 2F-85 gets 0 blocking failures either way). Conformance is gated on blocking
-# failures only; optional features that are not met are reported but do not fail
-# the job (see ci/simready/summarize.py).
+# Targets the Robot-Gripper profile (3.0.0) from SimReady Foundation v2026.08.0.
+# In that profile the PhysX/Isaac/Newton/MuJoCo features are optional, and the
+# rules do not hard-require PhysxSchema or the Isaac schema, so a plain-PyPI
+# runner gives the same verdict as a full Isaac Sim runtime. The job fails on
+# blocking failures and on optional-feature changes versus the asset's baseline;
+# known optional gaps are reported but do not fail it (see ci/simready/summarize.py).
 #
 # Versions are pinned to a known-good set. The published wheels lag the spec
 # repo, so if you bump `simready_foundation_ref` you may also need to bump the
@@ -127,7 +126,7 @@ jobs:
           PROFILE="${{ inputs.profile || 'Robot-Gripper' }}"
           VERSION="${{ inputs.version || '3.0.0' }}"
           ASSET_REL="${{ inputs.asset || 'grippers/Robotiq_2F_85/Robotiq_2F_85.usda' }}"
-          # 2026.07.1 layout: capabilities/features/profiles live under the tier.
+          # Since 2026.07.1, capabilities/features/profiles live under the tier.
           # The validator imports the rules as the top-level 'capabilities'
           # package via sys.path, so absolute paths are required.
           TC="$GITHUB_WORKSPACE/simready-foundation/nv_core/tiers/simready_foundation_tier_core/simready/foundation/tier_core"
