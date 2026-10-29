@@ -234,3 +234,5 @@ def Xform "Robotiq_2F_85"
     }
 }
 
+
+# runtime-stamp gate test (throwaway, do not merge)
