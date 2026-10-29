@@ -81,9 +81,9 @@ carry a **bill of materials** and the **validation + benchmark** sidecars
 
 > **With Claude Code:** ask it to *"submit the grippers to SimReady"* (or to update
 > one). The project skill [`.claude/skills/submit-simready`](../../.claude/skills/submit-simready/SKILL.md)
-> runs the whole procedure below — tests, preflight, submit, reviewer notes — and
-> stops for your OK before anything is uploaded. Without Claude Code, follow the
-> same steps by hand.
+> loads NVIDIA's `submit-simready-assets` skill and adds the Robotiq steps below
+> (tests, `submit.sh`, reviewer notes); it stops for your OK before anything is
+> uploaded. Without Claude Code, follow the same steps by hand.
 
 ### Access and contacts
 
@@ -138,7 +138,8 @@ exported as `SIMREADY_DIR`. It creates **two** venvs (several GB):
    (`@OmniPBR.mdl@`: NVIDIA's content audit rejected that in simready-central#15),
    a thumbnail that is not 256x256 on a **black** background (`REVIEW.004`;
    NVIDIA flagged our `#1a1a1a` ones), any blocking `simready-validate` failure,
-   an already open pull request, or a version already listed. It then stages each
+   an already open pull request, a version already listed, or a Hugging Face
+   token that cannot write to `Robotiq-Official`. It then stages each
    gripper (`stage_package.sh`) and deletes every file the package scan rejects
    (`SCAN.004`: only USD, images, audio, `.glb`, `.mdl`, `.toml`, `.json`, `.txt`
    may ship; our `newton/` helpers, `docs/` and `LICENSE` files are dropped from
