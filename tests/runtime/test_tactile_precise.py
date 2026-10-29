@@ -13,7 +13,7 @@ import pytest
 from _cube import add_fixed_cube
 from _scene import load_gripper, move_to, step
 from tactile import PreciseTactile, make_tactile_sensor
-from _tactile import PRECISE_VARIANTS
+from _tactile import sensor_variants
 
 GRIPPER = "Robotiq_2F_85"
 PRESET = f"{GRIPPER}_tactile"
@@ -34,7 +34,7 @@ def _load(simulation_app, physics):
         built["stage"] = stage
         built["sensor"] = make_tactile_sensor(stage, f"/World/Gripper/{GRIPPER}", "physx")
 
-    scene = load_gripper(simulation_app, GRIPPER, physics, None, setup=setup, variants=PRECISE_VARIANTS)
+    scene = load_gripper(simulation_app, GRIPPER, physics, None, setup=setup, variants=sensor_variants(GRIPPER, "Precise"))
     return scene, built["sensor"], built["stage"]
 
 
