@@ -2,9 +2,10 @@
 
 Tests that load the gripper assets into a running Isaac Sim and simulate them.
 They need an NVIDIA RTX GPU and a local **Isaac Sim 6.2 or later** (the session stops with a clear
-message on an older one), so they are **not**
-part of the GitHub CI (which only runs the static SimReady validation). Run them
-by hand before merging an asset change.
+message on an older one), so they do **not** run in the GitHub CI (which runs the static SimReady
+validation). Run them by hand before merging an asset change, then record the result with a stamp,
+which CI requires for each gripper the change touches: see
+[`ci/runtime/README.md`](../../ci/runtime/README.md).
 
 ```bash
 ~/isaacsim/python.sh -m pip install pytest      # once: Isaac's Python ships without pytest

@@ -1,0 +1,45 @@
+# Gate for the Isaac Sim runtime tests (tests/runtime), which need an RTX GPU and so do not run in CI.
+# Instead, every gripper whose files a change touches must carry a stamp, made by
+# ci/runtime/stamp.py on a developer's machine, saying the tests passed on exactly that content.
+# Like the SimReady gate, it is scoped per gripper: a PR that changes only grippers/Robotiq_2F_85/
+# needs only the 2F-85 stamp; a change to the tests themselves or to the shared scene/tactile/ROS 2
+# code needs every gripper's. A PR touching none of these (docs, demo, ...) needs nothing.
+#
+# The scopes and accepted Isaac Sim versions are read from the base branch
+# (ci/runtime/scopes.json), so a PR cannot loosen its own gate. See ci/runtime/README.md.
+#
+# The ruleset requires the `runtime-stamp` check. It is cheap, so it runs for real on the PR and again
+# in the merge queue (where a stamp made before main moved may no longer match the merged content).
+name: runtime-stamp
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify the runtime-test stamps
+        env:
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+        run: |
+          # On pull_request the checkout is GitHub's merge commit, which can sit on a newer main than
+          # github.event.pull_request.base.sha: its first parent is the main it merges into, so the diff
+          # against it is only this PR's changes.
+          if [ "${{ github.event_name }}" = merge_group ]; then BASE="$QUEUE_BASE"; else BASE="$(git rev-parse HEAD^1)"; fi
+          python3 ci/runtime/verify.py --base "$BASE" --head HEAD
+
+  # The tests of the gate itself (no Isaac Sim needed).
+  tooling-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pytest
+      - run: python3 -m pytest ci/runtime -q
