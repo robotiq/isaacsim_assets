@@ -33,9 +33,10 @@ VARIANTS = {"Physics": PHYSICS, "Gripper": GRIPPER}
 # The TSF-85 tactile sensor of the 2F grippers (TELEOP_SENSORSIM alone implies the gripper's TSF fingertip):
 #   TELEOP_FINGERTIP  a Fingertip variant of the mounted 2F85 / 2F140, e.g. Tactile_TSF85 (2F85) | Tactile_TSF140 (2F140)
 #                     (applied on those two grippers only)
-#   TELEOP_SENSORSIM  None | Raycast | EffectiveResponse   (2F85 and 2F140; Raycast needs a PhysX step of at
+#   TELEOP_SENSORSIM  None | Raycast | EffectiveResponse | Precise   (2F85 and 2F140; Raycast needs a PhysX step of at
 #                     least 240 Hz and gets it unless TELEOP_PHYSX_HZ says otherwise; EffectiveResponse is
-#                     the recommended one)
+#                     the recommended one; Precise, 2F85 only, is the deformable pad of the ETS CoRo lab, PhysX
+#                     only: it switches deformable bodies and GPU dynamics on before play)
 # With a sensor selected the live heatmap (mcp_bridge/make_tactile_sensor_plot.py) comes up
 # on its own with the contact-force plot.
 TACTILE_GRIPPERS = {"2F85": ("Robotiq_2F_85", "Tactile_TSF85"), "2F140": ("Robotiq_2F_140", "Tactile_TSF140")}
@@ -218,6 +219,21 @@ def _select_sensor(stage):
             continue
         vset.SetVariantSelection(want)
         notes.append("%s -> %r" % (name, want))
+    if SENSORSIM == "Precise":
+        try:
+            import carb.settings
+            from pxr import PhysxSchema, UsdPhysics
+
+            carb.settings.get_settings().set("/physics/enableDeformableBodies", True)
+            for scene in (p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene)):
+                api = PhysxSchema.PhysxSceneAPI.Apply(scene)  # deformable bodies run on the GPU
+                api.CreateEnableGPUDynamicsAttr(True)
+                api.CreateBroadphaseTypeAttr("GPU")
+            notes.append("deformable bodies and GPU dynamics on (Precise is PhysX only)")
+        except Exception:
+            import traceback
+
+            traceback.print_exc()
     if SENSORSIM == "EffectiveResponse":
         try:
             from pxr import Usd
