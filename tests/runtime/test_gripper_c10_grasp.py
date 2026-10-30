@@ -67,11 +67,11 @@ CONTACT_PRESENT = 0.9  # fraction of sampled frames a pad must be in contact
 TIP_LIMITS = {
     "Stepped": (1.2e-3, 2, ()),
     "Extender": (2.0e-3, 2, ("finger_1", "finger_2", "finger_3")),
-    "Flipped": (1.2e-3, 2, ()),  # the stepped tip's pad, at the same place
+    "Rotated": (1.2e-3, 2, ()),  # the stepped tip turned 180 degrees about Z; its pad is the old outer back face (unverified)
 }
 # Total gripper mass (kg) per tip: the datasheet's 1.7 kg, plus the manual's +180.22 g for the three extenders (1875.22 g
 # against 1695 g) in the Extender variant.
-GRIPPER_MASS = {"Stepped": 1.7, "Extender": 1.7 + 0.18022, "Flipped": 1.7}
+GRIPPER_MASS = {"Stepped": 1.7, "Extender": 1.7 + 0.18022, "Rotated": 1.7}
 MASS_TOL = 1.0e-3  # kg
 DRIVE_CAP = 525.0  # N: the driven joint's cap, three times the datasheet's 175 N per finger (the three fingers share it)
 DRIVE_STIFFNESS = 100000.0  # N/m, as authored in the payloads: the drive pushes with stiffness x the remaining stroke
@@ -86,7 +86,7 @@ PHYSX_HZ = 1000  # PhysX steps the test scene at 60 Hz by default: too coarse fo
 # (gripper, Physics variant, Fingertip variant): the gripper is a parameter so that the test id names it, which is how the
 # saved view presets (tests/runtime/views/<gripper>.json) are found. Both tips present the same 9 mm tall pad (z 114 to 123 mm)
 # whose inner face is 20.2 mm from the axis, so the same puck serves both.
-CASES = [(GRIPPER, ph, tip, r) for r in RADII for tip in ("Stepped", "Extender", "Flipped") for ph in ("PhysX", "Newton")]
+CASES = [(GRIPPER, ph, tip, r) for r in RADII for tip in ("Stepped", "Extender", "Rotated") for ph in ("PhysX", "Newton")]
 
 
 def add_puck(stage, radius: float) -> None:

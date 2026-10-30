@@ -99,8 +99,8 @@ def Xform "Robotiq_Hand_E_C10" (
         ) {
 
         }
-        "Flipped" (
-            prepend payload = @./payloads/Robotiq_Hand_E_C10_fingertip_flipped.usda@
+        "Rotated" (
+            prepend payload = @./payloads/Robotiq_Hand_E_C10_fingertip_rotated.usda@
         ) {
 
         }
