@@ -4,7 +4,7 @@
     # their PhysicsFixedJoints (welded to the finger stub, rigid like a screw). Sublayered by every Physics variant.
     #
     # Mass is 30.7 g per tip (aluminium 2700 kg/m^3 x CAD volume); centre of mass and moments from the baked mesh.
-    # With the Rotated variant the tip is the same body turned 180 degrees about Z (same mass, moved centre of mass).
+    # With the Flipped variant the tip is the same body turned 180 degrees about Z (same mass, moved centre of mass).
     # With the Extender variant the body is the tip moved onto the extender plus the extender (60.1 g: the manual's +180.2 g for
     # the three extenders with their screws): 90.7 g.
     # This layer only composes under a Physics variant, never under Physics = "None".
@@ -76,7 +76,7 @@ over "Robotiq_Hand_E_C10" (
         }
             }
         }
-        "Rotated" {
+        "Flipped" {
             over "Robotiq_Hand_E_C10"
             {
         over "fingertip_1"

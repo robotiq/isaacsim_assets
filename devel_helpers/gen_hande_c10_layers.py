@@ -38,10 +38,10 @@ TIPS = [
     ("stepped", "Stepped", "stepped fingertip"),
     ("extender", "Extender", "finger extender (FINGER_EXTENDER_C10, D-041); the stepped tip stays, mounted on it"),
 ]
-# The Rotated variant reuses the default tip (same mesh and colliders) turned 180 degrees about the vertical (Z) axis through
+# The Flipped variant reuses the default tip (same mesh and colliders) turned 180 degrees about the vertical (Z) axis through
 # the middle of its footprint (finger 1's frame: x = FLIP_X, y = 0), so it sits on the same spot of the finger and the face
 # that was its outer back now faces the gripper axis.
-ROTATED = "Rotated"
+FLIPPED = "Flipped"
 FLIP_X = 0.0447  # m, radial centre of the tip's footprint (it spans x 20.2 to 69.2 mm on finger 1)
 BODY_LINKS = ["base_link"] + [f"finger_{k}" for k in FINGERS]  # links that carry a collider on their /Meshes/<name>/mesh_0
 
@@ -185,7 +185,7 @@ def _flip_translate(k):
     return tuple(c - _RZ180 @ c)
 
 
-def rotated_tip(k):
+def flipped_tip(k):
     """The default tip body k turned 180 degrees about Z: centre of mass moved, principal axes turned, mass and moments unchanged."""
     d = MASS["tip"][k]
     c = _flip_centre(k)
@@ -484,7 +484,7 @@ over "{N}"
 ''')
 
 
-def gen_rotated_payload():
+def gen_flipped_payload():
     t = ""
     for k in FINGERS:
         t += f"""    over "fingertip_{k}"
@@ -498,8 +498,8 @@ def gen_rotated_payload():
     }}
 
 """
-    w(f"payloads/{N}_fingertip_rotated.usda", HDR + f"""(
-    # "{ROTATED}" fingertip variant: the default tip turned 180 degrees about the vertical (Z) axis through the middle of its
+    w(f"payloads/{N}_fingertip_flipped.usda", HDR + f"""(
+    # "{FLIPPED}" fingertip variant: the default tip turned 180 degrees about the vertical (Z) axis through the middle of its
     # footprint (x {FLIP_X * 1000:.1f} mm on finger 1), so it sits on the same spot and its outer back faces the axis. No new
     # part: the stepped tip's mesh and colliders are reused and only its transform changes. The mass properties of the fingertip
     # bodies are authored per Fingertip variant in {N}_fingertip_physics.usda.
@@ -585,7 +585,7 @@ def gen_fingertip_physics():
 
     def tip_mass(variant):
         return "".join(
-            _mass_block(f"fingertip_{k}", MASS["tip"][k] if variant == TIPS[0][1] else rotated_tip(k) if variant == ROTATED else tip_on_extender(k),
+            _mass_block(f"fingertip_{k}", MASS["tip"][k] if variant == TIPS[0][1] else flipped_tip(k) if variant == FLIPPED else tip_on_extender(k),
                         kind=None, prim_apis=False)
             for k in FINGERS)
 
@@ -594,13 +594,13 @@ def gen_fingertip_physics():
             {{
 {tip_mass(v)}            }}
         }}
-''' for v in (TIPS[0][1], TIPS[1][1], ROTATED))
+''' for v in (TIPS[0][1], TIPS[1][1], FLIPPED))
     w(f"payloads/{N}_fingertip_physics.usda", HDR + f'''(
     # Engine-neutral fingertip physics for the Hand-E C10 (UsdPhysics only): the screwed-on fingertip rigid bodies and
     # their PhysicsFixedJoints (welded to the finger stub, rigid like a screw). Sublayered by every Physics variant.
     #
     # Mass is {MASS["tip"][1]["mass"] * 1000:.1f} g per tip (aluminium {DENSITY_ALU:.0f} kg/m^3 x CAD volume); centre of mass and moments from the baked mesh.
-    # With the Rotated variant the tip is the same body turned 180 degrees about Z (same mass, moved centre of mass).
+    # With the Flipped variant the tip is the same body turned 180 degrees about Z (same mass, moved centre of mass).
     # With the Extender variant the body is the tip moved onto the extender plus the extender ({EXTENDER_MASS * 1000:.1f} g: the manual's +180.2 g for
     # the three extenders with their screws): {tip_on_extender(1)["mass"] * 1000:.1f} g.
     # This layer only composes under a Physics variant, never under Physics = "None".
@@ -1221,7 +1221,7 @@ def gen_root(meta):
         ) {{
 
         }}
-''' for key, var, _ in TIPS[1:] + [("rotated", ROTATED, "")])
+''' for key, var, _ in TIPS[1:] + [("flipped", FLIPPED, "")])
     w(f"{N}.usda", HDR + f'''(
     customLayerData = {{
         # SR.001 requires these identity fields authored DIRECTLY in the root layer's customLayerData (not only nested
@@ -1338,7 +1338,7 @@ if __name__ == "__main__":
         os.makedirs(os.path.join(ROOT, sub), exist_ok=True)
     gen_base()
     gen_tip_payloads()
-    gen_rotated_payload()
+    gen_flipped_payload()
     gen_body_mass()
     gen_fingertip_physics()
     gen_kinematics()

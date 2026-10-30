@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    # "Rotated" fingertip variant: the default tip turned 180 degrees about the vertical (Z) axis through the middle of its
+    # "Flipped" fingertip variant: the default tip turned 180 degrees about the vertical (Z) axis through the middle of its
     # footprint (x 44.7 mm on finger 1), so it sits on the same spot and its outer back faces the axis. No new
     # part: the stepped tip's mesh and colliders are reused and only its transform changes. The mass properties of the fingertip
     # bodies are authored per Fingertip variant in Robotiq_Hand_E_C10_fingertip_physics.usda.
