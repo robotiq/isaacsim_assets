@@ -90,7 +90,7 @@ Tests: `tests/runtime/test_tactile_sensor.py` (Isaac Sim, both grippers), `tests
 
 `SensorSim=Precise` is the TSF-85 model of the Control and Robotics Laboratory (CoRo) of the École de technologie
 supérieure, Montréal ([github.com/Lab-CORO/TSF-85](https://github.com/Lab-CORO/TSF-85)), put on our asset. Each
-fingertip gets the lab's **deformable pad** (a 26 × 3 × 40 mm soft body of 432 nodes, E = 1.289 MPa, ν = 0.173)
+fingertip gets the lab's **deformable pad** (a 26 × 3 × 40 mm soft body of 432 nodes, ν = 0.173; Young's modulus 50 kPa, see [Pad stiffness](#pad-stiffness))
 in place of the rigid pad collider, on a rigid backing fixed to the fingertip. The lab's **CNN** turns the
 compression of the pad's outer 216 nodes (an 18 × 12 image) into the 7 × 4 map.
 
@@ -113,12 +113,16 @@ images = sensor.compression_images()   # {"left": (18, 12), ...}: pad compressio
   the outer node to the back-layer node behind it, against its rest value, in the frame of the backing body (so neither the
   finger's own motion nor the pad sliding on its backing counts), positive when pressed in. The first `read` (the pad at rest)
   is the zero; `tare()` sets it again. Rows run from the fingertip end, columns along the finger's +X, for both fingers.
-- **What to expect:** a flat object aligned with the pads gives a patch of the contact's shape; an object that meets the pad
-  along an edge or corner (a cube not aligned with the gripper, e.g. at a yawed wrist) gives a line or a spot, and the two
-  pads can show it at different places. A flat grasp of a few tens of newtons thins the bonded 3 mm layer by only some
-  10-20 um, which is a small input for a network whose full scale is 1.6 mm: its map is then small too.
-- **Signal size:** a grip of about 10 N on the 12 × 16.5 mm test box compresses the pad by about 0.12 mm (of the
-  network's 1.6 mm full scale); the map then reads around 130, and about 0 at rest (the rest noise is a few µm).
+- **What to expect:** a flat object aligned with the pads gives a patch of the contact's shape (a flat cube over most of the pad
+  thins it by about 0.4-0.5 mm, the map reads a few hundred over the patch); an object that meets the pad along an edge or
+  corner (a cube not aligned with the gripper, e.g. at a yawed wrist) gives a line or a spot that presses the pad through its
+  3 mm, and the two pads can show it at different places.
+- **Pad stiffness:** the lab's file says E = 1.289 MPa (the bulk elastomer). A 3 mm layer bonded to its backing at that modulus
+  thins by only 10-30 um under a flat grasp of tens of newtons, while the lab's network has a full scale of 1.6 mm and was trained on
+  the displacements of the lab's own simulated pad, which was much softer (about 25-75 kPa effective: it was crushed by 3 N on an
+  18 × 18 mm cube whatever its modulus). With the stiff pad the network gets almost no signal (its map is mostly its own bias and
+  jitter) and an edge contact looks random. `parts/TSF_85_pad.usd` therefore uses **50 kPa**, which puts a flat grasp at a few
+  hundred um. This is a calibration to the network's input range, not the elastomer's modulus.
 - **Pad density:** the lab's file leaves the pad's density at the schema default, a 3 g pad. PhysX's position-based
   soft-body solver cannot hold a gripper's load on a pad that light: the pad is crushed through its 3 mm whatever its
   modulus. `parts/TSF_85_pad.usd` sets the density to 4e4 kg/m³ and 64 solver iterations. With the pad attached, an 18 × 18 mm

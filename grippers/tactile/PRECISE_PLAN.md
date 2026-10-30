@@ -200,6 +200,14 @@ Upstream's `TSF_85.usd` (case made kinematic) with a 0.3 kg cube resting on the 
     from the world axes), so it touched the pads along its edge: a line / spot at a different place on each pad. With a cube
     aligned to the gripper the contact is a flat patch of only ~12 um (a bonded 3 mm layer at tens of N): small for a network
     of 1.6 mm full scale.
+- **Spike 14, the data looked random in the teleop (Isaac 6.2, headless repro of it, kinematic 40 mm cube, finger driven closed):**
+  - At E = 1.289 MPa a cube aligned with the gripper thins the pad by 6-30 um (background +-5 um): the network gets ~no signal and
+    returns its bias pattern (map 10-40); an unaligned cube (edge contact) gives a 1 mm spot in 2-7 cells that the network smears
+    into a broad blob. The pad density (2e4-4e4) does not change either.
+  - E does: flat cube, peak thinning left / right um: 1.289e6 Pa 27 / 14; 3e5 70 / 31; 1e5 242 / 162; 3e4 899 / 760, over ~168 of 216
+    cells (the cube's footprint). Unaligned: peaks 0.8-3 mm over 9-25 cells.
+  - The lab's pad as simulated was effectively ~25-75 kPa (spike 2) and the network's full scale is 1.6 mm, so the network was trained
+    on a much softer pad than its stated 1.289 MPa. **Chosen: E = 50 kPa** (flat cube 514 / 408 um over 168 cells, map max ~1000, mean ~300).
 - **Environment gotchas:** run pytest for Isaac with `env -u PYTHONPATH -u AMENT_PREFIX_PATH ...`, otherwise the
   ROS Humble pytest plugins load and fail on a missing module; the throwaway spike is
   `tests/runtime/test_precise_spike.py` (not committed).

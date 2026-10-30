@@ -22,6 +22,11 @@ from pathlib import Path
 from pxr import Sdf, Usd
 
 PAD_DENSITY = 4.0e4  # kg/m^3
+# Young's modulus. The lab's file says 1.289 MPa (the bulk elastomer), but a 3 mm layer bonded to its backing then thins by only
+# 10-30 um under a flat grasp of tens of newtons, while the lab's network has a full scale of 1.6 mm: the pad of the lab's own
+# simulation was much softer (about 25-75 kPa effective, measured in tactile/PRECISE_PLAN.md spike 2), and the network was
+# trained on its displacements. 50 kPa puts a flat grasp at a few hundred um, in the network's range.
+PAD_YOUNGS = 5.0e4  # Pa
 # The render material of the lab's pad is a red OmniPBR; the real sensor's pad is the near-black rubber of the
 # ``TactilePad`` material of parts/TSF_85_case.usd (diffuseColor 0.05, 0.05, 0.055).
 PAD_COLOR = (0.05, 0.05, 0.055)
@@ -58,6 +63,7 @@ def main(src: str) -> None:
             parent.RemoveProperty(parent.attributes[name])
     if "physxDeformableBody:cookingSourceMesh" in parent.relationships:
         parent.RemoveProperty(parent.relationships["physxDeformableBody:cookingSourceMesh"])
+    mat.attributes["omniphysics:youngsModulus"].default = PAD_YOUNGS
     shader = out.GetPrimAtPath("/Pad/Looks/Deformable_Material/Shader")
     shader.attributes["inputs:diffuse_color_constant"].default = PAD_COLOR
     shader.attributes["inputs:diffuse_tint"].default = (1.0, 1.0, 1.0)
