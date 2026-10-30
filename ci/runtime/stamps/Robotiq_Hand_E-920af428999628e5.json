@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "scope": "Robotiq_Hand_E",
+  "input_hash": "920af428999628e5659bdef75c42add0b9374af17e27e95088097bc9a34804ac",
+  "commit": "38f5f91c41b522dd6e416617cf37a3f19969403c",
+  "author": "l-t.schreiber@robotiq.com",
+  "date": "2026-10-29T22:32:38Z",
+  "environment": {
+    "isaac_sim": "6.2.0-rc.14+release.52805.02189a84.gl",
+    "gpu": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 595.99.02",
+    "os": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35"
+  },
+  "result": {
+    "passed": 12,
+    "failed": 0,
+    "errors": 0,
+    "xfailed": 0,
+    "skipped": 0,
+    "tests": {
+      "tests.runtime.test_gripper_close::test_gripper_closes[Robotiq_Hand_E-Newton]": "passed",
+      "tests.runtime.test_gripper_close::test_gripper_closes[Robotiq_Hand_E-Newton_Stroke100]": "passed",
+      "tests.runtime.test_gripper_close::test_gripper_closes[Robotiq_Hand_E-PhysX]": "passed",
+      "tests.runtime.test_gripper_close::test_gripper_closes[Robotiq_Hand_E-PhysX_Stroke100]": "passed",
+      "tests.runtime.test_gripper_grasp::test_gripper_grasps_cube[Robotiq_Hand_E-Newton]": "passed",
+      "tests.runtime.test_gripper_grasp::test_gripper_grasps_cube[Robotiq_Hand_E-Newton_Stroke100]": "passed",
+      "tests.runtime.test_gripper_grasp::test_gripper_grasps_cube[Robotiq_Hand_E-PhysX]": "passed",
+      "tests.runtime.test_gripper_grasp::test_gripper_grasps_cube[Robotiq_Hand_E-PhysX_Stroke100]": "passed",
+      "tests.runtime.test_gripper_lift::test_gripper_lifts_cube[Robotiq_Hand_E-Newton]": "passed",
+      "tests.runtime.test_gripper_lift::test_gripper_lifts_cube[Robotiq_Hand_E-Newton_Stroke100]": "passed",
+      "tests.runtime.test_gripper_lift::test_gripper_lifts_cube[Robotiq_Hand_E-PhysX]": "passed",
+      "tests.runtime.test_gripper_lift::test_gripper_lifts_cube[Robotiq_Hand_E-PhysX_Stroke100]": "passed"
+    }
+  }
+}

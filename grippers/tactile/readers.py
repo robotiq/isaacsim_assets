@@ -19,7 +19,10 @@ Both readers give the same maps: ``read_force()`` (N per taxel, the default ``re
   normal forces (contact_points.py) give the force (spread over the contact patch) and r. Contact reports must
   be enabled before play (``prepare``).
 
-Each taxel is placed from its finger link's physics pose times its fixed marker offset, so it does not depend
+- ``PreciseTactile`` (``SensorSim=Precise``, PhysX only): the deformable TSF-85 pad of the ETS CoRo lab and its CNN
+  (precise.py). ``read()`` is the network's 7 x 4 map (``quantity="cnn"``), 0 at rest, in its own units.
+
+For the first two, each taxel is placed from its finger link's physics pose times its fixed marker offset, so it does not depend
 on USD being updated while playing.
 """
 
@@ -42,11 +45,14 @@ class TactileSensor:
         "force": ("TSF-85 tactile force per taxel [N] (simulated, uncalibrated)", "N", 1.0),
         "response": ("TSF-85 effective contact response r (simulated, uncalibrated)", "", 0.05),
         "depth": ("TSF-85 tactile depth [mm] (simulated, uncalibrated)", "mm", 0.5),
+        "cnn": ("TSF-85 CNN tactile map (simulated, uncalibrated, network units)", "", 50.0),
     }
     AVAILABLE = ("force", "response")
+    DEFAULT_QUANTITY = "force"
     caption = "per taxel (row 0 = fingertip end)"
 
-    def __init__(self, root: str, quantity: str = "force"):
+    def __init__(self, root: str, quantity: str | None = None):
+        quantity = quantity or self.DEFAULT_QUANTITY
         if quantity not in self.AVAILABLE:
             raise ValueError(f"{type(self).__name__} has no {quantity!r} map (available: {self.AVAILABLE})")
         self.root = root  # articulation root, e.g. /World/Gripper/Robotiq_2F_85
@@ -120,7 +126,8 @@ class TactileSensor:
 
     def read(self) -> dict[str, np.ndarray]:
         """The map of ``self.quantity``, ``{side: (ROWS, COLS)}``."""
-        return {"force": self.read_force, "response": self.read_response, "depth": self.read_depth}[self.quantity]()
+        return {"force": self.read_force, "response": self.read_response, "depth": self.read_depth,
+                "cnn": self.read_cnn}[self.quantity]()
 
     def read_force(self) -> dict[str, np.ndarray]:
         raise NotImplementedError
@@ -131,12 +138,15 @@ class TactileSensor:
     def read_depth(self) -> dict[str, np.ndarray]:
         raise NotImplementedError(f"{type(self).__name__} has no depth map")
 
+    def read_cnn(self) -> dict[str, np.ndarray]:
+        raise NotImplementedError(f"{type(self).__name__} has no CNN map")
+
 
 class RaycastTactile(TactileSensor):
     AVAILABLE = ("force", "response", "depth")
     DEFAULT_PAD_STIFFNESS = 0.43  # N / mm^3, the TSF-85 soft layer: E / thickness = 1.289 MPa / 3 mm
 
-    def __init__(self, root: str, quantity: str = "force"):
+    def __init__(self, root: str, quantity: str | None = None):
         super().__init__(root, quantity)
         self.pad_force = {s: 0.0 for s in SIDES}  # N, the force map's total at the last read_force()
 
@@ -192,7 +202,7 @@ class RaycastTactile(TactileSensor):
 class EffectiveTactile(TactileSensor):
     """``last_force`` is the pad force (N) behind the last read. ``contacts``: a ``ContactPointReader``."""
 
-    def __init__(self, root: str, contacts, quantity: str = "force"):
+    def __init__(self, root: str, contacts, quantity: str | None = None):
         super().__init__(root, quantity)
         self.contacts = contacts
         self.last_force = {s: 0.0 for s in SIDES}
@@ -224,13 +234,110 @@ class EffectiveTactile(TactileSensor):
         return self.read_both()[1]
 
 
+class PreciseTactile(TactileSensor):
+    """``SensorSim=Precise`` (PhysX only): the deformable TSF-85 pad of the ETS CoRo lab and its CNN, see precise.py.
+
+    ``read()`` is the 7 x 4 CNN map per finger (0 at rest, network units, not newtons). The pad nodes are read from USD
+    (``simulation_mesh.points``, updated by PhysX while playing) and expressed in the frame of the rigid backing
+    body, so the finger's own motion does not count. The compression at the first ``read`` (the pad at rest) is the
+    zero: call ``tare()`` to set it again. Needs ``onnxruntime`` and GPU dynamics (``prepare`` switches them on)."""
+
+    AVAILABLE = ("cnn",)
+    DEFAULT_QUANTITY = "cnn"
+    caption = "CNN map per taxel (row 0 = fingertip end)"
+    PAD_SIGN = {"right": 1.0, "left": -1.0}  # +1 when the pad's backing is on the +y side of the finger frame
+
+    def __init__(self, root: str, quantity: str | None = None):
+        super().__init__(root, quantity)
+        self.pads: dict[str, dict] = {}
+        self.cnn = None
+        self._backings = None
+        self._zero: dict[str, np.ndarray | None] = {s: None for s in SIDES}
+
+    def prepare(self, stage) -> None:
+        import carb.settings
+        from pxr import PhysxSchema, Usd, UsdGeom, UsdPhysics
+
+        from . import precise
+
+        super().prepare(stage)
+        carb.settings.get_settings().set("/physics/enableDeformableBodies", True)
+        scene = next((p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene)), None)
+        if scene is None:
+            raise ValueError("no PhysicsScene: SensorSim=Precise needs one with GPU dynamics")
+        api = PhysxSchema.PhysxSceneAPI.Apply(scene)  # deformable bodies run on the GPU
+        api.CreateEnableGPUDynamicsAttr(True)
+        api.CreateBroadphaseTypeAttr("GPU")
+        asset = self.root.rsplit("/", 1)[0]  # the pads sit beside the articulation prim, under the asset root
+        cache = UsdGeom.XformCache(Usd.TimeCode.Default())
+        for side in SIDES:
+            mesh = stage.GetPrimAtPath(f"{asset}/{side}_tsf_pad/simulation_mesh")
+            backing = stage.GetPrimAtPath(f"{self.root}/{side}_pad_backing")
+            if not mesh.IsValid() or not backing.IsValid():
+                raise ValueError(f"no deformable pad at {mesh.GetPath()}: select SensorSim=Precise")
+            rest = np.array(mesh.GetAttribute("omniphysics:restShapePoints").Get(), dtype=np.float64)
+            pad_to_world = np.array(cache.GetLocalToWorldTransform(mesh))  # USD: row vectors, p_world = [p, 1] @ M
+            back = np.array(cache.GetLocalToWorldTransform(backing))
+            rest_body = precise.body_frame((np.hstack([rest, np.ones((len(rest), 1))]) @ pad_to_world)[:, :3],
+                                           back[:3, :3].T, back[3, :3])
+            self.pads[side] = {"mesh": mesh.GetPath().pathString, "to_world": pad_to_world, "rest_body": rest_body,
+                               "grid": precise.outer_layer_grid(rest, columns_along_pad_x=side == "right")}
+        self.cnn = precise.TactileCnn()
+
+    def _backing_poses(self) -> dict:
+        from isaacsim.core.experimental.prims import RigidPrim
+
+        from . import precise
+
+        if self._backings is None:
+            self._backings = RigidPrim([f"{self.root}/{s}_pad_backing" for s in SIDES])
+        try:
+            pos, quat = (a.numpy() for a in self._backings.get_world_poses())
+        except Exception:  # the physics view is gone (Stop -> Play): rebuild on the next read
+            self._backings = None
+            raise
+        return {side: (precise.quat_to_matrix(quat[i]), np.asarray(pos[i], dtype=np.float64))
+                for i, side in enumerate(SIDES)}
+
+    def tare(self) -> None:
+        """Take the pad's present shape as its rest (call it with the gripper open and still)."""
+        self._zero = {s: None for s in SIDES}
+
+    def compression_images(self) -> dict[str, np.ndarray]:
+        """The CNN's input, per finger: ``(18, 12)`` compression in m (positive = pressed in), tared."""
+        from . import precise
+
+        stage = omni_usd_stage()
+        poses = self._backing_poses()
+        out = {}
+        for side, pad in self.pads.items():
+            pts = np.array(stage.GetPrimAtPath(pad["mesh"]).GetAttribute("points").Get(), dtype=np.float64)
+            world = (np.hstack([pts, np.ones((len(pts), 1))]) @ pad["to_world"])[:, :3]
+            rotation, position = poses[side]
+            dz = precise.compression(precise.body_frame(world, rotation, position), pad["rest_body"],
+                                     self.PAD_SIGN[side])
+            if self._zero[side] is None:
+                self._zero[side] = dz.copy()
+            out[side] = (dz - self._zero[side])[pad["grid"]]
+        return out
+
+    def read_cnn(self) -> dict[str, np.ndarray]:
+        return {side: self.cnn.read(image) for side, image in self.compression_images().items()}
+
+
+def omni_usd_stage():
+    import omni.usd
+
+    return omni.usd.get_context().get_stage()
+
+
 def _method(stage, root: str) -> str:
     methods = {}
     for side in SIDES:
         prim = stage.GetPrimAtPath(markers_path(root, side))
         if not prim.IsValid():
             raise ValueError(f"no taxel markers at {prim.GetPath()}: select the TSF fingertip (Tactile_TSF85 / "
-                             "Tactile_TSF140) and SensorSim=Raycast or EffectiveResponse")
+                             "Tactile_TSF140) and SensorSim=Raycast, EffectiveResponse or Precise")
         attr = prim.GetAttribute("robotiq:tactile:method")
         methods[side] = attr.Get() if attr else None
     if len(set(methods.values())) != 1:
@@ -239,7 +346,7 @@ def _method(stage, root: str) -> str:
 
 
 def make_tactile_sensor(stage, root: str, engine: str = "physx", gripper: str | None = None,
-                        object_path: str | None = None, quantity: str = "force") -> TactileSensor:
+                        object_path: str | None = None, quantity: str | None = None) -> TactileSensor:
     """The reader for the stage's ``SensorSim`` variant, ``prepare``d. ``engine``: "physx" | "newton";
     ``gripper``: e.g. "Robotiq_2F_140", by default the articulation root's name (``root`` ends with it);
     ``object_path``: the one prim whose contacts count, or None for any (``EffectiveTactile``)."""
@@ -251,6 +358,10 @@ def make_tactile_sensor(stage, root: str, engine: str = "physx", gripper: str | 
         from .contact_points import ContactPointReader
 
         sensor = EffectiveTactile(root, ContactPointReader(gripper, root, engine, object_path), quantity)
+    elif method == "precise":
+        if engine != "physx":  # deformable bodies are PhysX only
+            raise ValueError(f"SensorSim=Precise needs PhysX (deformable bodies), not {engine!r}")
+        sensor = PreciseTactile(root, quantity)
     else:
         raise ValueError(f"unknown robotiq:tactile:method {method!r} at {root}")
     sensor.prepare(stage)

@@ -1,0 +1,9 @@
+{
+  "source": "github.com/Lab-CORO/TSF-85, TSF_85_Ext/data (ETS CoRo lab), used under agreement with Robotiq",
+  "network": "tactile_cnn.onnx: input (N, 18, 12, 1) float32, output (N, 28) = the 7 x 4 tactile map",
+  "the_max": 0.0016163215041160583,
+  "grid": {
+    "rows": 18,
+    "cols": 12
+  }
+}
