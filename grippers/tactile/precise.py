@@ -54,6 +54,40 @@ def outer_layer_grid(rest_points: np.ndarray, columns_along_pad_x: bool = True) 
     return grid
 
 
+def mount_pads(stage, root: str, layer=None) -> list[str]:
+    """Free the deformable pads of the gripper whose articulation prim is ``root`` from the rigid bodies above it.
+
+    PhysX does not simulate a deformable body that has a rigid body among its ancestors, unless its transform stack is reset
+    (``Deformable Body ... missing xformstack reset when child of rigid body``): the pads are then not attached to the
+    fingertips and stay where the parent puts them. That is the case when the gripper is mounted on a robot (the UR5e's
+    ``wrist_3_link``). This makes each such pad's transform its present world pose with the stack reset, so call it
+    before play, with the robot at its start pose. A no-op for a gripper with no rigid body above it. ``layer``: where to
+    author (default: the edit target; the teleop demo passes the session layer to keep its scene file clean).
+    Returns the sides it changed."""
+    from pxr import Usd, UsdGeom, UsdPhysics
+
+    asset = root.rsplit("/", 1)[0]  # the pads sit beside the articulation prim, under the asset root
+    cache = UsdGeom.XformCache(Usd.TimeCode.Default())
+    changed = []
+    for side in ("left", "right"):
+        pad = stage.GetPrimAtPath(f"{asset}/{side}_tsf_pad")
+        if not pad.IsValid() or UsdGeom.Xformable(pad).GetResetXformStack():
+            continue
+        parent = pad.GetParent()
+        while parent and not parent.IsPseudoRoot() and not parent.HasAPI(UsdPhysics.RigidBodyAPI):
+            parent = parent.GetParent()
+        if not parent or parent.IsPseudoRoot():
+            continue  # nothing rigid above: the pad is fine where it is
+        world = cache.GetLocalToWorldTransform(pad)
+        with Usd.EditContext(stage, layer or stage.GetEditTarget()):
+            xform = UsdGeom.Xformable(pad)
+            xform.ClearXformOpOrder()
+            xform.AddTransformOp().Set(world)
+            xform.SetResetXformStack(True)
+        changed.append(side)
+    return changed
+
+
 def quat_to_matrix(q) -> np.ndarray:
     """3 x 3 rotation matrix (column convention: ``p_world = R @ p_body + t``) of a ``(w, x, y, z)`` quaternion."""
     w, x, y, z = (float(v) for v in q)

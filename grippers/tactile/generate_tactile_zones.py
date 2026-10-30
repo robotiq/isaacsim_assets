@@ -22,6 +22,7 @@ The markers do not collide; the readers in this folder only use their poses. Std
     python3 grippers/tactile/generate_tactile_zones.py Robotiq_2F_140   # one
 """
 
+import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -56,13 +57,14 @@ MOUNTS = {
 
 # SensorSim=Precise (2F-85): the deformable pad of github.com/Lab-CORO/TSF-85 (ETS CoRo lab) on each fingertip, placed in the
 # inner_finger frame (the links sit at the identity with the gripper open) where the lab mounts it: outer face at
-# y = +-38.4 mm, z = 112.5 .. 152.5 mm. The rigid backing stands for the sensor case behind it.
+# y = +-38.4 mm, z = 112.5 .. 152.5 mm. The rigid backing is the sensor's housing behind it.
 PRECISE = ("Robotiq_2F_85",)
 PRECISE_PAD_T = (-0.0142, 0.06271, 0.11042)  # m, right pad origin; the left pad is turned 180 deg about Z
 PRECISE_PAD_T_LEFT = (0.0142, -0.0628, 0.11042)
-PRECISE_BACKING_SIZE = (0.0284, 0.0213, 0.044)  # m
-PRECISE_BACKING_CENTER = (0.0, 0.05205, 0.1324)  # m, right; the left one mirrors y
 PRECISE_BACKING_MASS = 0.003  # kg
+# The rigid backing collides as the real sensor does: the convex hull of the CAD housing (parts/TSF_85_case.usd) cut at the
+# deformable's back face; Robotiq_2F_85/tools/extract_tsf85_backing.py writes it, one hull per finger.
+PRECISE_HULL = GRIPPERS / "Robotiq_2F_85" / "tools" / "tsf85_backing_hull.json"
 # pad nodes this close to the backing are attached to it (the lab's 4 mm would attach the whole 3 mm pad)
 PRECISE_ATTACH_OFFSET = 0.0005  # m
 # the attachment PhysX cooks for those pads: tools/capture_tsf85_pad_attachment.py
@@ -260,13 +262,17 @@ def precise_attachment(gripper, side):
 def precise_side(gripper, side, sgn):
     """The inner-prim part (case collider off, backing) and the root part (pad, attachment) of one finger."""
     inner = f"/{gripper}/{gripper}"
-    cx, cy, cz = PRECISE_BACKING_CENTER
-    sx, sy, sz = PRECISE_BACKING_SIZE
+    hull = json.loads(PRECISE_HULL.read_text())[side]
+    pts = ", ".join("(%s, %s, %s)" % tuple(f(v) for v in p) for p in hull["points"])
+    faces = ", ".join(str(i) for tri in hull["faces"] for i in tri)
+    lo = [min(p[i] for p in hull["points"]) for i in range(3)]
+    hi = [max(p[i] for p in hull["points"]) for i in range(3)]
     tx, ty, tz = PRECISE_PAD_T if sgn > 0 else PRECISE_PAD_T_LEFT
     rot = "" if sgn > 0 else "        float xformOp:rotateZ = 180\n"
     order = '["xformOp:translate"]' if sgn > 0 else '["xformOp:translate", "xformOp:rotateZ"]'
     body = f"""\
-        # The rigid TSF-85 case collider is off: the deformable pad and the backing take its place.
+        # The rigid TSF-85 case collider is off, and so is its rigid tactile pad (drawn transparent): the deformable pad
+        # and the backing (the housing, below) take their place. The housing, engraving and screws stay as they are.
         over "{side}_fingertip"
         {{
             over "visuals" (
@@ -279,25 +285,40 @@ def precise_side(gripper, side, sgn):
                     {{
                         bool physics:collisionEnabled = 0
                     }}
+                    over "Looks"
+                    {{
+                        over "TactilePad"
+                        {{
+                            over "Shader"
+                            {{
+                                float inputs:opacity = 0
+                            }}
+                        }}
+                    }}
                 }}
             }}
         }}
 
-        # The sensor case: a rigid backing fixed to the fingertip, which the pad is attached to.
+        # The sensor's housing: a rigid backing fixed to the fingertip, which the pad is attached to. It collides as the
+        # real housing does (its CAD hull, cut where the pad starts) and is not drawn (the real mesh above is).
         def Xform "{side}_pad_backing" (
             prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
         )
         {{
             float physics:mass = {f(PRECISE_BACKING_MASS)}
 
-            def Cube "collider" (
-                prepend apiSchemas = ["PhysicsCollisionAPI"]
+            def Mesh "collider" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
             )
             {{
-                double size = 1
-                double3 xformOp:scale = ({f(sx)}, {f(sy)}, {f(sz)})
-                double3 xformOp:translate = ({f(cx)}, {f(sgn * cy)}, {f(cz)})
-                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                float3[] extent = [({f(lo[0])}, {f(lo[1])}, {f(lo[2])}), ({f(hi[0])}, {f(hi[1])}, {f(hi[2])})]
+                int[] faceVertexCounts = [{", ".join(["3"] * len(hull["faces"]))}]
+                int[] faceVertexIndices = [{faces}]
+                uniform token physics:approximation = "convexHull"
+                int physxConvexHullCollision:hullVertexLimit = 64
+                point3f[] points = [{pts}]
+                uniform token purpose = "guide"
+                uniform token subdivisionScheme = "none"
             }}
 
             def PhysicsFixedJoint "FixedJoint"

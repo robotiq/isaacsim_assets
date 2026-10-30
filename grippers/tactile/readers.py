@@ -268,6 +268,7 @@ class PreciseTactile(TactileSensor):
         api = PhysxSchema.PhysxSceneAPI.Apply(scene)  # deformable bodies run on the GPU
         api.CreateEnableGPUDynamicsAttr(True)
         api.CreateBroadphaseTypeAttr("GPU")
+        precise.mount_pads(stage, self.root)  # a gripper on a robot link: free the pads from its rigid bodies
         asset = self.root.rsplit("/", 1)[0]  # the pads sit beside the articulation prim, under the asset root
         cache = UsdGeom.XformCache(Usd.TimeCode.Default())
         for side in SIDES:

@@ -230,6 +230,12 @@ def _select_sensor(stage):
                 api.CreateEnableGPUDynamicsAttr(True)
                 api.CreateBroadphaseTypeAttr("GPU")
             notes.append("deformable bodies and GPU dynamics on (Precise is PhysX only)")
+            # the gripper sits on the UR5e's wrist link, a rigid body: PhysX would not simulate the pads
+            sys.path.insert(0, os.path.join(_teleop_dir(), "..", ".."))
+            from tactile import precise
+
+            freed = precise.mount_pads(stage, str(edit.GetPath()) + "/" + asset, stage.GetSessionLayer())
+            notes.append("pads freed from the wrist link (%s)" % ", ".join(freed))
         except Exception:
             import traceback
 

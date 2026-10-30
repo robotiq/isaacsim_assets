@@ -11,7 +11,7 @@ Keeps ``/World/Deformable`` (the 432-node tetrahedral mesh, its material and its
 the rigid case, which is authored on the gripper instead. Two changes, both needed for the pad to carry a grip in
 Isaac Sim 6.2 (see tactile/PRECISE_PLAN.md): the material density is raised from the schema default (a 3 g pad, which the
 position-based solver cannot hold under a gripper's load) to ``PAD_DENSITY``, and the solver position iteration
-count is set to ``SOLVER_ITERATIONS``. Needs Isaac Sim's ``pxr``:
+count is set to ``SOLVER_ITERATIONS``. The pad is also given the colour of the real sensor's pad. Needs Isaac Sim's ``pxr``:
 
     python3 tools/extract_tsf85_pad.py /path/to/TSF_85.usd
 """
@@ -22,6 +22,9 @@ from pathlib import Path
 from pxr import Sdf, Usd
 
 PAD_DENSITY = 4.0e4  # kg/m^3
+# The render material of the lab's pad is a red OmniPBR; the real sensor's pad is the near-black rubber of the
+# ``TactilePad`` material of parts/TSF_85_case.usd (diffuseColor 0.05, 0.05, 0.055).
+PAD_COLOR = (0.05, 0.05, 0.055)
 SOLVER_ITERATIONS = 64
 OUT = Path(__file__).resolve().parents[1] / "parts" / "TSF_85_pad.usd"
 
@@ -43,6 +46,9 @@ def main(src: str) -> None:
     density = mat.attributes.get("omniphysics:density") or Sdf.AttributeSpec(
         mat, "omniphysics:density", Sdf.ValueTypeNames.Float)
     density.default = PAD_DENSITY
+    shader = out.GetPrimAtPath("/Pad/Looks/Deformable_Material/Shader")
+    shader.attributes["inputs:diffuse_color_constant"].default = PAD_COLOR
+    shader.attributes["inputs:diffuse_tint"].default = (1.0, 1.0, 1.0)
     iters = Sdf.AttributeSpec(parent, "physxDeformableBody:solverPositionIterationCount", Sdf.ValueTypeNames.Int)
     iters.default = SOLVER_ITERATIONS
     gravity = Sdf.AttributeSpec(parent, "physxDeformableBody:disableGravity", Sdf.ValueTypeNames.Bool)
