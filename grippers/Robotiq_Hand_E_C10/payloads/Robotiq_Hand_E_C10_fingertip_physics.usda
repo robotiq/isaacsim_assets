@@ -4,6 +4,7 @@
     # their PhysicsFixedJoints (welded to the finger stub, rigid like a screw). Sublayered by every Physics variant.
     #
     # Mass is 30.7 g per tip (aluminium 2700 kg/m^3 x CAD volume); centre of mass and moments from the baked mesh.
+    # With the Flipped variant the tip is the same body turned 180 degrees about Z (same mass, moved centre of mass).
     # With the Extender variant the body is the tip moved onto the extender plus the extender (60.1 g: the manual's +180.2 g for
     # the three extenders with their screws): 90.7 g.
     # This layer only composes under a Physics variant, never under Physics = "None".
@@ -72,6 +73,32 @@ over "Robotiq_Hand_E_C10" (
             float3 physics:diagonalInertia = (8.97140066e-06, 5.16593918e-05, 5.77928326e-05)
             float physics:mass = 0.0907344968
             quatf physics:principalAxes = (0.650995238, 0.564645595, 0.425443883, 0.276365798)
+        }
+            }
+        }
+        "Flipped" {
+            over "Robotiq_Hand_E_C10"
+            {
+        over "fingertip_1"
+        {
+            point3f physics:centerOfMass = (0.0380727069, -5.02096408e-07, 0.127897517)
+            float3 physics:diagonalInertia = (2.49551989e-06, 6.22787911e-06, 7.40338649e-06)
+            float physics:mass = 0.0306611635
+            quatf physics:principalAxes = (-0.231281808, 0.231266382, 0.668221471, 0.668210035)
+        }
+        over "fingertip_2"
+        {
+            point3f physics:centerOfMass = (-0.0190244859, 0.0329641861, 0.127897518)
+            float3 physics:diagonalInertia = (2.49551988e-06, 6.22787938e-06, 7.4033867e-06)
+            float physics:mass = 0.0306611635
+            quatf physics:principalAxes = (0.534393297, 0.1338091, 0.694327757, 0.463063597)
+        }
+        over "fingertip_3"
+        {
+            point3f physics:centerOfMass = (-0.0190241473, -0.032965777, 0.127897518)
+            float3 physics:diagonalInertia = (2.49551994e-06, 6.22787937e-06, 7.40338669e-06)
+            float physics:mass = 0.0306611635
+            quatf physics:principalAxes = (-0.13382817, -0.53440094, 0.463045962, 0.69432996)
         }
             }
         }

@@ -1,10 +1,10 @@
 {
   "version": 1,
   "scope": "Robotiq_Hand_E_C10",
-  "input_hash": "83450857c33132ca282c9e875c7a43ce591cc3c5435807422969fa16d93bf4ad",
-  "commit": "0132583a9c8494ddee0e4a51f2a5b4f8b48eff45",
+  "input_hash": "bc7fd57eda0f8c3d7df52e46a78c78bf72509ff1218efdc82bd7835636fdbac0",
+  "commit": "571e8001f643fa76e9942c13c57a3c2930634aa1",
   "author": "l-t.schreiber@robotiq.com",
-  "date": "2026-10-30T13:53:48Z",
+  "date": "2026-10-30T15:01:56Z",
   "environment": {
     "isaac_sim": "6.2.0-rc.14+release.52805.02189a84.gl",
     "gpu": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 595.99.02",
