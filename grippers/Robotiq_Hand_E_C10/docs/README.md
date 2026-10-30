@@ -8,14 +8,18 @@ joint layout is different, so it cannot be one of its variants.
 | Variant set | Variants |
 | --- | --- |
 | `Physics` | `PhysX` *(default)*, `Newton`, `None` |
-| `Fingertip` | `Stepped` *(default)*, `Extender` |
+| `Fingertip` | `Stepped` *(default)*, `Extender`, `Flipped` |
 
 `Extender` mounts the finger extender (FINGER_EXTENDER_C10, D-041) on the finger and the stepped tip on the extender: the
 extender is a 12 mm wide, 9 mm tall bar that runs radially from 20.2 mm to 104.2 mm from the axis, its inner end (a 3 mm
 wide nose at z 114 to 123 mm) being the pad for small objects, and the stepped tip sits at its outer end, 36.5 mm further
 out and 8.0 mm higher than on the bare finger, which moves the tip's step to a larger diameter. Both placements were
 set by hand in Isaac Sim and decoded to pure translations (no rotation). The manual puts the TCP 8 mm further out with
-extenders, as here. The
+extenders, as here. `Flipped` is the default stepped tip turned upside down: a 180 degree rotation about the finger's radial axis through the
+middle of the pad (z 118.3 mm), so the pad keeps its radius and height and the tip's step and post point toward the flange.
+The same mesh and colliders are reused; only the tip's transform and the tip bodies' centre of mass change (same mass,
+30.7 g). The flipped tip's body overlaps the finger stub in the CAD frame (the tip spans z 81.6 to 123.1 mm against the
+stub's 98.4 to 121.8 mm): it is a simulation variant, not checked against a mountable CAD assembly. The
 long and short spacers are not variants yet: they still have to be placed on the finger (see
 [What is not done](#what-is-not-done)).
 

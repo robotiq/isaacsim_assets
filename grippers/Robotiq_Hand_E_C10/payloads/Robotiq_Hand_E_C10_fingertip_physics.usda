@@ -4,6 +4,7 @@
     # their PhysicsFixedJoints (welded to the finger stub, rigid like a screw). Sublayered by every Physics variant.
     #
     # Mass is 30.7 g per tip (aluminium 2700 kg/m^3 x CAD volume); centre of mass and moments from the baked mesh.
+    # With the Flipped variant the tip is the same body turned upside down about the pad's middle (same mass, moved centre of mass).
     # With the Extender variant the body is the tip moved onto the extender plus the extender (60.1 g: the manual's +180.2 g for
     # the three extenders with their screws): 90.7 g.
     # This layer only composes under a Physics variant, never under Physics = "None".
@@ -72,6 +73,32 @@ over "Robotiq_Hand_E_C10" (
             float3 physics:diagonalInertia = (8.97140066e-06, 5.16593918e-05, 5.77928326e-05)
             float physics:mass = 0.0907344968
             quatf physics:principalAxes = (0.650995238, 0.564645595, 0.425443883, 0.276365798)
+        }
+            }
+        }
+        "Flipped" {
+            over "Robotiq_Hand_E_C10"
+            {
+        over "fingertip_1"
+        {
+            point3f physics:centerOfMass = (0.0513272931, -5.02096408e-07, 0.108702483)
+            float3 physics:diagonalInertia = (2.49551989e-06, 6.22787911e-06, 7.40338649e-06)
+            float physics:mass = 0.0306611635
+            quatf physics:principalAxes = (0.668221471, -0.668210035, 0.231281808, 0.231266382)
+        }
+        over "fingertip_2"
+        {
+            point3f physics:centerOfMass = (-0.0256644204, 0.04446489, 0.108702482)
+            float3 physics:diagonalInertia = (2.49551988e-06, 6.22787938e-06, 7.4033867e-06)
+            float physics:mass = 0.0306611635
+            quatf physics:principalAxes = (-0.463045958, 0.694329969, -0.13382819, 0.534400926)
+        }
+        over "fingertip_3"
+        {
+            point3f physics:centerOfMass = (-0.0256628733, -0.0444643878, 0.108702482)
+            float3 physics:diagonalInertia = (2.49551994e-06, 6.22787937e-06, 7.40338669e-06)
+            float physics:mass = 0.0306611635
+            quatf physics:principalAxes = (0.694327771, -0.463063575, -0.534393299, 0.133809096)
         }
             }
         }
