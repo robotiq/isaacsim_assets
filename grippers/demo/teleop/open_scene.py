@@ -210,6 +210,23 @@ def _select_sensor(stage):
     if edit is None:
         return "no %s_edit prim; tactile sensor NOT selected" % asset
     notes = []
+    if SENSORSIM == "Precise":
+        # Deformable bodies and GPU dynamics must be on BEFORE the pads appear: PhysX parses (and auto-cooks) them as soon
+        # as the variant is selected, and cooked in the wrong mode it writes a different mesh into the scene's layer.
+        try:
+            import carb.settings
+            from pxr import PhysxSchema, UsdPhysics
+
+            carb.settings.get_settings().set("/physics/enableDeformableBodies", True)
+            for scene in (p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene)):
+                api = PhysxSchema.PhysxSceneAPI.Apply(scene)  # deformable bodies run on the GPU
+                api.CreateEnableGPUDynamicsAttr(True)
+                api.CreateBroadphaseTypeAttr("GPU")
+            notes.append("deformable bodies and GPU dynamics on (Precise is PhysX only)")
+        except Exception:
+            import traceback
+
+            traceback.print_exc()
     for name, want in (("Fingertip", FINGERTIP), ("SensorSim", SENSORSIM)):  # SensorSim is nested in Fingertip
         if not want:
             continue
@@ -221,16 +238,7 @@ def _select_sensor(stage):
         notes.append("%s -> %r" % (name, want))
     if SENSORSIM == "Precise":
         try:
-            import carb.settings
-            from pxr import PhysxSchema, UsdPhysics
-
-            carb.settings.get_settings().set("/physics/enableDeformableBodies", True)
-            for scene in (p for p in stage.Traverse() if p.IsA(UsdPhysics.Scene)):
-                api = PhysxSchema.PhysxSceneAPI.Apply(scene)  # deformable bodies run on the GPU
-                api.CreateEnableGPUDynamicsAttr(True)
-                api.CreateBroadphaseTypeAttr("GPU")
-            notes.append("deformable bodies and GPU dynamics on (Precise is PhysX only)")
-            # the gripper sits on the UR5e's wrist link, a rigid body: PhysX would not simulate the pads
+            # the pads were switched on before they appeared (above); free them from the wrist link now they exist
             sys.path.insert(0, os.path.join(_teleop_dir(), "..", ".."))
             from tactile import precise
 

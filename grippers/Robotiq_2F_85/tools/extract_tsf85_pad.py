@@ -11,7 +11,7 @@ Keeps ``/World/Deformable`` (the 432-node tetrahedral mesh, its material and its
 the rigid case, which is authored on the gripper instead. Two changes, both needed for the pad to carry a grip in
 Isaac Sim 6.2 (see tactile/PRECISE_PLAN.md): the material density is raised from the schema default (a 3 g pad, which the
 position-based solver cannot hold under a gripper's load) to ``PAD_DENSITY``, and the solver position iteration
-count is set to ``SOLVER_ITERATIONS``. The pad is also given the colour of the real sensor's pad. Needs Isaac Sim's ``pxr``:
+count is set to ``SOLVER_ITERATIONS``. The pad is also given the colour of the real sensor's pad, and the auto-cook APIs of the body are dropped (see main()). Needs Isaac Sim's ``pxr``:
 
     python3 tools/extract_tsf85_pad.py /path/to/TSF_85.usd
 """
@@ -46,6 +46,18 @@ def main(src: str) -> None:
     density = mat.attributes.get("omniphysics:density") or Sdf.AttributeSpec(
         mat, "omniphysics:density", Sdf.ValueTypeNames.Float)
     density.default = PAD_DENSITY
+    # The lab's body carries the auto-cook APIs (PhysxAutoDeformableBodyAPI, mesh simplification, hexahedral mesh): PhysX
+    # then re-cooks the simulation mesh from the 8-point source box when it decides its inputs changed. In a scene where the
+    # gripper hangs on a robot (the teleop demo) it does so at the first play and replaces the 432-node mesh by a different
+    # one (972 / 908 nodes), which breaks the attachments and the reader. The file already has the cooked meshes, so the
+    # body keeps only the schemas that simulate it.
+    parent.SetInfo("apiSchemas", Sdf.TokenListOp.CreateExplicit(
+        ["OmniPhysicsDeformableBodyAPI", "PhysxBaseDeformableBodyAPI", "MaterialBindingAPI"]))
+    for name in ("physxDeformableBody:resolution", "physxDeformableBody:deformableBodyDataCrc"):
+        if name in parent.attributes:
+            parent.RemoveProperty(parent.attributes[name])
+    if "physxDeformableBody:cookingSourceMesh" in parent.relationships:
+        parent.RemoveProperty(parent.relationships["physxDeformableBody:cookingSourceMesh"])
     shader = out.GetPrimAtPath("/Pad/Looks/Deformable_Material/Shader")
     shader.attributes["inputs:diffuse_color_constant"].default = PAD_COLOR
     shader.attributes["inputs:diffuse_tint"].default = (1.0, 1.0, 1.0)
