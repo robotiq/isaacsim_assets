@@ -31,7 +31,8 @@ parser.add_argument("--gate", type=float, default=None, help="tactile max_contac
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
-parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera (needs --enable_cameras), 1920 x 1080")
+parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera, 1920 x 1080")
+parser.add_argument("--hq_pressure_map", action="store_true", help="draw the TSF pressure map of both fingertips on the lower left of --hq_video")
 parser.add_argument("--hq_fps", type=int, choices=(120, 60, 30), default=60, help="frame rate of --hq_video: a frame every 120 / hq_fps physics steps (120, 60 or 30)")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
@@ -44,6 +45,7 @@ from isaaclab.sim import PinholeCameraCfg  # noqa: E402
 from isaaclab.utils.math import quat_from_matrix  # noqa: E402
 from isaaclab_tasks.utils import parse_env_cfg  # noqa: E402
 from robotiq_rl.tactile_pick import mdp as tp  # noqa: E402
+from robotiq_rl.tactile_pick.overlay import overlay_lower_left, pressure_panel  # noqa: E402
 from robotiq_rl.tactile_pick.env_cfg import BOX_CENTER, BOX_INNER, REACH_HALF, RIM_Z, TASK  # noqa: E402
 
 PICK, CARRY, RELEASE, BACK, RETURN = 0, 1, 2, 3, 4
@@ -100,7 +102,11 @@ def main():
             def render_and_capture(*a, **k):
                 out = hq_render(*a, **k)
                 hq_cam.update(1 / 120, force_recompute=True)
-                hq_writer.append_data(hq_cam.data.output["rgb"][0, ..., :3].cpu().numpy())
+                frame = hq_cam.data.output["rgb"][0, ..., :3].cpu().numpy()
+                if args_cli.hq_pressure_map:
+                    taxels = env.scene["tactile"].taxel_force[0].cpu().numpy()  # (2, 7, 4) N, after the sensor's contact-distance gate
+                    frame = overlay_lower_left(frame, pressure_panel(taxels))
+                hq_writer.append_data(frame)
                 return out
 
             env.sim.render = render_and_capture
