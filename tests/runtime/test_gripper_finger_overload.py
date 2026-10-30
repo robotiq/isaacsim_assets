@@ -2,16 +2,14 @@
 
 For both 2F grippers on Physx_compliant: the gripper is held open (finger_joint
 target 0). A force is applied straight on the left inner finger body, along its
-local Y, for PUSH_FRAMES frames, then released: +Y is the closing direction (the
-linkage used to fold past its stops and tear, #128), -Y the opening direction (the
-linkage used to flip into its second, crossed configuration, #127). The passive
-joints (inner knuckle, inner finger knuckle) used to be limited to +-180 deg, so
-nothing stopped either and the gripper stayed broken. Check:
+local Y, for PUSH_FRAMES frames, then released: +Y is the closing direction (#128:
+without limits on the passive joints (inner knuckle, inner finger knuckle) the
+linkage folds past its stops and tears and the gripper stays broken), -Y the opening
+direction (#127: the linkage flips into its second, crossed configuration). Check:
 
 While pushed:
 
-1. the inner knuckle stays within MAX_KNUCKLE of open (it is limited to ~52 deg;
-   folded or flipped it went to 180 deg or to the wrong side).
+1. the inner knuckle stays within MAX_KNUCKLE of open (its limit, ~52 deg).
 
 After the release:
 
@@ -45,15 +43,15 @@ JOINTS = (
 )
 KNUCKLES = ("left_inner_knuckle_joint", "right_inner_knuckle_joint")
 
-MAX_KNUCKLE = math.radians(60.0)  # limits are ~52 deg; the broken linkage reached 180
+MAX_KNUCKLE = math.radians(60.0)  # the inner knuckle limits are ~52 deg
 RESTORE_TOL = math.radians(1.0)
 REST_DRIFT = math.radians(0.1)
 
 # (direction name, sign of the push along the finger's local Y, forces in N)
 PUSHES = (("close", 1.0, (100.0, 200.0)), ("open", -1.0, (30.0, 100.0, 300.0)))
-# Still broken with the CAD limits of #165 (found when adding the -Y cases for #127): at 100 N the
-# 2F-85 is pushed to 131 deg and ends 306 deg off, and the 2F-140 blows up at every -Y force
-# (inner knuckle angles in the millions of degrees). Strict, so a fix turns them into failures to un-mark.
+# Still broken with the CAD limits of #165 (#127): at 100 N the 2F-85 is pushed to 131 deg and
+# ends 306 deg off, and the 2F-140 blows up at every -Y force (inner knuckle angles in the
+# millions of degrees). Strict, so a fix turns them into failures to un-mark.
 KNOWN_BROKEN = {
     ("Robotiq_2F_85", "open", 100.0),
     ("Robotiq_2F_140", "open", 30.0),
@@ -79,6 +77,7 @@ def test_gripper_finger_overload(
 ) -> None:
     scene = load_gripper(simulation_app, gripper, "Physx_compliant", view)
     robot = scene.robot
+    robot.set_dof_position_targets([[0.0]], dof_indices=[scene.dof("finger_joint")])
     step(simulation_app, SETTLE_FRAMES)
     dofs = [scene.dof(j) for j in JOINTS]
     knuckles = [JOINTS.index(j) for j in KNUCKLES]
