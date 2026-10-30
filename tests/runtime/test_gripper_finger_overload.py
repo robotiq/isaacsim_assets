@@ -50,11 +50,10 @@ REST_DRIFT = math.radians(0.1)
 # (direction name, sign of the push along the finger's local Y, forces in N)
 PUSHES = (("close", 1.0, (100.0, 200.0)), ("open", -1.0, (30.0, 100.0, 300.0)))
 # Still broken with the CAD limits of #165 (#127): at 100 N the 2F-85 is pushed to 131 deg and
-# ends 306 deg off, and the 2F-140 blows up at every -Y force (inner knuckle angles in the
+# ends 306 deg off, and the 2F-140 blows up at 100 N and 300 N (inner knuckle angles in the
 # millions of degrees). Strict, so a fix turns them into failures to un-mark.
 KNOWN_BROKEN = {
     ("Robotiq_2F_85", "open", 100.0),
-    ("Robotiq_2F_140", "open", 30.0),
     ("Robotiq_2F_140", "open", 100.0),
     ("Robotiq_2F_140", "open", 300.0),
 }
