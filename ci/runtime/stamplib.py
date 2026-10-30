@@ -45,14 +45,15 @@ def _ignored(cfg: dict, path: str) -> bool:
 
 
 def _owner(cfg: dict, path: str) -> str | None:
-    """The one scope a per-gripper data file (``per_gripper`` patterns, ``{scope}`` stands for a scope name)
-    belongs to, or None for any other file. ``Robotiq_Hand_E_C10.json`` matches ``{scope}_*.json`` of
-    ``Robotiq_Hand_E`` too, so the longest scope name wins."""
+    """The one scope a file of ``tests/runtime`` belongs to, or None for any other file (shared by every scope).
+    A per-gripper data file matches the ``per_gripper`` patterns (``{scope}`` stands for a scope name); a test
+    file that only exercises one gripper is listed in that scope's ``own`` patterns. ``Robotiq_Hand_E_C10.json``
+    matches ``{scope}_*.json`` of ``Robotiq_Hand_E`` too, so the longest scope name wins."""
     owners = [
         scope
-        for scope in cfg["scopes"]
-        for pattern in cfg.get("per_gripper", [])
-        if fnmatch.fnmatch(path, pattern.replace("{scope}", scope))
+        for scope, spec in cfg["scopes"].items()
+        for pattern in [p.replace("{scope}", scope) for p in cfg.get("per_gripper", [])] + spec.get("own", [])
+        if fnmatch.fnmatch(path, pattern)
     ]
     return max(owners, key=len) if owners else None
 

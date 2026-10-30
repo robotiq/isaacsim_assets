@@ -37,7 +37,8 @@ the other shared code changes the hash of every scope: every open PR that needs 
    scope's paths. Files under `shared` (the tests, the scene, the tactile and ROS 2 code) belong to every scope;
    `ignore` (docs, saved views, thumbnails) belongs to none. A per-gripper data file in `tests/runtime`
    (`cubes/Robotiq_2F_85.json`, `fixed_cubes/Robotiq_2F_85_compliant.json`, ...: the `per_gripper` patterns)
-   belongs to that gripper only, so tuning one gripper's baseline needs one run, not four.
+   belongs to that gripper only, so tuning one gripper's baseline needs one run, not four. So does a test file
+   listed in a scope's `own` patterns (`test_gripper_c10_*.py` for the C10: it only exercises that gripper).
 2. For each touched scope, the stamp named by the hash of that scope's files at the head exists, describes
    that scope and hash, records 0 failures and at least one pass, and was made with an accepted Isaac Sim version.
 
@@ -50,7 +51,7 @@ A PR that touches none of this needs no stamp. The check runs on the PR and agai
 
 | File | Content |
 |---|---|
-| `scopes.json` | the scopes and their paths, the `shared` paths, the `per_gripper` data patterns, the `gripper_roots`, the `ignore` patterns, the accepted Isaac Sim versions |
+| `scopes.json` | the scopes and their paths, the `shared` paths, the `per_gripper` data patterns and each scope's `own` test files, the `gripper_roots`, the `ignore` patterns, the accepted Isaac Sim versions |
 | `stamps/` | the committed stamps, one per scope (`stamp.py` removes the older ones) |
 
 `verify.py` reads `scopes.json` from the **base** branch, so a PR can't change its own rules, with one exception:

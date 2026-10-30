@@ -112,6 +112,18 @@ def test_a_per_gripper_file_counts_only_for_its_gripper(repo):
     assert stamplib.changed_scopes(root, cfg, other, "HEAD") == ["A", "AB"]  # anything else in tests/runtime is shared
 
 
+def test_a_test_file_listed_as_own_counts_only_for_its_gripper(repo):
+    root = repo
+    cfg = stamplib.load_config(json.dumps(CFG).encode())
+    cfg["scopes"]["A"] = {**cfg["scopes"]["A"], "own": ["tests/runtime/test_a_*.py"]}
+    base = run(root, "git", "rev-parse", "HEAD")
+    commit(root, "a's test", {"tests/runtime/test_a_grasp.py": "1"})
+    assert stamplib.changed_scopes(root, cfg, base, "HEAD") == ["A"]
+    other = run(root, "git", "rev-parse", "HEAD")
+    commit(root, "another test file", {"tests/runtime/test_b_grasp.py": "1"})
+    assert stamplib.changed_scopes(root, cfg, other, "HEAD") == ["A", "AB"]  # not listed: shared, as before
+
+
 def test_the_longest_scope_name_owns_a_per_gripper_file(repo):
     root = repo
     cfg = stamplib.load_config(json.dumps(CFG).encode())

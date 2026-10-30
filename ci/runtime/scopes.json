@@ -22,6 +22,6 @@
     "Robotiq_2F_85": {"paths": ["grippers/Robotiq_2F_85"]},
     "Robotiq_2F_140": {"paths": ["grippers/Robotiq_2F_140"]},
     "Robotiq_Hand_E": {"paths": ["grippers/Robotiq_Hand_E"]},
-    "Robotiq_Hand_E_C10": {"paths": ["grippers/Robotiq_Hand_E_C10"]}
+    "Robotiq_Hand_E_C10": {"paths": ["grippers/Robotiq_Hand_E_C10"], "own": ["tests/runtime/test_gripper_c10_*.py"]}
   }
 }
