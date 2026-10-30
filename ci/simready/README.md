@@ -19,6 +19,7 @@ every rejection cites an id from it (`SUB.*`, `SCAN.*`, `REVIEW.*`).
 |---|---|
 | `summarize.py` | Renders a `simready-validate` `results.json` as a pass/fail table and gates against the baseline (`expected/<asset>.json`, one per gripper). |
 | `stage_package.sh` | Copies an asset into the one intermediate folder SimReady requires (`<asset>/simready_usd/…`, NP.005), keeping the organized subfolders. Used to stage an asset before `simready-manage submit`. |
+| `thumbnail_black_bg.py` | Builds each gripper's standard thumbnail on a pure black background from its `_transparent` render (REVIEW.004); `--check` is the CI gate. See §3. |
 | `expected/author_mesh_extents_normals.py` | Dev helper: fills in `extent` + `normals` on CAD-imported meshes (the 2F-140 parts needed it for VG.002/VG.027). |
 
 ## Pipeline overview
@@ -153,6 +154,36 @@ submission.
 - **SCAN.004 sweep** before uploading (see *Prepare the asset*) — `submit` uploads
   whatever is present and SCAN.004 only fails *after* publication.
 - One **open PR per dataset**: close/merge an existing one before submitting again.
+
+## 3. Thumbnails — black background
+
+Each gripper ships three 256×256 renders in `.thumbs/256x256/`: the standard
+`<root>.usda.png`, plus `<root>.usda_light.png` and `<root>.usda_transparent.png`.
+SimReady Central's **REVIEW.004** requires the standard one to show the asset on a
+**black** background; NVIDIA flagged our #1A1A1A backgrounds on simready-central
+PR #74. Note the conflict: the SimReady Foundation
+[thumbnail guidelines](https://github.com/NVIDIA/simready-foundation/blob/main/nv_core/sr_specs/docs/guides/thumbnail_guidelines.md)
+and NVIDIA's `simready-thumbnail` tool (2026.8.0, `--background dark`) both use
+**#1A1A1A** for the dark variant. We follow the reviewer: **#000000**.
+
+The standard thumbnail is never rendered directly. It is the `_transparent`
+render (straight alpha) composited over #000000, so lighting, framing and
+antialiased edges are identical to the render:
+
+```bash
+python3 ci/simready/thumbnail_black_bg.py           # regenerate all grippers' <root>.usda.png
+python3 ci/simready/thumbnail_black_bg.py --check   # verify only (what CI runs)
+```
+
+After re-rendering a gripper (whatever the tool), replace its `_transparent` and
+`_light` images, then run the script to rebuild the standard one. The PNGs are
+Git LFS (`*.png` in `.gitattributes`). `simready-validate.yml` runs `--check` on
+the validated gripper and fails the gate if the background isn't black.
+
+The current renders (PR #116) use a straight-on front orthographic view so the
+logo reads at 256 px, not the guidelines' default three-quarter view. If you
+re-render with `simready-thumbnail`, pass `--background transparent` and composite
+with this script. Don't commit its `dark` output as-is: that is #1A1A1A.
 
 ## Versioning model
 
