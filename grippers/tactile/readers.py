@@ -281,8 +281,10 @@ class PreciseTactile(TactileSensor):
             back = np.array(cache.GetLocalToWorldTransform(backing))
             rest_body = precise.body_frame((np.hstack([rest, np.ones((len(rest), 1))]) @ pad_to_world)[:, :3],
                                            back[:3, :3].T, back[3, :3])
+            right = side == "right"
             self.pads[side] = {"mesh": mesh.GetPath().pathString, "to_world": pad_to_world, "rest_body": rest_body,
-                               "grid": precise.outer_layer_grid(rest, columns_along_pad_x=side == "right")}
+                               "grid": precise.outer_layer_grid(rest, columns_along_pad_x=right),
+                               "back": precise.outer_layer_grid(rest, columns_along_pad_x=right, back=True)}
         self.cnn = precise.TactileCnn()
 
     def _backing_poses(self) -> dict:
@@ -305,7 +307,7 @@ class PreciseTactile(TactileSensor):
         self._zero = {s: None for s in SIDES}
 
     def compression_images(self) -> dict[str, np.ndarray]:
-        """The CNN's input, per finger: ``(18, 12)`` compression in m (positive = pressed in), tared."""
+        """The CNN's input, per finger: ``(18, 12)`` thinning of the pad in m (positive = pressed in), tared."""
         from . import precise
 
         stage = omni_usd_stage()
@@ -315,11 +317,11 @@ class PreciseTactile(TactileSensor):
             pts = np.array(stage.GetPrimAtPath(pad["mesh"]).GetAttribute("points").Get(), dtype=np.float64)
             world = (np.hstack([pts, np.ones((len(pts), 1))]) @ pad["to_world"])[:, :3]
             rotation, position = poses[side]
-            dz = precise.compression(precise.body_frame(world, rotation, position), pad["rest_body"],
-                                     self.PAD_SIGN[side])
+            dz = precise.thickness_compression(precise.body_frame(world, rotation, position), pad["rest_body"],
+                                               pad["grid"], pad["back"], self.PAD_SIGN[side])
             if self._zero[side] is None:
                 self._zero[side] = dz.copy()
-            out[side] = (dz - self._zero[side])[pad["grid"]]
+            out[side] = dz - self._zero[side]
         return out
 
     def read_cnn(self) -> dict[str, np.ndarray]:

@@ -182,6 +182,24 @@ Upstream's `TSF_85.usd` (case made kinematic) with a 0.3 kg cube resting on the 
   - `Physx_compliant`: the finger closes to 1.5 rad on the box, crushes the pad and does not reopen: not supported.
   - Isaac lock hygiene: a headless script that created a new stage per case hit `omni.rtx: Out of resource descriptors` and hung
     for 45 minutes holding the lock; wrap runs in `timeout` (which also counts the queue wait) and watch the log for `Fatal`.
+- **Spike 13, the teleop demo (Isaac 6.2, UR5e + 2F-85, `TELEOP_SENSORSIM=Precise`):**
+  - The gripper hangs under the UR5e's rigid `wrist_3_link`: PhysX does not simulate a deformable under a rigid body
+    unless its xform stack is reset, so the pads were not attached to the fingertips. `precise.mount_pads` (called by
+    `open_scene.py` before play and by `PreciseTactile.prepare`) makes each pad's transform its current world pose with
+    the stack reset.
+  - In that scene PhysX re-cooked the pads at the first play (432 -> 972 / 908 nodes) because of the auto-cook APIs of the lab's
+    body (reproduced headless with the scene file; removing the APIs keeps 432): `TSF_85_pad.usd` now keeps only the schemas that simulate it.
+  - Looks: the backing collides as the CAD housing hull cut at the pad's back face (`tools/extract_tsf85_backing.py`),
+    is not drawn, the rigid TactilePad is drawn transparent, the deformable has the real pad's colour.
+  - PhysX simplifies the backing hull to 64 vertices: with the 0.5 mm attach distance only 205 / 198 of 216 back-layer nodes
+    attached; 1 mm attaches all (`PRECISE_ATTACH_OFFSET`).
+  - Data check with ground truth (headless, teleop scene, kinematic 40 mm cube, finger driven closed): the compression
+    measured against the backing frame had a uniform +-55 um offset of opposite sign on the two pads (poses agreed to 0.0004
+    deg, the open pad drifts < 3 um): replaced by the **thickness change** (outer node vs the back-layer node behind it), which
+    ignores how the pad sits on its backing (background about -10 um). The cube was not aligned with the gripper (yawed ~34 deg
+    from the world axes), so it touched the pads along its edge: a line / spot at a different place on each pad. With a cube
+    aligned to the gripper the contact is a flat patch of only ~12 um (a bonded 3 mm layer at tens of N): small for a network
+    of 1.6 mm full scale.
 - **Environment gotchas:** run pytest for Isaac with `env -u PYTHONPATH -u AMENT_PREFIX_PATH ...`, otherwise the
   ROS Humble pytest plugins load and fail on a missing module; the throwaway spike is
   `tests/runtime/test_precise_spike.py` (not committed).

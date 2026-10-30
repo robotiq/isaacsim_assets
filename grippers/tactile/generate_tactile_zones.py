@@ -65,8 +65,9 @@ PRECISE_BACKING_MASS = 0.003  # kg
 # The rigid backing collides as the real sensor does: the convex hull of the CAD housing (parts/TSF_85_case.usd) cut at the
 # deformable's back face; Robotiq_2F_85/tools/extract_tsf85_backing.py writes it, one hull per finger.
 PRECISE_HULL = GRIPPERS / "Robotiq_2F_85" / "tools" / "tsf85_backing_hull.json"
-# pad nodes this close to the backing are attached to it (the lab's 4 mm would attach the whole 3 mm pad)
-PRECISE_ATTACH_OFFSET = 0.0005  # m
+# pad nodes this close to the backing are attached to it: the 216 back-layer nodes (PhysX simplifies the backing hull to 64
+# vertices, which recesses its face near the edges by up to ~1 mm); the lab's 4 mm would attach the whole 3 mm pad
+PRECISE_ATTACH_OFFSET = 0.001  # m
 # the attachment PhysX cooks for those pads: tools/capture_tsf85_pad_attachment.py
 PRECISE_ATTACHMENT = GRIPPERS / "Robotiq_2F_85" / "tools" / "tsf85_pad_attachment.usda"
 

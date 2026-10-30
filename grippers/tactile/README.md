@@ -109,9 +109,14 @@ images = sensor.compression_images()   # {"left": (18, 12), ...}: pad compressio
   units, so it is a map of where and how hard the pad is pressed, to be compared with itself. It is 0 at rest (the
   network's response to no compression is subtracted) and follows the contact: for a bump moved over the pad its
   centroid moves with it, but the map is smeared toward its centre (the network's own behaviour).
-- **Compression:** per node of the outer layer, how far it moved toward the backing along the pad normal, in the
-  frame of the backing body (so the finger's own motion does not count), positive when pressed in. The compression at the first `read` (the pad at rest) is
-  the zero; `tare()` sets it again. Rows run from the fingertip end, columns along the finger's +X, for both fingers.
+- **Compression:** per cell of the outer layer, how much thinner the pad got there: the distance along the pad normal from
+  the outer node to the back-layer node behind it, against its rest value, in the frame of the backing body (so neither the
+  finger's own motion nor the pad sliding on its backing counts), positive when pressed in. The first `read` (the pad at rest)
+  is the zero; `tare()` sets it again. Rows run from the fingertip end, columns along the finger's +X, for both fingers.
+- **What to expect:** a flat object aligned with the pads gives a patch of the contact's shape; an object that meets the pad
+  along an edge or corner (a cube not aligned with the gripper, e.g. at a yawed wrist) gives a line or a spot, and the two
+  pads can show it at different places. A flat grasp of a few tens of newtons thins the bonded 3 mm layer by only some
+  10-20 um, which is a small input for a network whose full scale is 1.6 mm: its map is then small too.
 - **Signal size:** a grip of about 10 N on the 12 × 16.5 mm test box compresses the pad by about 0.12 mm (of the
   network's 1.6 mm full scale); the map then reads around 130, and about 0 at rest (the rest noise is a few µm).
 - **Pad density:** the lab's file leaves the pad's density at the schema default, a 3 g pad. PhysX's position-based

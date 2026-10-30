@@ -8,8 +8,8 @@ pad is a 12 (x) x 18 (z) x 2 (y) lattice of 432 nodes, 3 mm thick; its outer lay
 frame) touches the object. The network of that lab (``data/tactile_cnn.onnx``) turns the compression of the 216
 outer-layer nodes, laid out as an 18 x 12 image, into a 7 x 4 tactile map:
 
-    compression = how far each node of the outer layer moved toward the backing, along the pad normal,
-                  in the backing's frame (m), minus the same at rest
+    compression = how much thinner the pad got at each outer node, along the pad normal, in the backing's frame (m):
+                  the distance to the back-layer node behind it, against its rest value
     image       = compression / the_max, rows from the fingertip end, columns along the finger's +X
     map         = network(image) - network(0)
 
@@ -30,8 +30,9 @@ IMAGE_ROWS, IMAGE_COLS = 18, 12  # network input: the outer layer's nodes, z by 
 MAP_ROWS, MAP_COLS = 7, 4  # network output
 
 
-def outer_layer_grid(rest_points: np.ndarray, columns_along_pad_x: bool = True) -> np.ndarray:
-    """Node index of each cell of the 18 x 12 image: ``(IMAGE_ROWS, IMAGE_COLS)``.
+def outer_layer_grid(rest_points: np.ndarray, columns_along_pad_x: bool = True, back: bool = False) -> np.ndarray:
+    """Node index of each cell of the 18 x 12 image: ``(IMAGE_ROWS, IMAGE_COLS)``. ``back``: the back layer (the one the
+    backing holds) instead of the outer one, in the same cell order.
 
     ``rest_points``: ``(N, 3)`` nodes at rest in the pad's file frame (x across, y through the 3 mm layer, z along).
     Rows run from the highest z (the fingertip end) down; columns along +x, or along -x when
@@ -39,8 +40,9 @@ def outer_layer_grid(rest_points: np.ndarray, columns_along_pad_x: bool = True) 
     run along the finger's +X).
     """
     pts = np.asarray(rest_points, dtype=np.float64)
-    # the outer layer is the lowest-y plane of the lattice
-    outer = np.where(np.isclose(pts[:, 1], pts[:, 1].min(), atol=1e-5))[0]
+    # the outer layer is the lowest-y plane of the lattice, the back layer the highest
+    plane = pts[:, 1].max() if back else pts[:, 1].min()
+    outer = np.where(np.isclose(pts[:, 1], plane, atol=1e-5))[0]
     xs = np.unique(np.round(pts[outer, 0], 5))
     zs = np.unique(np.round(pts[outer, 2], 5))[::-1]
     if len(xs) != IMAGE_COLS or len(zs) != IMAGE_ROWS or len(outer) != IMAGE_ROWS * IMAGE_COLS:
@@ -110,6 +112,18 @@ def compression(points_body: np.ndarray, rest_body: np.ndarray, sign: float = 1.
     mirror one.
     """
     return sign * (np.asarray(points_body)[:, 1] - np.asarray(rest_body)[:, 1])
+
+
+def thickness_compression(points_body: np.ndarray, rest_body: np.ndarray, outer: np.ndarray, back: np.ndarray,
+                          sign: float = 1.0) -> np.ndarray:
+    """``(IMAGE_ROWS, IMAGE_COLS)``: how much thinner the pad got at each cell, along the body's y, positive when pressed in.
+
+    The thickness at a cell is the distance along the pad normal from its outer node to the back-layer node behind it
+    (``outer`` / ``back``: the node grids of ``outer_layer_grid``). It does not depend on how the whole pad sits on its
+    backing, only on how much it is squeezed. ``sign``: as in ``compression``."""
+    pts, rest = np.asarray(points_body), np.asarray(rest_body)
+    thickness = sign * (pts[back, 1] - pts[outer, 1])
+    return sign * (rest[back, 1] - rest[outer, 1]) - thickness
 
 
 class TactileCnn:

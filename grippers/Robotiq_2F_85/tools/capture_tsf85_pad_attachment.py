@@ -45,7 +45,7 @@ def setup(stage):
             Sdf.Path(f"/World/Gripper/{GRIPPER}/{side}_pad_backing"))
         assert ok, side
         stage.GetPrimAtPath(f"/World/Gripper/{side}_pad_attach_gen").GetAttribute(
-            "physxAutoDeformableAttachment:deformableVertexOverlapOffset").Set(float(sys.argv[1]) if len(sys.argv) > 1 else 0.0005)
+            "physxAutoDeformableAttachment:deformableVertexOverlapOffset").Set(float(sys.argv[1]) if len(sys.argv) > 1 else 0.001)
     built["stage"] = stage
 
 

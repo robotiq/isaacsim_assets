@@ -66,6 +66,21 @@ def test_compression_is_positive_when_pressed_in(sign):
     assert np.allclose(precise.compression(rest, pressed, sign), -0.0004)
 
 
+@pytest.mark.parametrize("sign", [1.0, -1.0])
+def test_thickness_compression_ignores_how_the_pad_sits_on_its_backing(sign):
+    """Sliding or shifting the whole pad along the normal changes nothing; thinning it at a cell does."""
+    rest = pad_nodes()
+    outer, back = precise.outer_layer_grid(rest), precise.outer_layer_grid(rest, back=True)
+    assert not set(outer.ravel()) & set(back.ravel())
+    shifted = rest.copy()
+    shifted[:, 1] += sign * 0.00006  # the whole pad moves 60 um
+    assert np.allclose(precise.thickness_compression(shifted, rest, outer, back, sign), 0.0, atol=1e-12)
+    pressed = rest.copy()
+    pressed[outer[5, 4], 1] += sign * 0.0004  # one outer node moves 0.4 mm toward the backing
+    img = precise.thickness_compression(pressed, rest, outer, back, sign)
+    assert img[5, 4] == pytest.approx(0.0004) and np.count_nonzero(img) == 1
+
+
 @pytest.fixture(scope="module")
 def cnn():
     pytest.importorskip("onnxruntime")
