@@ -1,15 +1,17 @@
-"""An outside load on an open 2F finger must not fold the four-bar past its stops.
+"""An outside load on an open 2F finger must not break the four-bar.
 
 For both 2F grippers on Physx_compliant: the gripper is held open (finger_joint
 target 0). A force is applied straight on the left inner finger body, along its
-local +Y (the closing direction), for PUSH_FRAMES frames, then released. The
-passive joints (inner knuckle, inner finger knuckle) used to be limited to +-180
-deg, so the load folded the linkage over and it stayed broken (#128). Check:
+local Y, for PUSH_FRAMES frames, then released: +Y is the closing direction (the
+linkage used to fold past its stops and tear, #128), -Y the opening direction (the
+linkage used to flip into its second, crossed configuration, #127). The passive
+joints (inner knuckle, inner finger knuckle) used to be limited to +-180 deg, so
+nothing stopped either and the gripper stayed broken. Check:
 
 While pushed:
 
 1. the inner knuckle stays within MAX_KNUCKLE of open (it is limited to ~52 deg;
-   folded over it reached 180 deg).
+   folded or flipped it went to 180 deg or to the wrong side).
 
 After the release:
 
@@ -47,11 +49,34 @@ MAX_KNUCKLE = math.radians(60.0)  # limits are ~52 deg; the broken linkage reach
 RESTORE_TOL = math.radians(1.0)
 REST_DRIFT = math.radians(0.1)
 
-CASES = [(g, f) for g in ("Robotiq_2F_85", "Robotiq_2F_140") for f in (100.0, 200.0)]
+# (direction name, sign of the push along the finger's local Y, forces in N)
+PUSHES = (("close", 1.0, (100.0, 200.0)), ("open", -1.0, (30.0, 100.0, 300.0)))
+# Still broken with the CAD limits of #165 (found when adding the -Y cases for #127): at 100 N the
+# 2F-85 is pushed to 131 deg and ends 306 deg off, and the 2F-140 blows up at every -Y force
+# (inner knuckle angles in the millions of degrees). Strict, so a fix turns them into failures to un-mark.
+KNOWN_BROKEN = {
+    ("Robotiq_2F_85", "open", 100.0),
+    ("Robotiq_2F_140", "open", 30.0),
+    ("Robotiq_2F_140", "open", 100.0),
+    ("Robotiq_2F_140", "open", 300.0),
+}
+CASES = [
+    pytest.param(
+        g, d, sign, f,
+        id=f"{g}-{d}-{int(f)}N",
+        marks=pytest.mark.xfail(strict=True, reason="#127: still breaks with the #165 limits")
+        if (g, d, f) in KNOWN_BROKEN else (),
+    )
+    for g in ("Robotiq_2F_85", "Robotiq_2F_140")
+    for d, sign, forces in PUSHES
+    for f in forces
+]
 
 
-@pytest.mark.parametrize(("gripper", "force"), CASES, ids=[f"{g}-{int(f)}N" for g, f in CASES])
-def test_gripper_finger_overload(simulation_app, view, gripper: str, force: float) -> None:
+@pytest.mark.parametrize(("gripper", "direction", "sign", "force"), CASES)
+def test_gripper_finger_overload(
+    simulation_app, view, gripper: str, direction: str, sign: float, force: float
+) -> None:
     scene = load_gripper(simulation_app, gripper, "Physx_compliant", view)
     robot = scene.robot
     step(simulation_app, SETTLE_FRAMES)
@@ -65,7 +90,7 @@ def test_gripper_finger_overload(simulation_app, view, gripper: str, force: floa
     q_open = joints()
     peak = 0.0  # largest |inner knuckle| while pushed
     for _ in range(PUSH_FRAMES):
-        finger.apply_forces([[0.0, force, 0.0]], local_frame=True)
+        finger.apply_forces([[0.0, sign * force, 0.0]], local_frame=True)
         simulation_app.update()
         peak = max(peak, max(abs(float(joints()[i])) for i in knuckles))
     step(simulation_app, RELEASE_FRAMES - SAMPLE_FRAMES)
@@ -78,13 +103,13 @@ def test_gripper_finger_overload(simulation_app, view, gripper: str, force: floa
     q = samples[-1]
     spread = [max(s[i] for s in samples) - min(s[i] for s in samples) for i in range(len(JOINTS))]
     print(
-        f"{gripper} {force:.0f} N: inner knuckle peak {math.degrees(peak):.1f} deg while pushed; after release "
+        f"{gripper} {direction} {force:.0f} N: inner knuckle peak {math.degrees(peak):.1f} deg while pushed; after release "
         + ", ".join(f"{j}={math.degrees(float(v - o)):+.2f}" for j, v, o in zip(JOINTS, q, q_open))
         + " deg from open"
     )
 
     # 1. the linkage does not fold over
-    assert peak <= MAX_KNUCKLE, f"inner knuckle reached {math.degrees(peak):.1f} deg while pushed: folded past its stop"
+    assert peak <= MAX_KNUCKLE, f"inner knuckle reached {math.degrees(peak):.1f} deg while pushed: past its stop"
     # 2. back to the original configuration, at rest
     for j, v, o, sp in zip(JOINTS, q, q_open, spread):
         assert abs(v - o) <= RESTORE_TOL, f"{j} {math.degrees(float(v - o)):+.1f} deg from open after the release"
