@@ -147,8 +147,12 @@ def Xform "Robotiq_2F_140"
 
             # inner_finger / inner_finger_knuckle limits: CAD collision sweep from
             # gripper_joint_limits_report, rounded inward. The right side mirrors the left.
-            # The inner_finger end at -99.3 deg (left; mirrored on the right) is
-            # unresolved in the report: a lower bound, not a measured contact angle.
+            # inner_finger: the joint angle is positive while closing on the left (negative on
+            # the right, which mirrors it). Limits [-51, +44] deg on the left. Opening end -51:
+            # the compliant pad reaches -50.8 deg when the outer finger is swung out 17 deg, and
+            # the CAD contact angle is -54.4 deg. Closing end +44: the tip is held about 1 deg
+            # short of where the loop would put it at the 45 deg driver limit (the compliant loop
+            # absorbs it; the driver still reaches 45 deg).
             def PhysicsRevoluteJoint "left_inner_finger_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
             )
@@ -160,8 +164,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, -0.095238, 0.131208)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -99.3
-                float physics:upperLimit = 54.4
+                float physics:lowerLimit = -51
+                float physics:upperLimit = 44
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
@@ -177,8 +181,8 @@ def Xform "Robotiq_2F_140"
                 point3f physics:localPos1 = (0, 0.095238, 0.131208)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -54.4
-                float physics:upperLimit = 99.3
+                float physics:lowerLimit = -44
+                float physics:upperLimit = 51
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
