@@ -39,7 +39,7 @@ def _fmt(x: float, unit: str) -> str:
 _REVOLUTE_2F = Spec(
     driven="finger_joint",
     follower="right_outer_knuckle_joint",
-    target=0.8,  # ~46 deg; finger_joint upper limit is 47 deg
+    target=math.radians(47.0),  # the finger_joint upper limit: the 2F-85 closes all the way to it
     open_tol=math.radians(1.0),
     close_tol=math.radians(2.0),
     unit="deg",
