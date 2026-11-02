@@ -1,6 +1,65 @@
 # Plan: `SensorSim = Precise` (TSF-85 deformable-pad sensor)
 
-Status: **plan; spikes done, implemented (variant, reader, CNN, tests, docs); density 4e4 chosen (spike 12); next: runtime test green, SimReady validation, PR, nothing implemented yet.** Branch `kepler/add-tsf-precise-variant`.
+Status: **see the handoff above; the sections below are the working notes, in the order the work was done (earlier notes can be superseded by later ones, e.g. the density and stiffness choices).**
+
+# Handoff: where the work stands (2026-11-02)
+
+**One line:** `SensorSim=Precise` is built, stable and looks like the real sensor, but **the map it gives is not validated and was judged
+"really bad / almost random" by the person who tried it in the teleop demo**. Nothing here can be checked against the lab's data until the
+lab answers (https://github.com/Lab-CORO/TSF-85/issues/2). PR #168 is open; its runtime-stamp check fails (stale stamps, see below).
+
+## What works (verified, Isaac Sim 6.2, PhysX only)
+
+- The variant composes, cooks and runs on the 2F-85 (`Physx_parallel_grip`); both pads follow the fingers; a closed gripper on the
+  tactile test box gives a patch under the box (`tests/runtime/test_tactile_precise.py`, 2 tests) and the map returns to ~0 on release.
+- On a robot (the teleop demo, gripper under the UR5e's rigid `wrist_3_link`) the pads are simulated and attached
+  (`precise.mount_pads`, spike 13), keep their authored 432 nodes (the lab's auto-cook APIs were removed from `TSF_85_pad.usd`) and the
+  live heatmap comes up (`TELEOP_SENSORSIM=Precise TELEOP_PHYSICS=Physx_parallel_grip ./run_demo.sh`).
+- Looks and collides like the real sensor: the backing is the CAD housing's convex hull cut at the pad's back face (hidden), the real
+  housing / engraving / screws show, the rigid TactilePad is drawn transparent, the deformable has the real pad's colour.
+- Newton is refused with a clear error; the unit tests (`tests/unit/test_precise.py`) and the PR's SimReady / tooling checks pass.
+
+## What does not work, or is not known
+
+1. **The map is not validated.** The input to the lab's network is built by us (outer layer by position, rows from the fingertip end,
+   columns along +X, value = thinning of the pad / 1.616 mm, sign positive = pressed): chosen so a synthetic contact is followed, not
+   checked against the lab's data. Their `sensor_config.json` `node_ids` are NOT a spatial grid in the numbering of `TSF_85.usd`
+   (133 outer-layer + 83 back-layer nodes, scattered); the name `Nodes_id_filtered_1812` suggests their runtime mesh had ~1812 nodes,
+   i.e. PhysX had re-cooked the pad (as it did in our teleop scene, 972 / 908 nodes), so the ids are for a mesh we do not have.
+   The units of the 28 outputs and `norm_params.json` are unknown. The lab was asked (issue above).
+2. **Pad stiffness is a calibration, not physics.** The lab says E = 1.289 MPa; at that modulus a bonded 3 mm layer thins 10-30 um
+   under a flat grasp and the network (full scale 1.6 mm) gets ~no signal. We use **E = 50 kPa** (`PAD_YOUNGS`, tools/extract_tsf85_pad.py)
+   because the lab's own simulated pad was effectively 25-75 kPa (spike 2/14). This put a flat cube at ~0.4-0.5 mm over its footprint,
+   an edge contact at the pad's full 3 mm over ~20 cells. The person who tried it still found the result bad; no screenshot was kept,
+   so we do not know in which way (noise at rest? not following the contact? saturated?).
+3. **Pad density 4e4 kg/m3 is a numerical stabilisation** (the lab's file has the schema default, a 3 g pad that PhysX's position-based
+   solver crushes under any grip whatever E). Effect on the data is small (2e4-4e4 gave the same grasp data in the teleop scene).
+4. `Physx_compliant` is not supported (the finger over-closes on the test box, crushes the pad, does not reopen).
+5. A cube not aligned with the gripper (the demo's wrist is yawed ~34 deg from the world axes) touches the pads along an edge: a line or
+   spot at a different place on each pad. That is physics, but it looks odd in the demo.
+6. No force calibration; the map is "network units". The teleop demo path is wired but was only checked by eye by one person.
+7. The PR's runtime stamps (`ci/runtime/stamps/*`, four grippers, because `grippers/tactile` is a shared path) are **stale**: they were
+   made before spikes 13-14 (pad asset, payload, reader changed). Rerun `ci/runtime/stamp.py` (about 25 min of Isaac) before merging.
+
+## How to pick it up
+
+- Code: `grippers/tactile/{precise.py, readers.py (PreciseTactile), generate_tactile_zones.py (precise_layer), data/}`,
+  `grippers/Robotiq_2F_85/{parts/TSF_85_pad.usd, payloads/..._tactile_precise.usda (generated), tools/{extract_tsf85_pad.py,
+  extract_tsf85_backing.py, capture_tsf85_pad_attachment.py, tsf85_pad_attachment.usda, tsf85_backing_hull.json}}`,
+  demo: `grippers/demo/teleop/open_scene.py` (Precise block), tests: `tests/unit/test_precise.py`, `tests/runtime/test_tactile_precise.py`.
+- **Debug tool:** `grippers/tactile/dev/precise_teleop_grasp.py`, a headless grasp with ground truth in the teleop scene (about a minute;
+  `--aligned`, `--shift`, `--young`, `--density`, `--images`). Use it to compare pad softness, input conventions and the reader quickly.
+- Regenerate assets: `python3 grippers/tactile/generate_tactile_zones.py`; the pad from the lab's `TSF_85.usd`:
+  `tools/extract_tsf85_pad.py <path>/TSF_85.usd` (Isaac's pxr; the lab's file is `assets/TSF_85.usd` of their repo);
+  after any change to the pad or backing placement/shape re-run `tools/capture_tsf85_pad_attachment.py` and the generator.
+- **Best next step:** get the lab's answers (units, `norm_params.json`, a few recorded runs of deformations + maps, the mesh the ids belong
+  to). With their recordings, feed the same deformations to our input construction and compare the maps; that settles the orientation,
+  sign, scale and the pad stiffness. Without it, either keep `Precise` marked experimental or drop the CNN and offer the deformable pad
+  with a plain pressure/thinning map (no lab network, no unknown units), which is verifiable.
+- Environment gotchas: run pytest / Isaac with `env -u PYTHONPATH -u AMENT_PREFIX_PATH -u COLCON_PREFIX_PATH` (ROS Humble's pytest plugins break
+  Isaac's Python); a new 6.2 stage defaults to Newton (call `SimulationManager.switch_physics_engine("physx")`); wrap Isaac runs in
+  `timeout` (it also counts the lock-queue wait) and watch for `omni.rtx Fatal`: one run hung 45 min holding the shared lock;
+  `onnxruntime` must be installed in Isaac's Python; the 5.1 install on the dev machine segfaults at startup (no 5.1 comparison was possible).
 
 ## Goal
 
