@@ -143,8 +143,11 @@ def Xform "Robotiq_2F_85"
 
             # inner_finger / inner_finger_knuckle limits: CAD collision sweep from
             # gripper_joint_limits_report, rounded inward. The right side mirrors the left.
-            # The inner_finger end at -79.5 deg (left; mirrored on the right) is
-            # unresolved in the report: a lower bound, not a measured contact angle.
+            # inner_finger: the joint angle is positive while closing on the left (negative on
+            # the right, which mirrors it). Opening end -42 deg (left): beyond the -41.1 deg the
+            # compliant pad reaches when the outer finger is swung and the -29.8 deg the pusher
+            # test needs, inside the -74.2 deg CAD contact angle. Closing end +74.2 deg: clear of
+            # the 47 deg driver range (not a measured contact).
             def PhysicsRevoluteJoint "left_inner_finger_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
             )
@@ -156,7 +159,7 @@ def Xform "Robotiq_2F_85"
                 point3f physics:localPos1 = (0, -0.06881, 0.09741)
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
-                float physics:lowerLimit = -79.5
+                float physics:lowerLimit = -42
                 float physics:upperLimit = 74.2
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
@@ -174,7 +177,7 @@ def Xform "Robotiq_2F_85"
                 quatf physics:localRot0 = (0.5, 0.5, 0.5, 0.5)
                 quatf physics:localRot1 = (0.5, 0.5, 0.5, 0.5)
                 float physics:lowerLimit = -74.2
-                float physics:upperLimit = 79.5
+                float physics:upperLimit = 42
                 float state:angular:physics:position = 0
                 float state:angular:physics:velocity = 0
             }
