@@ -145,6 +145,7 @@ def main():
         prim.AddAppliedSchema("PhysxConvexDecompositionCollisionAPI")
         prim.CreateAttribute("physxConvexDecompositionCollision:maxConvexHulls", Sdf.ValueTypeNames.Int).Set(16)
         prim.CreateAttribute("physxConvexDecompositionCollision:hullVertexLimit", Sdf.ValueTypeNames.Int).Set(64)
+        UsdPhysics.RigidBodyAPI.Apply(root.GetPrim())  # Isaac Lab's RigidObject needs the rigid body on the root prim
         UsdPhysics.MassAPI.Apply(root.GetPrim()).CreateDensityAttr(DENSITY)
 
         # visual material: the diffuse atlas
