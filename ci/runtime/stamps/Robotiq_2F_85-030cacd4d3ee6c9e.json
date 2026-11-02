@@ -1,10 +1,10 @@
 {
   "version": 1,
   "scope": "Robotiq_2F_85",
-  "input_hash": "f049c40f2b99a965ef489ee5f4440b23c8fe247803b2b1903eb2f4d99c7773d9",
-  "commit": "3284da2eb590fc7efd2ed0a675d322285f276d1e",
+  "input_hash": "030cacd4d3ee6c9e8ab9d5582aab0f13f0a6d5bee15ae50580e366d21bf613f4",
+  "commit": "123d4e8e004b9be71b9e06a870cbab294846ec02",
   "author": "l-t.schreiber@robotiq.com",
-  "date": "2026-11-02T20:39:56Z",
+  "date": "2026-11-02T23:24:23Z",
   "environment": {
     "isaac_sim": "6.2.0-rc.14+release.52805.02189a84.gl",
     "gpu": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 595.99.02",
