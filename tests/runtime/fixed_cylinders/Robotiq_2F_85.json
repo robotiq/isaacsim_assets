@@ -11,42 +11,42 @@
   ],
   "recorded": {
     "Physx_parallel_grip": {
-      "finger_joint_deg": 21.13,
-      "right_outer_knuckle_joint_deg": 21.13,
+      "finger_joint_deg": 21.221,
+      "right_outer_knuckle_joint_deg": 21.221,
       "left_fingertip_rotation_deg": 0.056,
       "right_fingertip_rotation_deg": 0.04
     },
     "Physx_compliant": {
-      "finger_joint_deg": 27.832,
-      "right_outer_knuckle_joint_deg": 27.643,
-      "left_fingertip_rotation_deg": 13.138,
-      "right_fingertip_rotation_deg": 12.773
+      "finger_joint_deg": 27.325,
+      "right_outer_knuckle_joint_deg": 27.221,
+      "left_fingertip_rotation_deg": 11.163,
+      "right_fingertip_rotation_deg": 11.119
     },
     "Newton_parallel_grip": {
-      "finger_joint_deg": 21.246,
-      "right_outer_knuckle_joint_deg": 21.246,
+      "finger_joint_deg": 21.339,
+      "right_outer_knuckle_joint_deg": 21.339,
       "left_fingertip_rotation_deg": 0.0,
       "right_fingertip_rotation_deg": 0.0
     },
     "Newton_compliant": {
-      "finger_joint_deg": 33.186,
-      "right_outer_knuckle_joint_deg": 33.186,
-      "left_fingertip_rotation_deg": 22.847,
-      "right_fingertip_rotation_deg": 22.892
+      "finger_joint_deg": 32.649,
+      "right_outer_knuckle_joint_deg": 32.648,
+      "left_fingertip_rotation_deg": 20.099,
+      "right_fingertip_rotation_deg": 20.137
     }
   },
   "expected": {
     "parallel_grip": {
-      "finger_joint_deg": 21.188,
-      "right_outer_knuckle_joint_deg": 21.188,
+      "finger_joint_deg": 21.28,
+      "right_outer_knuckle_joint_deg": 21.28,
       "left_fingertip_rotation_deg": 0.028,
       "right_fingertip_rotation_deg": 0.02
     },
     "compliant": {
-      "finger_joint_deg": 30.509,
-      "right_outer_knuckle_joint_deg": 30.415,
-      "left_fingertip_rotation_deg": 17.992,
-      "right_fingertip_rotation_deg": 17.832
+      "finger_joint_deg": 29.987,
+      "right_outer_knuckle_joint_deg": 29.934,
+      "left_fingertip_rotation_deg": 15.631,
+      "right_fingertip_rotation_deg": 15.628
     }
   }
 }

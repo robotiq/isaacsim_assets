@@ -143,8 +143,8 @@ over "Robotiq_2F_85"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_finger>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/right_inner_knuckle>
                 uniform bool physics:excludeFromArticulation = 1
-                point3f physics:localPos0 = (0, 0.04986, 0.1046)
-                point3f physics:localPos1 = (0, 0.04986, 0.1046)
+                point3f physics:localPos0 = (0, 0.05091, 0.10392)
+                point3f physics:localPos1 = (0, 0.05091, 0.10392)
                 quatf physics:localRot0 = (1, 0, 0, 0)
                 quatf physics:localRot1 = (1, 0, 0, 0)
             }
@@ -158,8 +158,8 @@ over "Robotiq_2F_85"
                 rel physics:body0 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_finger>
                 rel physics:body1 = </Robotiq_2F_85/Robotiq_2F_85/left_inner_knuckle>
                 uniform bool physics:excludeFromArticulation = 1
-                point3f physics:localPos0 = (0, -0.04986, 0.1046)
-                point3f physics:localPos1 = (0, -0.04986, 0.1046)
+                point3f physics:localPos0 = (0, -0.05091, 0.10392)
+                point3f physics:localPos1 = (0, -0.05091, 0.10392)
                 quatf physics:localRot0 = (0, 0, 0, 1)
                 quatf physics:localRot1 = (0, 0, 0, 1)
             }

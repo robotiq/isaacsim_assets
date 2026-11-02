@@ -59,8 +59,9 @@ GRIPPER_TOL = {
 PHYSX_HZ = 1000  # as in test_gripper_grasp.py: 60 Hz mis-resolves a stiff squeeze
 REST_DRIFT = math.radians(0.1)  # each joint moves less than this over the sampled frames
 # The 2F-85 Newton_compliant finger is still ringing down slowly after it hits the cylinder (a lightly
-# damped oscillation, a little of it left in the sampled frames), so it gets a looser rest limit.
-CASE_REST_DRIFT = {("Robotiq_2F_85", "Newton_compliant"): math.radians(0.25)}
+# damped oscillation, a little of it left in the sampled frames), so it gets a looser rest limit. With
+# the joint anchors on the CAD pin holes it leaves 0.39 deg in the sampled frames (0.25 deg before).
+CASE_REST_DRIFT = {("Robotiq_2F_85", "Newton_compliant"): math.radians(0.5)}
 
 CASES = [
     (g, p)

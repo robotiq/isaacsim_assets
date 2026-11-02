@@ -89,7 +89,7 @@ def _cases(*axes) -> list:
 SENSOR_CASES = _cases(SENSORS)
 CASES = [pytest.param(g, s, p, id=f"{g}-{s}-{p}") for g in GRIPPERS for s in SENSORS for p in MODELS[s].physics]
 SCALE_PHYSICS = ("Physx_parallel_grip", "Newton_parallel_grip")
-SCALE_CASES = [c for c in CASES if c.values[2] in SCALE_PHYSICS]  # _known() below, once KNOWN_FAILURES exists
+SCALE_CASES = [c for c in CASES if c.values[2] in SCALE_PHYSICS]
 EFFECTIVE_SCALE_CASES = [c for c in SCALE_CASES if c.values[1] == "effective"]
 RAYCAST_CASES = _cases(MODELS["raycast"].physics)
 # On Newton_parallel_grip the 2F-140's pads do not stay parallel under the grip: they pitch 1.3 / 1.7 deg along
@@ -108,7 +108,6 @@ def _known(params: list) -> list:
 
 
 EFFECTIVE_CASES = _known(_cases(MODELS["effective"].physics))
-SCALE_CASES, EFFECTIVE_SCALE_CASES = _known(SCALE_CASES), _known(EFFECTIVE_SCALE_CASES)
 # One static box (a collider, no body), as a fixture or a table edge: PhysX contact against a static collider and
 # Newton's world body as the object. On the 2F-85, where its load split stays well conditioned.
 STATIC_CASES = [pytest.param("Robotiq_2F_85", "effective", p, "static", id=f"Robotiq_2F_85-effective-{p}-static")
