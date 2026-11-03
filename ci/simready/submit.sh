@@ -83,6 +83,10 @@ step() { echo; echo "== $* =="; }
 [ "${#GRIPPERS[@]}" -gt 0 ] || { echo "no gripper given (e.g. Robotiq_2F_85)" >&2; exit 2; }
 [[ "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(_[0-9]{2})?$ ]] || { echo "bad --version '$VERSION' (YYYY.MM.DD)" >&2; exit 2; }
 [ -n "${SIMREADY_DIR:-}" ] || { echo "SIMREADY_DIR is not set (see ci/simready/README.md, one-time setup)" >&2; exit 2; }
+[ -d "$SIMREADY_DIR" ] || { echo "SIMREADY_DIR=$SIMREADY_DIR is not a directory" >&2; exit 2; }
+# Absolute: step 9 runs simready-manage from $SIMREADY_DIR/workspace, where a relative
+# path would no longer resolve the project config or the staged folders.
+SIMREADY_DIR="$(realpath "$SIMREADY_DIR")"
 VENV="$SIMREADY_DIR/.venv-submit"
 CONFIG="$SIMREADY_DIR/workspace/project_config.toml"
 [ -x "$VENV/bin/simready-manage" ] || { echo "no simready-manage in $VENV (one-time setup not done?)" >&2; exit 2; }
