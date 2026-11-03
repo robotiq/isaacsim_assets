@@ -31,11 +31,14 @@ parser.add_argument("--gate", type=float, default=None, help="tactile max_contac
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
 parser.add_argument("--regrasp", action="store_true", help="shape task: put the carried piece down, release it and grasp it again, centred, at the same place; the tactile maps of that second grasp are what --recognizer / --record_grasps use")
+parser.add_argument("--no_centre", action="store_true", help="--regrasp: do not shift the second grasp by the offset of the piece on the pads, estimated from the tactile maps of the first")
 parser.add_argument("--recognizer", default=None, help="shape task: a recogniser (joblib, scripts/fit_recognizer.py) that names every piece the policy lifts; the accuracy is printed and the name shown in --hq_video")
 parser.add_argument("--record_grasps", default=None, help="shape task: save the tactile history and the true class of every piece the policy lifts (for the recogniser) to this .npz")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera, 1920 x 1080")
 parser.add_argument("--hq_pressure_map", action="store_true", help="draw the TSF pressure map of both fingertips on the lower left of --hq_video")
+parser.add_argument("--hq_eye", type=float, nargs=3, default=(1.15, -0.75, 0.75), help="camera position of --hq_video (env frame, m)")
+parser.add_argument("--hq_look", type=float, nargs=3, default=(0.5, 0.0, 0.1), help="the point the camera of --hq_video looks at")
 parser.add_argument("--hq_fps", type=int, choices=(120, 60, 30), default=60, help="frame rate of --hq_video: a frame every 120 / hq_fps physics steps (120, 60 or 30)")
 add_launcher_args(parser)
 args_cli, hydra_overrides = parser.parse_known_args()
@@ -91,7 +94,7 @@ def main():
         env_cfg.video_recorders = [VideoRecorderCfg(source="viz", output_dir=args_cli.video, video_length=total)]
     if args_cli.hq_video:
         env_cfg.sim.render_interval = 120 // args_cli.hq_fps  # a render (and a frame) every this many physics steps
-        eye, target = torch.tensor([1.15, -0.75, 0.75]), torch.tensor([0.5, 0.0, 0.1])  # the viewer's camera
+        eye, target = torch.tensor(args_cli.hq_eye), torch.tensor(args_cli.hq_look)  # default: the viewer's camera
         fwd = (target - eye) / (target - eye).norm()
         right = torch.linalg.cross(fwd, torch.tensor([0.0, 0.0, 1.0]))
         right = right / right.norm()
@@ -140,6 +143,7 @@ def main():
         timer = torch.zeros(n, device=dev)
         did_regrasp = torch.zeros(n, dtype=torch.bool, device=dev)
         place_xy = torch.zeros(n, 2, device=dev)
+        regrasp_off = torch.zeros(n, 2, device=dev)  # horizontal offset of the piece from the pads' centre, from the tactile footprint of the first grasp
         picked = torch.zeros(n, dtype=torch.long, device=dev)
         last_pick = torch.zeros(n, device=dev)
         active = torch.ones(n, dtype=torch.bool, device=dev)
@@ -172,7 +176,7 @@ def main():
 
             recognize = joblib.load(args_cli.recognizer)
             confusion = torch.zeros(6, 6, dtype=torch.long)
-        if args_cli.record_grasps or recognize is not None:
+        if args_cli.record_grasps or recognize is not None or args_cli.regrasp:
             from robotiq_rl.shape_pick import mdp as shape_mdp
             from robotiq_rl.shape_pick.env_cfg import SLOT_TYPES
 
@@ -180,6 +184,7 @@ def main():
             hist_maps = torch.zeros(n, HIST, 56, device=dev)
             hist_closure = torch.zeros(n, HIST, device=dev)
             rec = {"maps": [], "closure": [], "label": [], "pad_force": [], "n_picked": []}
+            dbg = []
 
         def spheres_in_box(zone_only=False):
             s = tp.get_state(env, TASK)
@@ -215,11 +220,26 @@ def main():
                         e0 = int((ids == 0).nonzero()[0])
                         caption["text"] = f"recognised: {recog_lib.CLASSES[int(guess[e0])]}"
                         print(f"t={t:5d} env0: recognised {recog_lib.CLASSES[int(guess[e0])]} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
+                if args_cli.regrasp:
+                    off_now = (s.sphere_pos[ids, nearest] - s.tcp[ids]).cpu()
+                    loaded = (f_sph[ids].sum((-1, -2)) > 1.0).cpu()
+                    dbg.append(torch.cat([off_now, loaded[:, None].float(), regrasp_off[ids].cpu()], 1))
                 rec["maps"].append(hist_maps[ids].cpu())
                 rec["closure"].append(hist_closure[ids].cpu())
                 rec["label"].append(slot_type[nearest].cpu())
                 rec["pad_force"].append(f_sph[ids].sum(-1).cpu())
                 rec["n_picked"].append(picked[ids].cpu())
+            if args_cli.regrasp and not args_cli.no_centre and bool(start_carry.any()):
+                ids = start_carry.nonzero().flatten()
+                m = hist_maps[ids, -4:].mean(1).reshape(-1, 2, 7, 4)  # (k, pad, row, col) [N]
+                col = (m.sum(2) * torch.arange(4, device=dev)).sum(-1) / (m.sum((2, 3)) + 1e-6)  # force-weighted column of each pad
+                tw = env.scene["tactile"].taxel_positions_w[ids].reshape(-1, 2, 7, 4, 3)
+                axis = (tw[:, :, :, 3] - tw[:, :, :, 0]).mean(2)  # (k, pad, 3): the direction of increasing column, in the world
+                axis = axis / (axis.norm(dim=-1, keepdim=True) + 1e-9)
+                pitch = (tw[:, :, :, 3] - tw[:, :, :, 0]).mean(2).norm(dim=-1) / 3  # m per column
+                off = ((col - 1.5) * pitch)[..., None] * axis  # (k, pad, 3)
+                w = m.sum((2, 3))
+                regrasp_off[ids] = ((off[..., :2] * w[..., None]).sum(1) / (w.sum(1, keepdim=True) + 1e-6)).clamp(-0.03, 0.03)
             phase = torch.where(start_carry, torch.full_like(phase, CARRY), phase)
             did_regrasp = did_regrasp & ~start_carry
             target = drop_point(picked, *((0.11, 0.14) if args_cli.regrasp else (0.07, 0.07)))
@@ -242,7 +262,7 @@ def main():
             back_act[:, 2] = 0.5
             back_act[:, 6] = -1.0
             place, adjust, regrasp = phase == PLACE, phase == ADJUST, phase == REGRASP
-            hold_xy = (GAIN * (place_xy - tcp[:, :2])).clamp(-1, 1)
+            hold_xy = (GAIN * (place_xy + regrasp_off - tcp[:, :2])).clamp(-1, 1)
             place_act = torch.zeros_like(act)
             place_act[:, 0:2] = (GAIN * (target - tcp[:, :2])).clamp(-1, 1)
             place_act[:, 2] = (GAIN * (Z_PLACE - tcp[:, 2])).clamp(-1, 1) * 0.5
@@ -328,7 +348,7 @@ def main():
                 meas["max_geom"] = max(meas["max_geom"], float((plain - old).abs().max()))
             caption["phase"] = int(phase[0])
             obs, *_ = env.step(act)
-            if args_cli.record_grasps or recognize is not None:  # the maps after this step (what the next decision sees): a rolling history
+            if args_cli.record_grasps or recognize is not None or args_cli.regrasp:  # the maps after this step (what the next decision sees): a rolling history
                 hist_maps = torch.cat([hist_maps[:, 1:], shape_mdp.tactile_map_shape(env, log_scale=False)[:, None]], dim=1)
                 hist_closure = torch.cat([hist_closure[:, 1:], env.scene["robot"].data.joint_pos.torch[:, s.finger_id][:, None]], dim=1)
         left = spheres_in_box()
@@ -346,6 +366,12 @@ def main():
             print(f"RESULT gate: env-steps where it changes the map by > 0.01 N: {meas['gate_changes']} ({100 * meas['gate_changes'] / max(meas['contact'], 1):.2f} % of the steps with contact)")
             print(f"RESULT gate: share of the total tactile force it removes: {100 * meas['removed'] / max(meas['total'], 1e-9):.3f} %; largest change of one taxel {meas['max_gate']:.2f} N")
             print(f"RESULT geometry: largest difference of one taxel between the old rounded grid and the exact one: {meas['max_geom']:.3f} N")
+        if args_cli.regrasp and dbg:
+            dd = torch.cat(dbg)
+            ld = dd[:, 3] > 0.5
+            print(f"RESULT regrasp: {int(ld.sum())} of {len(dd)} second grasps hold the piece; offset of the piece from the tool point (cm, world x y z) "
+                  f"median |.| of those that hold {(dd[ld, :3].abs().median(0).values * 100).tolist()}, of those that do not {(dd[~ld, :3].abs().median(0).values * 100).tolist() if (~ld).any() else '-'}; "
+                  f"median |estimated offset| {(dd[:, 4:].norm(dim=-1).median() * 100):.2f} cm")
         if recognize is not None:
             total = int(confusion.sum())
             correct = int(confusion.diag().sum())

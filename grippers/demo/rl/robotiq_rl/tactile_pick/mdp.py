@@ -362,6 +362,8 @@ class TaskState:
             + w["grasp"] * self.held * (0.5 + 0.5 * self.sym)
             + w["stable"] * self.stable
             + w["lift"] * self.lift_progress
+            # optional (0 for the spheres): a grasp that holds the object's centre near the tool point, 1 within 1.5 cm, 0 beyond 5.5 cm
+            + w.get("centre", 0.0) * self.held * (1.0 - ((dmin - 0.015) / 0.04).clamp(0, 1))
         )
         self.shaping = torch.where(was_fresh, torch.zeros_like(phi), c["gamma"] * phi - self.phi_prev)
         self.phi_prev = phi

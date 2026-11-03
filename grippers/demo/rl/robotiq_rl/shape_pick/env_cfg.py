@@ -22,7 +22,12 @@ from . import mdp as sp
 # The tactile pick's task constants with one change: a grasped piece's centre is farther from the tool point than a sphere's (the pieces are
 # up to 6.6 cm wide and held anywhere along the pads; measured while both pads press a piece: median 3.5 cm, p90 4.1 cm), so the "held" test
 # of the rewards needs a larger distance than the 3 cm of the spheres. With 3 cm the policy was rewarded for only 6 % of its grasps.
-SHAPE_TASK = {**base.TASK, "hold_dist": 0.055}
+SHAPE_TASK = {
+    **base.TASK,
+    "hold_dist": 0.055,
+    # and a reward for holding the piece near the middle of the pads: a centred grasp is a better one and gives a cleaner tactile map to recognise it from
+    "shaping_weights": {**base.TASK["shaping_weights"], "centre": 2.0},
+}
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "shape_sorter"
 PIECES = ["rectangle", "pentagon", "cross", "cylinder", "star", "square"]  # the class names, in class order
