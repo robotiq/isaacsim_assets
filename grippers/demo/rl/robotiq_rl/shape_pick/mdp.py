@@ -102,24 +102,37 @@ def tactile_map_gaussian(env: ManagerBasedRLEnv, log_scale: bool = True) -> torc
 _RECOGNIZERS: dict = {}
 
 
-def r_recognise(env: ManagerBasedRLEnv, cfg: dict, model_path: str) -> torch.Tensor:
-    """Reward at the step a pick completes: the probability the (frozen, calibrated) recogniser gives to the true class of the held piece.
+def r_recognise(env: ManagerBasedRLEnv, cfg: dict, model_path: str, every: int = 8) -> torch.Tensor:
+    """Reward when a pick completes: the probability the (frozen, calibrated) recogniser gives to the true class of the held piece.
 
-    The policy is paid for holding pieces in a way that can be recognised from the maps of the grasp. ``(E,)``, 0 where no pick completes."""
+    The policy is paid for holding pieces in a way that can be recognised from the maps of the grasp. The classifier runs on the CPU and is
+    slow to call (about 0.3 s whatever the batch), so the pick events are collected and scored together every ``every`` steps: the
+    reward comes at most ``every`` steps (0.27 s) after the pick. ``(E,)``, 0 where nothing is scored."""
+    import numpy as np
+
     from .env_cfg import SLOT_TYPES
 
     state = tp.get_state(env, cfg)
-    ids = state.success.nonzero().flatten()
     out = torch.zeros(env.num_envs, device=env.device)
-    if len(ids) == 0 or not hasattr(env, "_shape_hist_maps"):
-        return out
-    import joblib
-    import numpy as np
+    pend = getattr(env, "_rec_pending", None)
+    if pend is None:
+        pend = env._rec_pending = {"ids": [], "maps": [], "closure": [], "truth": []}
+    ids = state.success.nonzero().flatten()
+    if len(ids) and hasattr(env, "_shape_hist_maps"):
+        pend["ids"].append(ids)
+        pend["maps"].append(env._shape_hist_maps[ids].clone())
+        pend["closure"].append(env._shape_hist_closure[ids].clone())
+        pend["truth"].append(torch.tensor(SLOT_TYPES, device=env.device)[state.near[ids]])
+    if pend["ids"] and env.common_step_counter % every == 0:
+        import joblib
 
-    from . import recognizer
+        from . import recognizer
 
-    model = _RECOGNIZERS.setdefault(model_path, joblib.load(model_path))
-    _, proba = recognizer.decide(model, env._shape_hist_maps[ids].cpu().numpy(), env._shape_hist_closure[ids].cpu().numpy())
-    truth = torch.tensor(SLOT_TYPES, device=env.device)[state.near[ids]].cpu().numpy()
-    out[ids] = torch.tensor(proba[np.arange(len(ids)), truth], dtype=torch.float32, device=env.device)
+        model = _RECOGNIZERS.setdefault(model_path, joblib.load(model_path))
+        ids, maps, closure, truth = (torch.cat(pend[k]) for k in ("ids", "maps", "closure", "truth"))
+        for k in pend:
+            pend[k].clear()
+        _, proba = recognizer.decide(model, maps.cpu().numpy(), closure.cpu().numpy())
+        p_true = torch.tensor(proba[np.arange(len(ids)), truth.cpu().numpy()], dtype=torch.float32, device=env.device)
+        out.index_add_(0, ids, p_true)
     return out
