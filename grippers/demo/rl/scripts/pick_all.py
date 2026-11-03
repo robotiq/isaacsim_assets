@@ -31,6 +31,7 @@ parser.add_argument("--gate", type=float, default=None, help="tactile max_contac
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
 parser.add_argument("--regrasp", action="store_true", help="shape task: put the carried piece down, release it and grasp it again, centred, at the same place; the tactile maps of that second grasp are what --recognizer / --record_grasps use")
+parser.add_argument("--putback_speed", type=float, default=2.0, help="speed [rad/s] of every joint when an unknown piece is taken to the put-back poses")
 parser.add_argument("--no_centre", action="store_true", help="--regrasp: do not shift the second grasp by the offset of the piece on the pads, estimated from the tactile maps of the first")
 parser.add_argument("--recognizer", default=None, help="shape task: a recogniser (joblib, scripts/fit_recognizer.py) that names every piece the policy lifts; the accuracy is printed and the name shown in --hq_video")
 parser.add_argument("--record_grasps", default=None, help="shape task: save the tactile history and the true class of every piece the policy lifts (for the recogniser) to this .npz")
@@ -54,12 +55,17 @@ from robotiq_rl.tactile_pick import mdp as tp  # noqa: E402
 from robotiq_rl.tactile_pick.overlay import overlay_lower_left, pressure_panel  # noqa: E402
 from robotiq_rl.tactile_pick.env_cfg import BOX_CENTER, BOX_INNER, REACH_HALF, RIM_Z, TASK  # noqa: E402
 
-PICK, CARRY, RELEASE, BACK, RETURN, PLACE, ADJUST, REGRASP = 0, 1, 2, 3, 4, 5, 6, 7
+PICK, CARRY, RELEASE, BACK, RETURN, PLACE, ADJUST, REGRASP, PUTBACK = 0, 1, 2, 3, 4, 5, 6, 7, 8
+# Putting an unknown piece back in the box: the arm goes to a fixed joint pose, then to a second one, and lets go there. Joint angles
+# [rad] of shoulder_pan, shoulder_lift, elbow, wrist_1, wrist_2, wrist_3 for the tool tip at (x, y, z) in the env frame, pointing down
+# (from tactile_pick/start_poses.npz; the box centre is (0.5, 0)).
+PUT_BACK_ABOVE = (-0.2534, -1.6529, 1.9059, -2.0038, -1.6055, -0.8434)  # tool tip at (0.5, 0.0, 0.28): above the box centre, the piece clears the rim
+PUT_BACK_RELEASE = (-0.2534, -1.5247, 2.1176, -2.3437, -1.6055, -0.8434)  # tool tip at (0.5, 0.0, 0.16): the piece about 10 cm above the floor
+ARM_JOINTS = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
 Z_PLACE = 0.055  # m: tool-tip height at which a carried piece is put down on the table (--regrasp)
 Z_GRASP = 0.026  # m: tool-tip height of the second grasp: the pads at the middle of a piece lying on the table
 HOME_Z = 0.28  # m: tool-tip height above the box centre where the policy takes over again (inside its training starts)
 CARRY_Z = 0.22  # m: tool tip height while carrying (sphere bottom ~ 18 cm: clear of the 11 cm walls)
-CARRY_Z_UNKNOWN = 0.17  # m: tool tip height when an unknown piece is carried to a point inside the box and released (the piece ~10 cm above the floor, 2 cm above the rim)
 GAIN = 60.0  # action per metre of error (an action of 1 is 1 cm per step)
 
 
@@ -143,7 +149,24 @@ def main():
         held_count = torch.zeros(n, device=dev)
         timer = torch.zeros(n, device=dev)
         did_regrasp = torch.zeros(n, dtype=torch.bool, device=dev)
-        unk_target = torch.zeros(n, 2, device=dev)  # where an unknown piece is put back: the point of the box (in the tool tip's reach) nearest to where it was held
+        pb_stage = torch.zeros(n, dtype=torch.long, device=dev)  # 0: going to PUT_BACK_ABOVE, 1: going to PUT_BACK_RELEASE
+        pb_goal = torch.zeros(n, 6, device=dev)
+        pb_active = torch.zeros(n, dtype=torch.bool, device=dev)
+        robot = env.scene["robot"]
+        arm_ids = robot.find_joints(ARM_JOINTS, preserve_order=True)[0]
+        # the arm actions are Cartesian: for the envs that put a piece back the joint targets are overwritten right before every physics
+        # step, moving each joint towards the goal at --putback_speed (the IK term, with a zero command, holds the pose the rest of the time)
+        write_data_to_sim = env.scene.write_data_to_sim
+
+        def write_with_joint_goal():
+            if pb_active.any():
+                ids = pb_active.nonzero().flatten()
+                q = robot.data.joint_pos.torch[ids][:, arm_ids]
+                step = args_cli.putback_speed * env.physics_dt
+                robot.set_joint_position_target_index(target=q + (pb_goal[ids] - q).clamp(-step, step), joint_ids=arm_ids, env_ids=ids)
+            write_data_to_sim()
+
+        env.scene.write_data_to_sim = write_with_joint_goal
         unk = torch.zeros(n, dtype=torch.bool, device=dev)  # the piece in the gripper was "unknown": it is put back in the box, not carried out
         place_xy = torch.zeros(n, 2, device=dev)
         regrasp_off = torch.zeros(n, 2, device=dev)  # horizontal offset of the piece from the pads' centre, from the tactile footprint of the first grasp
@@ -181,6 +204,8 @@ def main():
             confusion = torch.zeros(6, 7, dtype=torch.long)  # rows: the piece, columns: the six answers, then "unknown"
             events = []  # (env, slot, step, true class, answer or -1): every time a piece is held and read
             checks, landed = [], []  # where a put-back piece lies 150 steps after it is let go
+            carried = []  # distance of the piece to the tool point when the release pose is reached: still in the gripper?
+            held_slot = torch.zeros(n, dtype=torch.long, device=dev)  # the slot of the piece in the gripper, at the last reading
         if args_cli.record_grasps or recognize is not None or args_cli.regrasp:
             from robotiq_rl.shape_pick import mdp as shape_mdp
             from robotiq_rl.shape_pick.env_cfg import SLOT_TYPES
@@ -225,10 +250,7 @@ def main():
                         events.append((int(ids[k]), int(nearest[k]), t, int(tr), int(g)))
                     if not args_cli.regrasp:  # "unknown": not carried out, put back in the box (released where it is, above the box)
                         unknown_ids = ids[torch.tensor(guess < 0, device=dev)]
-                        lo, hi = centre - reach + 0.02, centre + reach - 0.02  # 2 cm inside the reachable zone
-                        unk_target[unknown_ids] = torch.maximum(torch.minimum(s.tcp[unknown_ids, :2], hi), lo)
-                        for k in (guess < 0).nonzero()[0]:
-                            checks.append((int(ids[k]), int(nearest[k]), t + 150))
+                        held_slot[ids] = nearest
                         unk_now[unknown_ids] = True
                         unk |= unk_now
                     if bool(trigger[0]):
@@ -261,17 +283,18 @@ def main():
                 w = m.sum((2, 3))
                 regrasp_off[ids] = ((off[..., :2] * w[..., None]).sum(1) / (w.sum(1, keepdim=True) + 1e-6)).clamp(-0.03, 0.03)
             phase = torch.where(start_carry, torch.full_like(phase, CARRY), phase)
+            phase = torch.where(unk_now, torch.full_like(phase, PUTBACK), phase)  # an unknown piece is not carried out: back into the box
+            pb_stage = torch.where(unk_now, torch.zeros_like(pb_stage), pb_stage)
+            timer = torch.where(unk_now, torch.zeros_like(timer), timer)
             did_regrasp = did_regrasp & ~start_carry
             target = drop_point(picked, *((0.11, 0.14) if args_cli.regrasp else (0.07, 0.07)))
-            target = torch.where(unk[:, None], unk_target, target)  # an unknown piece is carried to a point inside the box instead, and released there
             to_target = torch.cat([target - tcp[:, :2], torch.zeros(n, 1, device=dev)], dim=-1)
             carry = phase == CARRY
-            cz = torch.where(unk, torch.full_like(tcp[:, 2], CARRY_Z_UNKNOWN), torch.full_like(tcp[:, 2], CARRY_Z))
-            reached = (to_target[:, :2].norm(dim=-1) < 0.02) & ((tcp[:, 2] - cz).abs() < 0.03)
+            reached = (to_target[:, :2].norm(dim=-1) < 0.02) & ((tcp[:, 2] - CARRY_Z).abs() < 0.03)
             # carry: rise first, then go sideways at carry height, gripper closed
-            low = tcp[:, 2] < cz - 0.03
+            low = tcp[:, 2] < CARRY_Z - 0.03
             vxy = torch.where(low[:, None], torch.zeros(n, 2, device=dev), (GAIN * to_target[:, :2]).clamp(-1, 1))
-            vz = (GAIN * (cz - tcp[:, 2])).clamp(-1, 1)
+            vz = (GAIN * (CARRY_Z - tcp[:, 2])).clamp(-1, 1)
             scripted = torch.zeros_like(act)
             scripted[:, 0:2] = vxy
             scripted[:, 2] = vz
@@ -283,6 +306,9 @@ def main():
             back_act = torch.zeros_like(act)
             back_act[:, 2] = 0.5
             back_act[:, 6] = -1.0
+            putback = phase == PUTBACK
+            pb_act = torch.zeros_like(act)
+            pb_act[:, 6] = 1.0  # the piece stays held; the joint targets are set by write_with_joint_goal
             place, adjust, regrasp = phase == PLACE, phase == ADJUST, phase == REGRASP
             hold_xy = (GAIN * (place_xy + regrasp_off - tcp[:, :2])).clamp(-1, 1)
             place_act = torch.zeros_like(act)
@@ -304,13 +330,31 @@ def main():
             act = torch.where(use(carry), scripted, act)
             act = torch.where(use(release), rel_act, act)
             act = torch.where(use(back), back_act, act)
+            act = torch.where(use(putback), pb_act, act)
             act = torch.where(use(place), place_act, act)
             act = torch.where(use(adjust), adjust_act, act)
             act = torch.where(use(regrasp), regrasp_act, act)
             act = torch.where(use(ret), ret_act, act)
             act = torch.where(use(~active), torch.zeros_like(act).index_fill_(1, torch.tensor([6], device=dev), -1.0), act)
             # --- phase transitions
-            timer = torch.where(carry | release | back | ret | place | adjust | regrasp, timer + 1, torch.zeros_like(timer))
+            timer = torch.where(carry | release | back | ret | place | adjust | regrasp | putback, timer + 1, torch.zeros_like(timer))
+            goal_a = torch.tensor(PUT_BACK_ABOVE, device=dev)
+            goal_b = torch.tensor(PUT_BACK_RELEASE, device=dev)
+            pb_goal = torch.where((pb_stage == 0)[:, None], goal_a, goal_b)
+            q_arm = robot.data.joint_pos.torch[:, arm_ids]
+            pb_err = (q_arm - pb_goal).abs().amax(-1)
+            at_above = putback & (pb_stage == 0) & (pb_err < 0.03)
+            at_release = putback & (pb_stage == 1) & ((pb_err < 0.03) | (timer > 400))
+            pb_stage = torch.where(at_above, torch.ones_like(pb_stage), pb_stage)
+            phase = torch.where(at_release, torch.full_like(phase, RELEASE), phase)
+            timer = torch.where(at_release, torch.zeros_like(timer), timer)
+            pb_active = (phase == PUTBACK)
+            if recognize is not None:
+                for e in at_release.nonzero().flatten().tolist():
+                    checks.append((e, int(held_slot[e]), t + 150))
+                    carried.append(float((s.sphere_pos[e, int(held_slot[e])] - tcp[e]).norm()))
+            if bool(at_release[0]):
+                print(f"t={t:5d} env0: put-back pose reached, tool tip at {[round(v, 3) for v in tcp[0].tolist()]}")
             to_release = carry & (reached | (timer > 300))
             to_place = to_release & args_cli.regrasp
             to_release = to_release & ~to_place
@@ -414,6 +458,10 @@ def main():
             print("RESULT                 " + " ".join(f"{n[:5]:>5s}" for n in recog_lib.CLASSES) + "  unkn")
             for i, name in enumerate(recog_lib.CLASSES):
                 print(f"RESULT   {name:10s} " + " ".join(f"{int(v):5d}" for v in confusion[i]) + f"   recall when answered {int(confusion[i, i]) / max(int(confusion[i, :6].sum()), 1):.2f}, unknown {int(confusion[i, 6]) / max(int(confusion[i].sum()), 1):.0%}")
+            if carried:
+                cd = torch.tensor(carried)
+                print(f"RESULT put back, at the release pose: {int((cd < 0.06).sum())} of {len(cd)} pieces are still in the gripper (within 6 cm of the tool point), "
+                      f"median distance {cd.median() * 100:.1f} cm")
             if landed:
                 lp = torch.stack(landed)
                 rel = (lp[:, :2] - torch.tensor(BOX_CENTER)).abs()
