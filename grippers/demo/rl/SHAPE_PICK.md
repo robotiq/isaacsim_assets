@@ -79,6 +79,16 @@ What did not work: putting the carried piece down, releasing it and grasping it 
 the second grasp holds the piece in only 40 % of the attempts, because the piece lies beside the open fingers, not between them; the
 footprint of the first grasp is nearly always centred on the pad, so it cannot say where the piece is.
 
+## Video
+
+<video src="docs/recognition_demo.mp4" controls width="800"></video>
+
+[`docs/recognition_demo.mp4`](docs/recognition_demo.mp4) (1080p, 60 fps, RTX render): the first 33 s of one run (seed 42, one env), with the
+pressure map of the two fingertips (the maps the policy and the recogniser receive) and the recogniser's answer in the panel: it finds,
+lifts and names a pentagon and a rectangle, both correct, and drops them beside the box. It is an excerpt: the next piece of that run, 100 s
+later, is named a cylinder and is a square. The accuracy over many runs is the 65 % above; with one env a run only has a few pieces.
+Recorded with the `pick_all.py` command below (`--steps 1000 --seed 42`, camera `--hq_eye 1.0 -0.55 0.62 --hq_look 0.5 0 0.08`).
+
 ## Run it
 
 ```bash

@@ -48,6 +48,10 @@ find them next to the package from an editable install; with another install, pa
    (sigma 6 mm) and normalised, so the taxels of a pad sum to the force the pad carries. Objects add up. A contact farther than
    8 mm (`max_contact_distance`) from every taxel is not on the sensing area (the back or the side of the finger, the part of the
    pad outside the array) and reads nothing, instead of showing up at full force on the nearest taxels.
+   When the shape of the touched object is known there is a second spreading, `spread_forces_by_distance`: the force goes to the taxels
+   that touch the object (those within a few mm of its surface, given each taxel's distance to it), which shows the footprint of a flat face,
+   a cylinder or a star instead of a blob (used by `grippers/demo/rl/SHAPE_PICK.md`; `TactileSensor.taxel_force_of` gives the Gaussian map of
+   some of the objects only, for tasks that model the others themselves).
 
 The logic of steps 1-3 is in pure torch functions (`sensing.py`), which `tests/unit` runs without Isaac Lab; `isaaclab/sensor.py` only reads the
 contact sensor's buffers and calls them.
