@@ -147,12 +147,6 @@ def Xform "Robotiq_2F_140"
 
             # inner_finger / inner_finger_knuckle limits: CAD collision sweep from
             # gripper_joint_limits_report, rounded inward. The right side mirrors the left.
-            # inner_finger: the joint angle is positive while closing on the left (negative on
-            # the right, which mirrors it). Limits [-51, +44] deg on the left. Opening end -51:
-            # the compliant pad reaches -50.8 deg when the outer finger is swung out 17 deg, and
-            # the CAD contact angle is -54.4 deg. Closing end +44: the tip is held about 1 deg
-            # short of where the loop would put it at the 45 deg driver limit (the compliant loop
-            # absorbs it; the driver still reaches 45 deg).
             def PhysicsRevoluteJoint "left_inner_finger_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
             )
