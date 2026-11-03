@@ -23,11 +23,11 @@ mkdir -p "$LOGDIR" || exit 1
 # locked LABEL CMD...: CMD through the lock when there is one
 locked() { local label=$1; shift; if [ -x "$LOCK" ]; then "$LOCK" run --wait --label "$label" -- "$@"; else "$@"; fi; }
 HERE=$(cd "$(dirname "$0")" && pwd)
-TASK=Robotiq-Tactile-Sphere-Pick-UR5e-2F85
+TASK=${TASK:-Robotiq-Tactile-Sphere-Pick-UR5e-2F85}  # or Robotiq-Tactile-Shape-Pick-UR5e-2F85 (with EXPERIMENT=tactile_shape_pick)
 export OMNI_KIT_ACCEPT_EULA=YES
 cd "$ISAACLAB" || exit 1
 PY=.venv/bin/python
-LOGS=logs/rsl_rl/tactile_sphere_pick
+LOGS=logs/rsl_rl/${EXPERIMENT:-tactile_sphere_pick}
 
 for k in $(seq 1 "$CHUNKS"); do
   args=(--rl_library rsl_rl --task $TASK --num_envs "$ENVS" --max_iterations "$CHUNK" --run_name "${NAME}_c$k")
@@ -48,12 +48,12 @@ for k in $(seq 1 "$CHUNKS"); do
   # export the policy (play.py writes it at start, then loops: stop it after the export)
   locked "tactile-$NAME-export-c$k" timeout 200 $PY scripts/reinforcement_learning/play.py --rl_library rsl_rl --task $TASK --num_envs 1 --checkpoint "$CKPT" > /dev/null 2>&1
   [ -f "$run/exported/policy.pt" ] || { echo "chunk $k: policy export failed"; continue; }
-  locked "tactile-$NAME-eval-c$k" $PY "$HERE/eval_tactile.py" --policy "$run/exported/policy.pt" --num_envs 64 > "$run/eval_full.txt" 2>&1
+  locked "tactile-$NAME-eval-c$k" $PY "$HERE/eval_tactile.py" --task $TASK --policy "$run/exported/policy.pt" --num_envs 64 > "$run/eval_full.txt" 2>&1
   grep "^RESULT" "$run/eval_full.txt" | tee "$run/eval.txt"
   if [ "${PICK_ALL:-0}" = 1 ]; then
     locked "tactile-$NAME-pickall-c$k" $PY "$HERE/pick_all.py" --policy "$run/exported/policy.pt" --num_envs 16 --steps 6000 --layout reachable > "$run/pick_all_full.txt" 2>&1
     grep -E "^RESULT" "$run/pick_all_full.txt" | tee "$run/pick_all.txt"
   fi
-  locked "tactile-$NAME-video-c$k" $PY "$HERE/eval_tactile.py" --policy "$run/exported/policy.pt" --num_envs 1 --video "$run/eval_video" > "$run/eval_video.txt" 2>&1
+  locked "tactile-$NAME-video-c$k" $PY "$HERE/eval_tactile.py" --task $TASK --policy "$run/exported/policy.pt" --num_envs 1 --video "$run/eval_video" > "$run/eval_video.txt" 2>&1
 done
 echo "[$(date +%T)] all chunks done"

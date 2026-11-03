@@ -21,6 +21,7 @@ ASSETS = Path(__file__).resolve().parents[2] / "assets" / "shape_sorter"
 PIECES = ["rectangle", "pentagon", "cross", "cylinder", "star", "square"]  # class order, as shape_pick.env_cfg.PIECES
 DELTA = 0.002  # m: depth of the compliant skin
 POWER = 1.0
+MAX_DISTANCE = 0.006  # m: a piece farther than this from the nearest taxel touches the edge or the back of the pad: not read
 
 
 class PieceSdfs:
@@ -67,6 +68,7 @@ def piece_taxel_force(
     quat_w: torch.Tensor,
     delta: float = DELTA,
     power: float = POWER,
+    max_distance: float | None = MAX_DISTANCE,
 ) -> torch.Tensor:
     """Force per taxel [N] from the pads' force on the pieces, ``(E, 2, T)``.
 
@@ -74,8 +76,11 @@ def piece_taxel_force(
     ``pos_w`` ``(E, S, 3)`` and ``quat_w`` ``(E, S, 4)`` the poses of the pieces, ``slot_types`` the type of each slot."""
     E, P, T, _ = taxel_w.shape
     pts = taxel_w.reshape(E, P * T, 3)
-    dist = torch.stack(
-        [sdfs.distance(torch.full((E,), slot_types[s], device=pts.device), pos_w[:, s], quat_w[:, s], pts).reshape(E, P, T) for s in range(len(slot_types))],
-        dim=2,
-    )  # (E, 2, S, T)
-    return spread_forces_by_distance(dist, force, delta, power)
+    dist = torch.full((E, P, len(slot_types), T), 1.0, device=pts.device)  # far: where a piece is not touched nothing is read
+    for s in range(len(slot_types)):
+        touched = (force[:, :, s] > 0).any(dim=-1).nonzero().flatten()  # only the envs whose pads touch this piece need its distances
+        if len(touched) == 0:
+            continue
+        d = sdfs.distance(torch.full((len(touched),), slot_types[s], device=pts.device), pos_w[touched, s], quat_w[touched, s], pts[touched])
+        dist[touched, :, s] = d.reshape(len(touched), P, T)
+    return spread_forces_by_distance(dist, force, delta, power, max_distance)

@@ -45,7 +45,13 @@ def spread_forces(
     return (w * force[:, :, None]).sum(-1)
 
 
-def spread_forces_by_distance(distance: torch.Tensor, force: torch.Tensor, delta: float = 0.002, power: float = 1.0) -> torch.Tensor:
+def spread_forces_by_distance(
+    distance: torch.Tensor,
+    force: torch.Tensor,
+    delta: float = 0.002,
+    power: float = 1.0,
+    max_distance: float | None = None,
+) -> torch.Tensor:
     """Force per taxel when the shape of the touched object is known: the footprint of the object on the pad.
 
     A contact report gives one force per pad and object but not where on the pad it is carried. With the object's surface
@@ -60,11 +66,15 @@ def spread_forces_by_distance(distance: torch.Tensor, force: torch.Tensor, delta
         force: normal force [N] of each pad on each object, ``(E, P, F)``; objects with no force add nothing.
         delta: depth [m] of the compliant skin.
         power: exponent of the weight ``(1 - (d - d_min) / delta) ** power``.
+        max_distance: an object whose nearest taxel is farther than this [m] from its surface is not touching the sensing
+            area (the edge or the back of the pad): its force adds nothing. ``None`` keeps every object.
 
     Returns:
         ``(E, P, T)`` force [N] per taxel; the taxels of a pad sum to the sum of its objects' forces.
     """
     nearest = distance.min(dim=-1, keepdim=True).values
+    if max_distance is not None:
+        force = torch.where(nearest[..., 0] <= max_distance, force, torch.zeros_like(force))
     w = (1.0 - (distance - nearest) / delta).clamp(min=0.0) ** power  # (E, P, F, T), 1 at the nearest taxel
     w = w / (w.sum(dim=-1, keepdim=True) + 1e-9)
     return (w * force[..., None]).sum(dim=2)

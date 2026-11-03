@@ -30,6 +30,7 @@ parser.add_argument("--seed", type=int, default=None, help="seed the layouts and
 parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
+parser.add_argument("--record_grasps", default=None, help="shape task: save the tactile history and the true class of every piece the policy lifts (for the recogniser) to this .npz")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera, 1920 x 1080")
 parser.add_argument("--hq_pressure_map", action="store_true", help="draw the TSF pressure map of both fingertips on the lower left of --hq_video")
@@ -144,6 +145,15 @@ def main():
             )
 
         reach = torch.tensor(REACH_HALF, device=dev)
+        HIST = 8  # tactile history kept for the recogniser: the last HIST policy steps
+        if args_cli.record_grasps:
+            from robotiq_rl.shape_pick import mdp as shape_mdp
+            from robotiq_rl.shape_pick.env_cfg import SLOT_TYPES
+
+            slot_type = torch.tensor(SLOT_TYPES, device=dev)
+            hist_maps = torch.zeros(n, HIST, 56, device=dev)
+            hist_closure = torch.zeros(n, HIST, device=dev)
+            rec = {"maps": [], "closure": [], "label": [], "pad_force": [], "n_picked": []}
 
         def spheres_in_box(zone_only=False):
             s = tp.get_state(env, TASK)
@@ -165,6 +175,14 @@ def main():
             # --- the hand-over logic (sensor-based) and the scripted phases
             held_count = torch.where((phase == PICK) & sensed_hold, held_count + 1, torch.zeros_like(held_count))
             start_carry = (phase == PICK) & (held_count >= args_cli.hold_steps)
+            if args_cli.record_grasps and bool(start_carry.any()):
+                ids = start_carry.nonzero().flatten()
+                nearest = torch.linalg.norm(s.sphere_pos[ids] - s.tcp[ids, None], dim=-1).argmin(-1)  # the piece in the gripper
+                rec["maps"].append(hist_maps[ids].cpu())
+                rec["closure"].append(hist_closure[ids].cpu())
+                rec["label"].append(slot_type[nearest].cpu())
+                rec["pad_force"].append(f_sph[ids].sum(-1).cpu())
+                rec["n_picked"].append(picked[ids].cpu())
             phase = torch.where(start_carry, torch.full_like(phase, CARRY), phase)
             target = drop_point(picked)
             to_target = torch.cat([target - tcp[:, :2], torch.zeros(n, 1, device=dev)], dim=-1)
@@ -240,6 +258,9 @@ def main():
                 meas["max_gate"] = max(meas["max_gate"], float((plain - gated).abs().max()))
                 meas["max_geom"] = max(meas["max_geom"], float((plain - old).abs().max()))
             obs, *_ = env.step(act)
+            if args_cli.record_grasps:  # the maps after this step (what the next decision sees): a rolling history
+                hist_maps = torch.cat([hist_maps[:, 1:], shape_mdp.tactile_map_shape(env, log_scale=False)[:, None]], dim=1)
+                hist_closure = torch.cat([hist_closure[:, 1:], env.scene["robot"].data.joint_pos.torch[:, s.finger_id][:, None]], dim=1)
         left = spheres_in_box()
         s = tp.get_state(env, TASK)
         rel = s.sphere_pos[0, :, :2] - centre
@@ -255,6 +276,12 @@ def main():
             print(f"RESULT gate: env-steps where it changes the map by > 0.01 N: {meas['gate_changes']} ({100 * meas['gate_changes'] / max(meas['contact'], 1):.2f} % of the steps with contact)")
             print(f"RESULT gate: share of the total tactile force it removes: {100 * meas['removed'] / max(meas['total'], 1e-9):.3f} %; largest change of one taxel {meas['max_gate']:.2f} N")
             print(f"RESULT geometry: largest difference of one taxel between the old rounded grid and the exact one: {meas['max_geom']:.3f} N")
+        if args_cli.record_grasps:
+            import numpy as np
+
+            out = {k: torch.cat(v).numpy() for k, v in rec.items() if v}
+            np.savez_compressed(args_cli.record_grasps, **out)
+            print("RESULT recorded grasps:", len(out.get("label", [])), "per class", np.bincount(out["label"], minlength=6).tolist() if len(out.get("label", [])) else [], "->", args_cli.record_grasps)
         print("RESULT per-env picked:", picked.tolist())
         completed = tp.get_state(env, TASK).n_picked
         print(f"RESULT picks completed by the task itself, per env (mean/max): {completed.float().mean().item():.2f} / {int(completed.max())} (0 = the supervisor's count is the only one)")
