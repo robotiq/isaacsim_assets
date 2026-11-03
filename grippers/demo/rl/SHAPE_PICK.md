@@ -78,6 +78,27 @@ star           30     47     71      8    336     10   recall 0.67
 square         11     20     34     13     18     96   recall 0.50
 ```
 
+## Answering "unknown"
+
+The recogniser is wrong a third of the time, so it can decline. Its raw probabilities are overconfident (it says 96 % and is right 73 % of the
+time), so they are temperature-scaled on cross-validated predictions (`recognizer.fit_model`); below the confidence at which the
+cross-validated accuracy of the answered pieces drops under 85 % the answer is "unknown" (threshold 0.61 on the calibrated probability).
+Cross-validated that answers 52 % of the pieces with 85 % accuracy, against 63 % accuracy when it always answers
+([`docs/accuracy_vs_coverage.png`](docs/accuracy_vs_coverage.png): accuracy against coverage, and the calibration, measured before the calibration).
+
+When the answer is unknown the supervisor does not carry the piece out: it takes it to the point of the box (inside the tool tip's reach)
+nearest to where it was held and releases it about 10 cm above the floor, so that the policy can pick it up again, with another grasp.
+Live, on fresh boxes (128 envs x 150 s, 8 to 16 pieces, seed 21): 296 pieces held and read, 159 named (54 %), 135 of them correctly (**84.9 %**),
+137 put back. Over four such runs the share named is 44 - 54 % and the accuracy of the named ones 85 - 92 %.
+Put-back pieces: 76 % are in the box 5 s later (the others bounce out); about one in six is held again before the run ends, and about half of those
+are then named, almost always correctly (the policy picks slowly, 2 pieces per 100 s per env, and the give-up timer ends many runs). Unknown pieces
+do not count as picks; the printed statistics are in `pick_all.py` (`--recognizer`).
+
+<video src="docs/unknown_demo.mp4" controls width="800"></video>
+
+[`docs/unknown_demo.mp4`](docs/unknown_demo.mp4): the first 30 s of one run (seed 36, one env): a square named at 97 % (correct), then a pentagon whose best guess
+would have been a cylinder at 39 %: "unknown", put back in the box.
+
 What did not work: putting the carried piece down, releasing it and grasping it again at the same spot (`pick_all.py --regrasp`, experimental):
 the second grasp holds the piece in only 40 % of the attempts, because the piece lies beside the open fingers, not between them; the
 footprint of the first grasp is nearly always centred on the pad, so it cannot say where the piece is.
