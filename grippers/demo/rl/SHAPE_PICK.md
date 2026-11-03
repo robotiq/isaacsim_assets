@@ -42,16 +42,16 @@ and 17 with the Gaussian one.
 ## Step 1: finding and grasping a piece
 
 The policy of the sphere demo (`robotiq_rl/tactile_pick/policy`) is fine-tuned on the pieces (same observations, shape-aware map as the tactile
-input), 2048 envs, PPO, about @@ITERS@@ iterations. Two things made the difference:
+input), 2048 envs, PPO, about 6000 PPO iterations (about 5 h of training, in several runs) iterations. Two things made the difference:
 
 - **The "held" test of the sphere task rejected the policy's grasps.** It needs the object's centre within 3 cm of the tool point. A piece
   grasped anywhere along the pads is farther (median 3.5 cm), so the policy was rewarded for 6 % of its grasps and training stalled
   (25 successes per 64 envs x 20 s, below the 52 of the untrained policy). With 5.5 cm: 58. Measure the funnel (both pads press / closed /
   held, `scripts/diag_shape.py`) before touching hyper-parameters.
-- A reward for holding the piece near the middle of the pads (`centre` in `SHAPE_TASK`) raised it to @@SUCCESS@@ and the grasps are better
+- A reward for holding the piece near the middle of the pads (`centre` in `SHAPE_TASK`) raised it to 60 - 64 lifted pieces per 64 envs x 20 s (58 before) and the grasps are better centred: the median distance from the tool point to the piece's centre when it is lifted went from 3.5 to 2.5 cm and the grasps are better
   centred.
 
-Result: @@STEP1@@.
+Result: per 64 envs and 20 s, 60 pieces lifted out of the box; 95 % of the envs touch a piece, 81 % hold one and 66 % lift one; about 1.9 picks per 90 s episode in training (the sphere policy: 5.7).
 
 ## Step 2: recognising the piece
 
@@ -60,10 +60,20 @@ supervisor records the last 8 steps of the maps and the closure; `robotiq_rl/sha
 features and a gradient boosting classifier names the piece. Then the usual scripted carry puts it down outside the box.
 
 Recognition from the policy's own grasps is harder than from scripted centred ones: the pieces are held at the edge of the pads,
-tilted, off-centre. Trained on @@NGRASPS@@ of the policy's grasps: @@ACC@@ cross-validated, @@LIVE@@ live on fresh boxes (see the
+tilted, off-centre. Trained on 3037 of the policy's grasps: 62.5 % (balanced over the classes 60 %) cross-validated, 65.4 % (206 of 315 lifted pieces) live on fresh boxes (see the
 confusion matrix below). With 282 grasps it was 46 %, and the curve was still rising with data.
 
-@@CONFUSION@@
+Confusion matrix of the cross-validation (rows: the piece, columns: the answer):
+
+```
+           rectan pentag  cross cylind   star square
+rectangle     163     75     59     33     35      7   recall 0.44
+pentagon       56    477     78     54     15      7   recall 0.69
+cross          42    106    327     83     36      8   recall 0.54
+cylinder       26     77     63    498      8     10   recall 0.73
+star           30     47     71      8    336     10   recall 0.67
+square         11     20     34     13     18     96   recall 0.50
+```
 
 What did not work: putting the carried piece down, releasing it and grasping it again at the same spot (`pick_all.py --regrasp`, experimental):
 the second grasp holds the piece in only 40 % of the attempts, because the piece lies beside the open fingers, not between them; the
@@ -86,5 +96,5 @@ TASK=Robotiq-Tactile-Shape-Pick-UR5e-2F85 EXPERIMENT=tactile_shape_pick scripts/
 ## Limits
 
 - Simulation only; the tactile model is uncalibrated and the recogniser is trained on its output.
-- Step 1 lifts @@PICKS@@ pieces per box in 90 s, much less than the sphere policy (5.7 spheres): the pieces do not roll into the pads.
+- Step 1 lifts about 2 pieces per box in 90 s, much less than the sphere policy (5.7 spheres): the pieces do not roll into the pads.
 - The carry-and-drop routine is the scripted one of the sphere demo, with the limits listed there.
