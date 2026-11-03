@@ -1,20 +1,20 @@
 {
   "version": 1,
   "scope": "Robotiq_2F_85",
-  "input_hash": "030cacd4d3ee6c9e8ab9d5582aab0f13f0a6d5bee15ae50580e366d21bf613f4",
-  "commit": "123d4e8e004b9be71b9e06a870cbab294846ec02",
+  "input_hash": "47a9800555692851e577a0863fff9bfc94632cb2783f8e20313fa1fcfaa195d9",
+  "commit": "4d8a609d1f320088b54d1f8598e6e41fac520df2",
   "author": "l-t.schreiber@robotiq.com",
-  "date": "2026-11-02T23:24:23Z",
+  "date": "2026-11-03T16:25:49Z",
   "environment": {
     "isaac_sim": "6.2.0-rc.14+release.52805.02189a84.gl",
     "gpu": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 595.99.02",
     "os": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35"
   },
   "result": {
-    "passed": 68,
+    "passed": 69,
     "failed": 0,
     "errors": 0,
-    "xfailed": 6,
+    "xfailed": 5,
     "skipped": 0,
     "tests": {
       "tests.runtime.test_gripper_close::test_gripper_closes[Robotiq_2F_85-Newton_compliant]": "passed",
@@ -23,7 +23,7 @@
       "tests.runtime.test_gripper_close::test_gripper_closes[Robotiq_2F_85-Physx_parallel_grip]": "passed",
       "tests.runtime.test_gripper_finger_overload::test_gripper_finger_overload[Robotiq_2F_85-close-100N]": "passed",
       "tests.runtime.test_gripper_finger_overload::test_gripper_finger_overload[Robotiq_2F_85-close-200N]": "passed",
-      "tests.runtime.test_gripper_finger_overload::test_gripper_finger_overload[Robotiq_2F_85-open-100N]": "xfailed",
+      "tests.runtime.test_gripper_finger_overload::test_gripper_finger_overload[Robotiq_2F_85-open-100N]": "passed",
       "tests.runtime.test_gripper_finger_overload::test_gripper_finger_overload[Robotiq_2F_85-open-300N]": "passed",
       "tests.runtime.test_gripper_finger_overload::test_gripper_finger_overload[Robotiq_2F_85-open-30N]": "passed",
       "tests.runtime.test_gripper_fixed_cube::test_compliant_gripper_closes_on_fixed_cube[Robotiq_2F_85-Newton_compliant]": "passed",
