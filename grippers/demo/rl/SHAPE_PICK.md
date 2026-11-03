@@ -86,13 +86,17 @@ cross-validated accuracy of the answered pieces drops under 85 % the answer is "
 Cross-validated that answers 52 % of the pieces with 85 % accuracy, against 63 % accuracy when it always answers
 ([`docs/accuracy_vs_coverage.png`](docs/accuracy_vs_coverage.png): accuracy against coverage, and the calibration, measured before the calibration).
 
-When the answer is unknown the supervisor does not carry the piece out: it takes it to the point of the box (inside the tool tip's reach)
-nearest to where it was held and releases it about 10 cm above the floor, so that the policy can pick it up again, with another grasp.
-Live, on fresh boxes (128 envs x 150 s, 8 to 16 pieces, seed 21): 296 pieces held and read, 159 named (54 %), 135 of them correctly (**84.9 %**),
-137 put back. Over four such runs the share named is 44 - 54 % and the accuracy of the named ones 85 - 92 %.
-Put-back pieces: 76 % are in the box 5 s later (the others bounce out); about one in six is held again before the run ends, and about half of those
-are then named, almost always correctly (the policy picks slowly, 2 pieces per 100 s per env, and the give-up timer ends many runs). Unknown pieces
-do not count as picks; the printed statistics are in `pick_all.py` (`--recognizer`).
+When the answer is unknown the supervisor does not carry the piece out: the arm goes, in joint space, to a fixed pose above the centre of the
+box (tool tip at 28 cm, so that the piece clears the rim) and then to a second fixed pose (tool tip at 16 cm over the box centre: the piece
+about 12 cm above the floor) and releases it there, so that the policy can pick it up again, with another grasp. The two poses are hardcoded joint
+angles (`PUT_BACK_ABOVE`, `PUT_BACK_RELEASE` in `pick_all.py`, from `start_poses.npz`), reached at `--putback_speed` 2 rad/s per joint
+(at 0.8 rad/s the same run read 95 pieces, against 235 at 2 and 3 rad/s). `scripts/show_putback_pose.py` renders the arm at the two poses.
+Live, on fresh boxes (128 envs x 150 s, 8 to 16 pieces, seed 21, with the earlier Cartesian put-back): 296 pieces held and read, 159 named (54 %), 135 of
+them correctly (**84.9 %**), 137 put back. Over several runs the share named is 40 - 54 % and the accuracy of the named ones 85 - 95 %.
+Put-back at 2 - 3 rad/s (64 envs x 83 s, three runs): all the pieces are still in the gripper when the release pose is reached (123 of 123), 82 - 88 are put
+back and 45 - 52 of them are held again before the run ends (the policy often picks the piece it just released); of those, 18 - 27 are named
+correctly, 1 - 2 wrongly and 24 - 30 are unknown again: a second try is named about half of the time, almost always correctly. Unknown pieces
+do not count as picks; the statistics are printed by `pick_all.py` (`--recognizer`).
 
 <video src="docs/unknown_demo.mp4" controls width="800"></video>
 
