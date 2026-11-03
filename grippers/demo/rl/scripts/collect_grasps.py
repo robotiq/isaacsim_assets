@@ -63,8 +63,8 @@ def main():
             closure = env.scene["robot"].data.joint_pos.torch[:, s.finger_id]
             sensor = env.scene["tactile"]
             ii, sl = torch.arange(n, device=dev), cur["slot"]
-            pos = torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch for i in range(10)], 1)[ii, sl]
-            quat = torch.stack([env.scene[f"sphere_{i}"].data.root_quat_w.torch for i in range(10)], 1)[ii, sl]
+            pos = torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch for i in range(len(SLOT_TYPES))], 1)[ii, sl]
+            quat = torch.stack([env.scene[f"sphere_{i}"].data.root_quat_w.torch for i in range(len(SLOT_TYPES))], 1)[ii, sl]
             geometry = (sensor.taxel_positions_w.clone(), pos.clone(), quat.clone(), sensor.object_force[ii, :, sl].clone())
             return maps.clone(), closure.clone(), maps.sum((-1, -2)).clone(), geometry
 
@@ -83,7 +83,7 @@ def main():
             has_piece = in_box.any(-1)
             idx = torch.arange(n, device=dev)
             target = s.sphere_pos[idx, slot].clone()
-            vel = torch.stack([env.scene[f"sphere_{i}"].data.root_lin_vel_w.torch for i in range(10)], 1)[idx, slot].norm(dim=-1)
+            vel = torch.stack([env.scene[f"sphere_{i}"].data.root_lin_vel_w.torch for i in range(len(SLOT_TYPES))], 1)[idx, slot].norm(dim=-1)
             settled = has_piece & (vel < 0.02)
 
             def track(z_target):
@@ -100,8 +100,8 @@ def main():
                 act = track(target[:, 2])
                 act[:, 6] = -1.0
                 env.step(act)
-            piece_quat = torch.stack([env.scene[f"sphere_{i}"].data.root_quat_w.torch for i in range(10)], 1)[idx, slot].clone()
-            z0 = torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch[:, 2] for i in range(10)], 1)[idx, slot].clone()
+            piece_quat = torch.stack([env.scene[f"sphere_{i}"].data.root_quat_w.torch for i in range(len(SLOT_TYPES))], 1)[idx, slot].clone()
+            z0 = torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch[:, 2] for i in range(len(SLOT_TYPES))], 1)[idx, slot].clone()
             act[:, 0:3] = 0.0
             act[:, 6] = 1.0  # close
             snaps = []
@@ -110,7 +110,7 @@ def main():
                 if i in RECORD:
                     snaps.append(snapshot())
             hold_xy = state().tcp[:, :2].clone()
-            xy_in_tcp = (torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch for i in range(10)], 1)[idx, slot][:, :2]
+            xy_in_tcp = (torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch for i in range(len(SLOT_TYPES))], 1)[idx, slot][:, :2]
                          - env.scene.env_origins[:, :2] - hold_xy)
             for i in range(100):  # lift
                 act[:, 0:2] = ((hold_xy - state().tcp[:, :2]) * 60).clamp(-1, 1)
@@ -118,7 +118,7 @@ def main():
                 env.step(act)
                 if i in LIFT_RECORD:
                     snaps.append(snapshot())
-            z1 = torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch[:, 2] for i in range(10)], 1)[idx, slot]
+            z1 = torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch[:, 2] for i in range(len(SLOT_TYPES))], 1)[idx, slot]
             lifted = (z1 - z0) > 0.04
             ok = settled & lifted
             keep["maps"].append(torch.stack([m for m, _, _, _ in snaps], 1)[ok].cpu())

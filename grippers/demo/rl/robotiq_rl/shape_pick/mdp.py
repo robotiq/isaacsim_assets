@@ -23,6 +23,7 @@ def reset_pieces_in_box(
     zone_half_xy: tuple[float, float] | None = None,
     p_zone_only: float = 0.0,
     num_active_range: tuple[int, int] = (4, 8),
+    min_gap: float = 0.058,
 ):
     """Put ``k`` pieces (``k`` drawn from ``num_active_range``) at random spots of the box, each with a random orientation.
 
@@ -51,7 +52,7 @@ def reset_pieces_in_box(
         p_zone_only=p_zone_only,
         active_mask=mask,
         random_orientation=True,
-        min_gap=0.075,
+        min_gap=min_gap,
         # the spare pieces wait on the ground (the ground plane is 1.05 m below the table top), out of view, at rest
         park_xy=(0.0, 1.15),
         park_z=-1.05 + 0.045,

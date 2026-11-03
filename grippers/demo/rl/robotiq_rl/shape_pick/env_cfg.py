@@ -1,8 +1,8 @@
 """UR5e + 2F-85 (TSF-85 fingertips) with shape-sorter pieces in the box instead of spheres.
 
 Everything else (box, arm, sensors, rewards, PPO settings) is the tactile pick's; the objects keep the names ``sphere_i``
-so that its code works unchanged. There are 10 piece slots of fixed types (``SLOT_TYPES``); every reset puts a random subset
-of 4 - 8 of them in the box (types equally likely), each dropped with a random orientation so it settles on a face of its
+so that its code works unchanged. There are 18 piece slots of fixed types (``SLOT_TYPES``); every reset puts a random subset
+of 8 - 16 of them in the box (types equally likely), each dropped with a random orientation so it settles on a face of its
 own. The class of the piece in slot ``i`` is ``SLOT_TYPES[i]``. The rewards still use the sphere radius for the pick test,
 so this cfg is for the recognition data (scripts/collect_grasps.py) until the shape rewards are adapted."""
 
@@ -31,7 +31,8 @@ SHAPE_TASK = {
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "shape_sorter"
 PIECES = ["rectangle", "pentagon", "cross", "cylinder", "star", "square"]  # the class names, in class order
-SLOT_TYPES = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3]  # piece type of each of the 10 slots
+NUM_SLOTS = 18  # three pieces of each type; every reset puts 8 to 16 of them in the box
+SLOT_TYPES = [i % len(PIECES) for i in range(NUM_SLOTS)]  # piece type of each slot
 
 
 def _piece(i: int):
@@ -59,6 +60,21 @@ class ShapePickSceneCfg(base.TactilePickSceneCfg):
     sphere_7 = _piece(7)
     sphere_8 = _piece(8)
     sphere_9 = _piece(9)
+    sphere_10 = _piece(10)
+    sphere_11 = _piece(11)
+    sphere_12 = _piece(12)
+    sphere_13 = _piece(13)
+    sphere_14 = _piece(14)
+    sphere_15 = _piece(15)
+    sphere_16 = _piece(16)
+    sphere_17 = _piece(17)
+
+    # the tactile sensor filters on every piece, then on the box parts (the order ``num_objects`` relies on)
+    tactile = replace(
+        base.TactilePickSceneCfg(num_envs=1, env_spacing=2.0).tactile,
+        filter_prim_paths_expr=[f"{{ENV_REGEX_NS}}/Sphere_{i}" for i in range(NUM_SLOTS)]
+        + [f"{{ENV_REGEX_NS}}/Box/{part}" for part in ("floor", "wall_n", "wall_s", "wall_e", "wall_w")],
+    )
 
 
 # SHAPE_TACTILE=gaussian: the tactile pick's map (one averaged contact point per pad and object) instead of the shape-aware one
@@ -81,8 +97,9 @@ class EventCfg(base.EventCfg):
         mode="reset",
         params={
             "slot_types": SLOT_TYPES,
-            "num_active_range": (4, 8),
-            **{k: v for k, v in base.EventCfg().reset_spheres.params.items() if k not in ("num_active_range",)},
+            "num_active_range": (8, 16),
+            **{k: v for k, v in base.EventCfg().reset_spheres.params.items() if k not in ("num_active_range", "p_zone_only")},
+            "p_zone_only": 0.0,  # 16 pieces do not fit in the tool tip's reach: they are spread over the whole floor
         },
     )
 

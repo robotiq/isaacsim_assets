@@ -1,6 +1,6 @@
 # Finding and recognising shape sorter pieces by touch
 
-A second demo on the same robot (UR5e + Robotiq 2F-85 on TSF-85 tactile fingertips, Isaac Lab 3.0, PhysX). The box now holds 4 to 8 of
+A second demo on the same robot (UR5e + Robotiq 2F-85 on TSF-85 tactile fingertips, Isaac Lab 3.0, PhysX). The box holds 8 to 16 of
 the six loose pieces of the shape sorter, blind (no camera). The robot
 
 1. **finds a piece by touch and grasps it** (the policy of the sphere demo, fine-tuned on the pieces), then
@@ -13,9 +13,12 @@ accuracy on simulated maps, not on a real TSF.
 ## The pieces and the scene
 
 Rectangle, pentagon, cross, cylinder, star, square: 4 cm thick extrusions of an outline, 4 to 5.5 cm across, 29 to 43 g (wood density,
-friction 0.5). Ten piece slots of fixed types (`SLOT_TYPES`); every reset puts a random subset of 4 to 8 in the box, types equally likely,
+friction 0.5). Eighteen piece slots of fixed types (`SLOT_TYPES`, three of each type); every reset puts a random subset of 8 to 16 in the box (12 on average), types equally likely,
 each dropped from 4.5 cm with a random orientation so it settles on whatever face it falls on (a cylinder can end up on its side). Unused
-pieces wait on the ground, out of view.
+pieces wait on the ground, out of view. The pieces are spread over the whole floor of the 36 cm box (16 do not fit in the tool tip's reach),
+at least 5.8 cm apart, and do not pile up (the tallest is 4.5 cm).
+The policy and the recogniser below were trained with 4 to 8 pieces in the box; they were not retrained for the denser box. On 128 envs x 100 s with
+8 to 16 pieces they lift and name 266 pieces (2.1 per env, against 1.2 with 4 to 8) and name 64.7 % of them correctly (65.4 % with 4 to 8).
 
 ## A tactile model that can see shapes (`robotiq_rl/shape_pick/tactile_sdf.py`)
 
