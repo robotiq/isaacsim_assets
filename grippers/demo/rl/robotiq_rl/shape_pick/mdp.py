@@ -81,9 +81,45 @@ def tactile_map_shape(env: ManagerBasedRLEnv, slot_types: list[int] | None = Non
     pieces = piece_taxel_force(sdfs, slot_types, taxel_w, sensor.object_force[..., :n], pos, quat)  # (E, 2, T)
     walls = sensor.taxel_force_of(slice(n, None)).reshape(env.num_envs, 2, -1)  # the box parts follow the pieces
     force = (pieces + walls).reshape(env.num_envs, -1)
+    # a rolling history of the raw maps and of the closure (the last 8 steps): what the recogniser reads, for the recognition reward
+    robot = env.scene["robot"]
+    if not hasattr(env, "_finger_id"):
+        env._finger_id = robot.find_joints("finger_joint")[0][0]
+    closure = robot.data.joint_pos.torch[:, env._finger_id]
+    if not hasattr(env, "_shape_hist_maps"):
+        env._shape_hist_maps = torch.zeros(env.num_envs, 8, force.shape[1], device=env.device)
+        env._shape_hist_closure = torch.zeros(env.num_envs, 8, device=env.device)
+    env._shape_hist_maps = torch.cat([env._shape_hist_maps[:, 1:], force[:, None]], dim=1)
+    env._shape_hist_closure = torch.cat([env._shape_hist_closure[:, 1:], closure[:, None]], dim=1)
     return torch.log1p(force) if log_scale else force
 
 
 def tactile_map_gaussian(env: ManagerBasedRLEnv, log_scale: bool = True) -> torch.Tensor:
     """The Gaussian model of the tactile sensor for everything (the tactile pick's map), ``(E, 56)``."""
     return tp.tactile_maps(env, log_scale=log_scale)
+
+
+_RECOGNIZERS: dict = {}
+
+
+def r_recognise(env: ManagerBasedRLEnv, cfg: dict, model_path: str) -> torch.Tensor:
+    """Reward at the step a pick completes: the probability the (frozen, calibrated) recogniser gives to the true class of the held piece.
+
+    The policy is paid for holding pieces in a way that can be recognised from the maps of the grasp. ``(E,)``, 0 where no pick completes."""
+    from .env_cfg import SLOT_TYPES
+
+    state = tp.get_state(env, cfg)
+    ids = state.success.nonzero().flatten()
+    out = torch.zeros(env.num_envs, device=env.device)
+    if len(ids) == 0 or not hasattr(env, "_shape_hist_maps"):
+        return out
+    import joblib
+    import numpy as np
+
+    from . import recognizer
+
+    model = _RECOGNIZERS.setdefault(model_path, joblib.load(model_path))
+    _, proba = recognizer.decide(model, env._shape_hist_maps[ids].cpu().numpy(), env._shape_hist_closure[ids].cpu().numpy())
+    truth = torch.tensor(SLOT_TYPES, device=env.device)[state.near[ids]].cpu().numpy()
+    out[ids] = torch.tensor(proba[np.arange(len(ids)), truth], dtype=torch.float32, device=env.device)
+    return out

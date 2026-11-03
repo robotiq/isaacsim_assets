@@ -59,6 +59,7 @@ Z_PLACE = 0.055  # m: tool-tip height at which a carried piece is put down on th
 Z_GRASP = 0.026  # m: tool-tip height of the second grasp: the pads at the middle of a piece lying on the table
 HOME_Z = 0.28  # m: tool-tip height above the box centre where the policy takes over again (inside its training starts)
 CARRY_Z = 0.22  # m: tool tip height while carrying (sphere bottom ~ 18 cm: clear of the 11 cm walls)
+CARRY_Z_UNKNOWN = 0.17  # m: tool tip height when an unknown piece is carried to a point inside the box and released (the piece ~10 cm above the floor, 2 cm above the rim)
 GAIN = 60.0  # action per metre of error (an action of 1 is 1 cm per step)
 
 
@@ -142,6 +143,7 @@ def main():
         held_count = torch.zeros(n, device=dev)
         timer = torch.zeros(n, device=dev)
         did_regrasp = torch.zeros(n, dtype=torch.bool, device=dev)
+        unk_target = torch.zeros(n, 2, device=dev)  # where an unknown piece is put back: the point of the box (in the tool tip's reach) nearest to where it was held
         unk = torch.zeros(n, dtype=torch.bool, device=dev)  # the piece in the gripper was "unknown": it is put back in the box, not carried out
         place_xy = torch.zeros(n, 2, device=dev)
         regrasp_off = torch.zeros(n, 2, device=dev)  # horizontal offset of the piece from the pads' centre, from the tactile footprint of the first grasp
@@ -178,6 +180,7 @@ def main():
             recognize = joblib.load(args_cli.recognizer)
             confusion = torch.zeros(6, 7, dtype=torch.long)  # rows: the piece, columns: the six answers, then "unknown"
             events = []  # (env, slot, step, true class, answer or -1): every time a piece is held and read
+            checks, landed = [], []  # where a put-back piece lies 150 steps after it is let go
         if args_cli.record_grasps or recognize is not None or args_cli.regrasp:
             from robotiq_rl.shape_pick import mdp as shape_mdp
             from robotiq_rl.shape_pick.env_cfg import SLOT_TYPES
@@ -222,6 +225,10 @@ def main():
                         events.append((int(ids[k]), int(nearest[k]), t, int(tr), int(g)))
                     if not args_cli.regrasp:  # "unknown": not carried out, put back in the box (released where it is, above the box)
                         unknown_ids = ids[torch.tensor(guess < 0, device=dev)]
+                        lo, hi = centre - reach + 0.02, centre + reach - 0.02  # 2 cm inside the reachable zone
+                        unk_target[unknown_ids] = torch.maximum(torch.minimum(s.tcp[unknown_ids, :2], hi), lo)
+                        for k in (guess < 0).nonzero()[0]:
+                            checks.append((int(ids[k]), int(nearest[k]), t + 150))
                         unk_now[unknown_ids] = True
                         unk |= unk_now
                     if bool(trigger[0]):
@@ -254,17 +261,17 @@ def main():
                 w = m.sum((2, 3))
                 regrasp_off[ids] = ((off[..., :2] * w[..., None]).sum(1) / (w.sum(1, keepdim=True) + 1e-6)).clamp(-0.03, 0.03)
             phase = torch.where(start_carry, torch.full_like(phase, CARRY), phase)
-            phase = torch.where(unk_now, torch.full_like(phase, RELEASE), phase)  # an unknown piece is let go at once
-            timer = torch.where(unk_now, torch.zeros_like(timer), timer)
             did_regrasp = did_regrasp & ~start_carry
             target = drop_point(picked, *((0.11, 0.14) if args_cli.regrasp else (0.07, 0.07)))
+            target = torch.where(unk[:, None], unk_target, target)  # an unknown piece is carried to a point inside the box instead, and released there
             to_target = torch.cat([target - tcp[:, :2], torch.zeros(n, 1, device=dev)], dim=-1)
             carry = phase == CARRY
-            reached = (to_target[:, :2].norm(dim=-1) < 0.02) & ((tcp[:, 2] - CARRY_Z).abs() < 0.03)
+            cz = torch.where(unk, torch.full_like(tcp[:, 2], CARRY_Z_UNKNOWN), torch.full_like(tcp[:, 2], CARRY_Z))
+            reached = (to_target[:, :2].norm(dim=-1) < 0.02) & ((tcp[:, 2] - cz).abs() < 0.03)
             # carry: rise first, then go sideways at carry height, gripper closed
-            low = tcp[:, 2] < CARRY_Z - 0.03
+            low = tcp[:, 2] < cz - 0.03
             vxy = torch.where(low[:, None], torch.zeros(n, 2, device=dev), (GAIN * to_target[:, :2]).clamp(-1, 1))
-            vz = (GAIN * (CARRY_Z - tcp[:, 2])).clamp(-1, 1)
+            vz = (GAIN * (cz - tcp[:, 2])).clamp(-1, 1)
             scripted = torch.zeros_like(act)
             scripted[:, 0:2] = vxy
             scripted[:, 2] = vz
@@ -362,6 +369,11 @@ def main():
                 meas["total"] += float((plain.sum((-1, -2)) * live).sum())
                 meas["max_gate"] = max(meas["max_gate"], float((plain - gated).abs().max()))
                 meas["max_geom"] = max(meas["max_geom"], float((plain - old).abs().max()))
+            if recognize is not None and checks and checks[0][2] <= t:
+                due = [c for c in checks if c[2] <= t]
+                checks[:] = [c for c in checks if c[2] > t]
+                for e, sl, _ in due:
+                    landed.append(s.sphere_pos[e, sl].cpu())
             caption["phase"] = int(phase[0])
             obs, *_ = env.step(act)
             if args_cli.record_grasps or recognize is not None or args_cli.regrasp:  # the maps after this step (what the next decision sees): a rolling history
@@ -402,6 +414,14 @@ def main():
             print("RESULT                 " + " ".join(f"{n[:5]:>5s}" for n in recog_lib.CLASSES) + "  unkn")
             for i, name in enumerate(recog_lib.CLASSES):
                 print(f"RESULT   {name:10s} " + " ".join(f"{int(v):5d}" for v in confusion[i]) + f"   recall when answered {int(confusion[i, i]) / max(int(confusion[i, :6].sum()), 1):.2f}, unknown {int(confusion[i, 6]) / max(int(confusion[i].sum()), 1):.0%}")
+            if landed:
+                lp = torch.stack(landed)
+                rel = (lp[:, :2] - torch.tensor(BOX_CENTER)).abs()
+                in_box = (rel < BOX_INNER / 2).all(-1) & (lp[:, 2] < RIM_Z + 0.02)
+                in_zone = (rel < torch.tensor(REACH_HALF)).all(-1) & in_box
+                print(f"RESULT put back, 150 steps after the release: {len(lp)} pieces, {int(in_box.sum())} lie in the box, {int(in_zone.sum())} in the tool tip's reach, "
+                      f"{int((~in_box).sum())} outside the box; median height of those in the box {lp[in_box, 2].median() * 100 if in_box.any() else float('nan'):.1f} cm "
+                      f"(a piece lying on the floor: 1.2 + 2 to 2.5 cm)")
             # what happens to a piece that was put back: is it held again, and named?
             seq = {}
             for e, sl, tt, tr, g in events:

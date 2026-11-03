@@ -235,6 +235,7 @@ class TaskState:
         self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = self.out_now = self.out_centred = zeros
         self.tcp = torch.zeros(n, 3, device=dev)
         self.sphere_pos = torch.zeros(n, self.n_obj, 3, device=dev)
+        self.near = torch.zeros(n, dtype=torch.long, device=dev)
 
     def reset(self, env_ids):
         self.visited[env_ids] = False
@@ -318,6 +319,7 @@ class TaskState:
         # --- phase 3: the sphere nearest the TCP is the one in the gripper
         d = torch.linalg.norm(self.sphere_pos - self.tcp[:, None], dim=-1)  # (E, S)
         dmin, near = d.min(-1)
+        self.near = near  # the object nearest the tool point (the one in the gripper, when one is held)
         near_z = self.sphere_pos[torch.arange(env.num_envs, device=env.device), near, 2]
         closure = (robot.data.joint_pos.torch[:, self.finger_id] / c["closed_pos"]).clamp(0, 1)
         held = both & (dmin < c["hold_dist"]) & (closure > c["min_closure"])

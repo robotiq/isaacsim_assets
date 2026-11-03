@@ -12,6 +12,7 @@ from pathlib import Path
 import isaaclab.sim as sim_utils
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.utils import configclass, replace
 from isaaclab.utils.noise import GaussianNoiseCfg as Gnoise
 from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
@@ -26,7 +27,8 @@ SHAPE_TASK = {
     **base.TASK,
     "hold_dist": 0.055,
     # and a reward for holding the piece near the middle of the pads: a centred grasp is a better one and gives a cleaner tactile map to recognise it from
-    "shaping_weights": {**base.TASK["shaping_weights"], "centre": 2.0},
+    # (SHAPE_CENTRE_W: the weight, 2 for the policy of the repo)
+    "shaping_weights": {**base.TASK["shaping_weights"], "centre": float(os.environ.get("SHAPE_CENTRE_W", 2.0))},
 }
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "shape_sorter"
@@ -105,10 +107,18 @@ class EventCfg(base.EventCfg):
 
 
 @configclass
+class RewardsCfg(base.RewardsCfg):
+    # SHAPE_RECOGNISE_W > 0: the policy is paid, when a pick completes, the probability that the recogniser gives to the true class of the piece
+    recognise = RewTerm(func=sp.r_recognise, weight=float(os.environ.get("SHAPE_RECOGNISE_W", 0.0)),
+                        params={"cfg": SHAPE_TASK, "model_path": str(Path(__file__).resolve().parent / "policy" / "recognizer.joblib")})
+
+
+@configclass
 class TactileShapePickEnvCfg(base.TactileSpherePickEnvCfg):
     scene: ShapePickSceneCfg = ShapePickSceneCfg(num_envs=512, env_spacing=2.0)
     observations: ObservationsCfg = ObservationsCfg()
     events: EventCfg = EventCfg()
+    rewards: RewardsCfg = RewardsCfg()
 
     def __post_init__(self):
         super().__post_init__()
