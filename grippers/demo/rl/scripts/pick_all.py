@@ -220,7 +220,7 @@ def main():
                         e0 = int((ids == 0).nonzero()[0])
                         caption["text"] = f"recognised: {recog_lib.CLASSES[int(guess[e0])]}"
                         print(f"t={t:5d} env0: recognised {recog_lib.CLASSES[int(guess[e0])]} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
-                if args_cli.regrasp:
+                if True:
                     off_now = (s.sphere_pos[ids, nearest] - s.tcp[ids]).cpu()
                     loaded = (f_sph[ids].sum((-1, -2)) > 1.0).cpu()
                     dbg.append(torch.cat([off_now, loaded[:, None].float(), regrasp_off[ids].cpu()], 1))
@@ -366,6 +366,11 @@ def main():
             print(f"RESULT gate: env-steps where it changes the map by > 0.01 N: {meas['gate_changes']} ({100 * meas['gate_changes'] / max(meas['contact'], 1):.2f} % of the steps with contact)")
             print(f"RESULT gate: share of the total tactile force it removes: {100 * meas['removed'] / max(meas['total'], 1e-9):.3f} %; largest change of one taxel {meas['max_gate']:.2f} N")
             print(f"RESULT geometry: largest difference of one taxel between the old rounded grid and the exact one: {meas['max_geom']:.3f} N")
+        if dbg and not args_cli.regrasp:
+            dd = torch.cat(dbg)
+            dist = dd[:, :3].norm(dim=-1) * 100
+            print(f"RESULT hold: distance from the tool point to the piece's centre when the piece is lifted (cm): median {dist.median():.2f}, "
+                  f"p90 {dist.quantile(0.9):.2f} over {len(dd)} grasps (|dx| |dy| |dz| medians {(dd[:, :3].abs().median(0).values * 100).tolist()})")
         if args_cli.regrasp and dbg:
             dd = torch.cat(dbg)
             ld = dd[:, 3] > 0.5
