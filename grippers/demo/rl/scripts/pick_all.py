@@ -30,6 +30,7 @@ parser.add_argument("--seed", type=int, default=None, help="seed the layouts and
 parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
+parser.add_argument("--regrasp", action="store_true", help="shape task: put the carried piece down, release it and grasp it again, centred, at the same place; the tactile maps of that second grasp are what --recognizer / --record_grasps use")
 parser.add_argument("--recognizer", default=None, help="shape task: a recogniser (joblib, scripts/fit_recognizer.py) that names every piece the policy lifts; the accuracy is printed and the name shown in --hq_video")
 parser.add_argument("--record_grasps", default=None, help="shape task: save the tactile history and the true class of every piece the policy lifts (for the recogniser) to this .npz")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
@@ -50,16 +51,18 @@ from robotiq_rl.tactile_pick import mdp as tp  # noqa: E402
 from robotiq_rl.tactile_pick.overlay import overlay_lower_left, pressure_panel  # noqa: E402
 from robotiq_rl.tactile_pick.env_cfg import BOX_CENTER, BOX_INNER, REACH_HALF, RIM_Z, TASK  # noqa: E402
 
-PICK, CARRY, RELEASE, BACK, RETURN = 0, 1, 2, 3, 4
+PICK, CARRY, RELEASE, BACK, RETURN, PLACE, ADJUST, REGRASP = 0, 1, 2, 3, 4, 5, 6, 7
+Z_PLACE = 0.055  # m: tool-tip height at which a carried piece is put down on the table (--regrasp)
+Z_GRASP = 0.026  # m: tool-tip height of the second grasp: the pads at the middle of a piece lying on the table
 HOME_Z = 0.28  # m: tool-tip height above the box centre where the policy takes over again (inside its training starts)
 CARRY_Z = 0.22  # m: tool tip height while carrying (sphere bottom ~ 18 cm: clear of the 11 cm walls)
 GAIN = 60.0  # action per metre of error (an action of 1 is 1 cm per step)
 
 
-def drop_point(k: torch.Tensor) -> torch.Tensor:
+def drop_point(k: torch.Tensor, dx: float = 0.07, dy: float = 0.07) -> torch.Tensor:
     """Where the k-th sphere of an env is dropped: beside the box on the +y side, on a grid so they do not pile up."""
-    x = BOX_CENTER[0] - 0.14 + 0.07 * (k % 5).float()
-    y = BOX_CENTER[1] + BOX_INNER / 2 + 0.10 + 0.07 * (k // 5).float()
+    x = BOX_CENTER[0] - 0.14 + dx * (k % 5).float()
+    y = BOX_CENTER[1] + BOX_INNER / 2 + 0.10 + dy * (k // 5).float()
     return torch.stack([x, y], dim=-1)
 
 
@@ -80,7 +83,8 @@ def main():
     if args_cli.gate is not None:
         env_cfg.scene.tactile.max_contact_distance = None if args_cli.gate < 0 else args_cli.gate
     reset = env_cfg.events.reset_spheres.params
-    reset["num_active_range"] = None  # all ten spheres are in the box
+    if not args_cli.task.startswith("Robotiq-Tactile-Shape"):
+        reset["num_active_range"] = None  # all ten spheres are in the box (the shape task keeps its random 4 - 8 pieces)
     reset["p_zone_only"] = 1.0 if args_cli.layout == "reachable" else 0.0
     total = args_cli.steps
     if args_cli.video:
@@ -118,7 +122,7 @@ def main():
                         taxels = shape_mdp_maps(env)[0].reshape(2, 7, 4).cpu().numpy()
                     else:
                         taxels = env.scene["tactile"].taxel_force[0].cpu().numpy()  # (2, 7, 4) N, after the sensor's contact-distance gate
-                    show = caption["text"] if caption["phase"] in (CARRY, RELEASE, BACK) else ""
+                    show = "feeling the piece ..." if caption["phase"] in (ADJUST, REGRASP) and args_cli.regrasp else (caption["text"] if caption["phase"] in (CARRY, RELEASE, BACK, PLACE) else "")
                     frame = overlay_lower_left(frame, pressure_panel(taxels, caption=show))
                 hq_writer.append_data(frame)
                 return out
@@ -134,6 +138,8 @@ def main():
         phase = torch.full((n,), PICK, device=dev)
         held_count = torch.zeros(n, device=dev)
         timer = torch.zeros(n, device=dev)
+        did_regrasp = torch.zeros(n, dtype=torch.bool, device=dev)
+        place_xy = torch.zeros(n, 2, device=dev)
         picked = torch.zeros(n, dtype=torch.long, device=dev)
         last_pick = torch.zeros(n, device=dev)
         active = torch.ones(n, dtype=torch.bool, device=dev)
@@ -195,15 +201,17 @@ def main():
             # --- the hand-over logic (sensor-based) and the scripted phases
             held_count = torch.where((phase == PICK) & sensed_hold, held_count + 1, torch.zeros_like(held_count))
             start_carry = (phase == PICK) & (held_count >= args_cli.hold_steps)
-            if (args_cli.record_grasps or recognize is not None) and bool(start_carry.any()):
-                ids = start_carry.nonzero().flatten()
+            regrasp_done = (phase == REGRASP) & (timer >= 45)
+            trigger = regrasp_done if args_cli.regrasp else start_carry
+            if (args_cli.record_grasps or recognize is not None) and bool(trigger.any()):
+                ids = trigger.nonzero().flatten()
                 nearest = torch.linalg.norm(s.sphere_pos[ids] - s.tcp[ids, None], dim=-1).argmin(-1)  # the piece in the gripper
                 if recognize is not None:
                     guess = recog_lib.predict(recognize, hist_maps[ids].cpu().numpy(), hist_closure[ids].cpu().numpy()).argmax(1)
                     truth = slot_type[nearest].cpu().numpy()
                     for g, tr in zip(guess, truth):
                         confusion[int(tr), int(g)] += 1
-                    if bool(start_carry[0]):
+                    if bool(trigger[0]):
                         e0 = int((ids == 0).nonzero()[0])
                         caption["text"] = f"recognised: {recog_lib.CLASSES[int(guess[e0])]}"
                         print(f"t={t:5d} env0: recognised {recog_lib.CLASSES[int(guess[e0])]} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
@@ -213,7 +221,8 @@ def main():
                 rec["pad_force"].append(f_sph[ids].sum(-1).cpu())
                 rec["n_picked"].append(picked[ids].cpu())
             phase = torch.where(start_carry, torch.full_like(phase, CARRY), phase)
-            target = drop_point(picked)
+            did_regrasp = did_regrasp & ~start_carry
+            target = drop_point(picked, *((0.11, 0.14) if args_cli.regrasp else (0.07, 0.07)))
             to_target = torch.cat([target - tcp[:, :2], torch.zeros(n, 1, device=dev)], dim=-1)
             carry = phase == CARRY
             reached = (to_target[:, :2].norm(dim=-1) < 0.02) & ((tcp[:, 2] - CARRY_Z).abs() < 0.03)
@@ -232,6 +241,18 @@ def main():
             back_act = torch.zeros_like(act)
             back_act[:, 2] = 0.5
             back_act[:, 6] = -1.0
+            place, adjust, regrasp = phase == PLACE, phase == ADJUST, phase == REGRASP
+            hold_xy = (GAIN * (place_xy - tcp[:, :2])).clamp(-1, 1)
+            place_act = torch.zeros_like(act)
+            place_act[:, 0:2] = (GAIN * (target - tcp[:, :2])).clamp(-1, 1)
+            place_act[:, 2] = (GAIN * (Z_PLACE - tcp[:, 2])).clamp(-1, 1) * 0.5
+            place_act[:, 6] = 1.0  # still holding
+            adjust_act = torch.zeros_like(act)
+            adjust_act[:, 0:2] = hold_xy
+            adjust_act[:, 2] = (GAIN * (Z_GRASP - tcp[:, 2])).clamp(-1, 1) * 0.5
+            adjust_act[:, 6] = -1.0  # open
+            regrasp_act = adjust_act.clone()
+            regrasp_act[:, 6] = 1.0  # close
             ret = phase == RETURN
             ret_act = torch.zeros_like(act)
             ret_act[:, 0:2] = (GAIN * (centre - tcp[:, :2])).clamp(-1, 1)
@@ -241,16 +262,35 @@ def main():
             act = torch.where(use(carry), scripted, act)
             act = torch.where(use(release), rel_act, act)
             act = torch.where(use(back), back_act, act)
+            act = torch.where(use(place), place_act, act)
+            act = torch.where(use(adjust), adjust_act, act)
+            act = torch.where(use(regrasp), regrasp_act, act)
             act = torch.where(use(ret), ret_act, act)
             act = torch.where(use(~active), torch.zeros_like(act).index_fill_(1, torch.tensor([6], device=dev), -1.0), act)
             # --- phase transitions
-            timer = torch.where(carry | release | back | ret, timer + 1, torch.zeros_like(timer))
+            timer = torch.where(carry | release | back | ret | place | adjust | regrasp, timer + 1, torch.zeros_like(timer))
             to_release = carry & (reached | (timer > 300))
+            to_place = to_release & args_cli.regrasp
+            to_release = to_release & ~to_place
+            phase = torch.where(to_place, torch.full_like(phase, PLACE), phase)
             phase = torch.where(to_release, torch.full_like(phase, RELEASE), phase)
-            timer = torch.where(to_release, torch.zeros_like(timer), timer)
-            done_release = release & (timer >= 25)
+            timer = torch.where(to_release | to_place, torch.zeros_like(timer), timer)
+            placed = place & (((tcp[:, 2] - Z_PLACE).abs() < 0.008) | (timer > 250))
+            place_xy = torch.where(placed[:, None], tcp[:, :2], place_xy)
+            phase = torch.where(placed, torch.full_like(phase, RELEASE), phase)
+            timer = torch.where(placed, torch.zeros_like(timer), timer)
+            done_release_all = release & (timer >= 25)
+            to_adjust = done_release_all & args_cli.regrasp & ~did_regrasp
+            done_release = done_release_all & ~to_adjust  # the final release: the piece stays on the table, outside the box
+            phase = torch.where(to_adjust, torch.full_like(phase, ADJUST), phase)
             phase = torch.where(done_release, torch.full_like(phase, BACK), phase)
-            timer = torch.where(done_release, torch.zeros_like(timer), timer)
+            timer = torch.where(done_release_all, torch.zeros_like(timer), timer)
+            to_regrasp = adjust & (timer >= 25)
+            phase = torch.where(to_regrasp, torch.full_like(phase, REGRASP), phase)
+            timer = torch.where(to_regrasp, torch.zeros_like(timer), timer)
+            phase = torch.where(regrasp_done, torch.full_like(phase, RELEASE), phase)  # after reading the maps: let go
+            did_regrasp = did_regrasp | regrasp_done
+            timer = torch.where(regrasp_done, torch.zeros_like(timer), timer)
             done_release_count = done_release.long()
             picked = picked + done_release_count  # the sphere is dropped: count it
             done_back = back & (timer >= 15)
