@@ -19,6 +19,11 @@ from isaaclab_physx.sim.schemas import PhysxRigidBodyCfg
 from ..tactile_pick import env_cfg as base
 from . import mdp as sp
 
+# The tactile pick's task constants with one change: a grasped piece's centre is farther from the tool point than a sphere's (the pieces are
+# up to 6.6 cm wide and held anywhere along the pads; measured while both pads press a piece: median 3.5 cm, p90 4.1 cm), so the "held" test
+# of the rewards needs a larger distance than the 3 cm of the spheres. With 3 cm the policy was rewarded for only 6 % of its grasps.
+SHAPE_TASK = {**base.TASK, "hold_dist": 0.055}
+
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "shape_sorter"
 PIECES = ["rectangle", "pentagon", "cross", "cylinder", "star", "square"]  # the class names, in class order
 SLOT_TYPES = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3]  # piece type of each of the 10 slots
@@ -82,3 +87,12 @@ class TactileShapePickEnvCfg(base.TactileSpherePickEnvCfg):
     scene: ShapePickSceneCfg = ShapePickSceneCfg(num_envs=512, env_spacing=2.0)
     observations: ObservationsCfg = ObservationsCfg()
     events: EventCfg = EventCfg()
+
+    def __post_init__(self):
+        super().__post_init__()
+        # every term that shares the task constants gets the shape task's
+        for group in (self.rewards, self.observations.policy, self.observations.critic, self.events):
+            for term in vars(group).values():
+                params = getattr(term, "params", None)
+                if isinstance(params, dict) and isinstance(params.get("cfg"), dict) and params["cfg"].get("body_name") == base.TASK["body_name"]:
+                    params["cfg"] = SHAPE_TASK

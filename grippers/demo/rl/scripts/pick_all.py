@@ -30,6 +30,7 @@ parser.add_argument("--seed", type=int, default=None, help="seed the layouts and
 parser.add_argument("--gate", type=float, default=None, help="tactile max_contact_distance [m] (negative: off); default: the task's")
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
+parser.add_argument("--recognizer", default=None, help="shape task: a recogniser (joblib, scripts/fit_recognizer.py) that names every piece the policy lifts; the accuracy is printed and the name shown in --hq_video")
 parser.add_argument("--record_grasps", default=None, help="shape task: save the tactile history and the true class of every piece the policy lifts (for the recogniser) to this .npz")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera, 1920 x 1080")
@@ -62,7 +63,15 @@ def drop_point(k: torch.Tensor) -> torch.Tensor:
     return torch.stack([x, y], dim=-1)
 
 
+def shape_mdp_maps(env):
+    """The shape task's tactile map [N] (what the policy and the recogniser see), ``(E, 56)``."""
+    from robotiq_rl.shape_pick import mdp as shape_mdp
+
+    return shape_mdp.tactile_map_shape(env, log_scale=False)
+
+
 def main():
+    caption = {"text": "", "phase": None}  # what the video panel shows: the recogniser's last answer while the piece is carried
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, overrides=hydra_overrides)
     env_cfg.episode_length_s = 3600.0  # no time-out reset: this is one long run
     if args_cli.seed is not None:
@@ -105,8 +114,12 @@ def main():
                 hq_cam.update(1 / 120, force_recompute=True)
                 frame = hq_cam.data.output["rgb"][0, ..., :3].cpu().numpy()
                 if args_cli.hq_pressure_map:
-                    taxels = env.scene["tactile"].taxel_force[0].cpu().numpy()  # (2, 7, 4) N, after the sensor's contact-distance gate
-                    frame = overlay_lower_left(frame, pressure_panel(taxels))
+                    if args_cli.task.startswith("Robotiq-Tactile-Shape"):  # the map the policy sees (the pieces' footprints)
+                        taxels = shape_mdp_maps(env)[0].reshape(2, 7, 4).cpu().numpy()
+                    else:
+                        taxels = env.scene["tactile"].taxel_force[0].cpu().numpy()  # (2, 7, 4) N, after the sensor's contact-distance gate
+                    show = caption["text"] if caption["phase"] in (CARRY, RELEASE, BACK) else ""
+                    frame = overlay_lower_left(frame, pressure_panel(taxels, caption=show))
                 hq_writer.append_data(frame)
                 return out
 
@@ -146,7 +159,14 @@ def main():
 
         reach = torch.tensor(REACH_HALF, device=dev)
         HIST = 8  # tactile history kept for the recogniser: the last HIST policy steps
-        if args_cli.record_grasps:
+        recognize = None
+        if args_cli.recognizer:
+            import joblib
+            from robotiq_rl.shape_pick import recognizer as recog_lib
+
+            recognize = joblib.load(args_cli.recognizer)
+            confusion = torch.zeros(6, 6, dtype=torch.long)
+        if args_cli.record_grasps or recognize is not None:
             from robotiq_rl.shape_pick import mdp as shape_mdp
             from robotiq_rl.shape_pick.env_cfg import SLOT_TYPES
 
@@ -175,9 +195,18 @@ def main():
             # --- the hand-over logic (sensor-based) and the scripted phases
             held_count = torch.where((phase == PICK) & sensed_hold, held_count + 1, torch.zeros_like(held_count))
             start_carry = (phase == PICK) & (held_count >= args_cli.hold_steps)
-            if args_cli.record_grasps and bool(start_carry.any()):
+            if (args_cli.record_grasps or recognize is not None) and bool(start_carry.any()):
                 ids = start_carry.nonzero().flatten()
                 nearest = torch.linalg.norm(s.sphere_pos[ids] - s.tcp[ids, None], dim=-1).argmin(-1)  # the piece in the gripper
+                if recognize is not None:
+                    guess = recog_lib.predict(recognize, hist_maps[ids].cpu().numpy(), hist_closure[ids].cpu().numpy()).argmax(1)
+                    truth = slot_type[nearest].cpu().numpy()
+                    for g, tr in zip(guess, truth):
+                        confusion[int(tr), int(g)] += 1
+                    if bool(start_carry[0]):
+                        e0 = int((ids == 0).nonzero()[0])
+                        caption["text"] = f"recognised: {recog_lib.CLASSES[int(guess[e0])]}"
+                        print(f"t={t:5d} env0: recognised {recog_lib.CLASSES[int(guess[e0])]} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
                 rec["maps"].append(hist_maps[ids].cpu())
                 rec["closure"].append(hist_closure[ids].cpu())
                 rec["label"].append(slot_type[nearest].cpu())
@@ -257,8 +286,9 @@ def main():
                 meas["total"] += float((plain.sum((-1, -2)) * live).sum())
                 meas["max_gate"] = max(meas["max_gate"], float((plain - gated).abs().max()))
                 meas["max_geom"] = max(meas["max_geom"], float((plain - old).abs().max()))
+            caption["phase"] = int(phase[0])
             obs, *_ = env.step(act)
-            if args_cli.record_grasps:  # the maps after this step (what the next decision sees): a rolling history
+            if args_cli.record_grasps or recognize is not None:  # the maps after this step (what the next decision sees): a rolling history
                 hist_maps = torch.cat([hist_maps[:, 1:], shape_mdp.tactile_map_shape(env, log_scale=False)[:, None]], dim=1)
                 hist_closure = torch.cat([hist_closure[:, 1:], env.scene["robot"].data.joint_pos.torch[:, s.finger_id][:, None]], dim=1)
         left = spheres_in_box()
@@ -276,6 +306,12 @@ def main():
             print(f"RESULT gate: env-steps where it changes the map by > 0.01 N: {meas['gate_changes']} ({100 * meas['gate_changes'] / max(meas['contact'], 1):.2f} % of the steps with contact)")
             print(f"RESULT gate: share of the total tactile force it removes: {100 * meas['removed'] / max(meas['total'], 1e-9):.3f} %; largest change of one taxel {meas['max_gate']:.2f} N")
             print(f"RESULT geometry: largest difference of one taxel between the old rounded grid and the exact one: {meas['max_geom']:.3f} N")
+        if recognize is not None:
+            total = int(confusion.sum())
+            correct = int(confusion.diag().sum())
+            print(f"RESULT recognition: {correct} of {total} lifted pieces named correctly ({100 * correct / max(total, 1):.1f} %)")
+            for i, name in enumerate(recog_lib.CLASSES):
+                print(f"RESULT   {name:10s} " + " ".join(f"{int(v):4d}" for v in confusion[i]) + f"   recall {int(confusion[i, i]) / max(int(confusion[i].sum()), 1):.2f}")
         if args_cli.record_grasps:
             import numpy as np
 
