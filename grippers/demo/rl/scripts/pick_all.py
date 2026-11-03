@@ -142,6 +142,7 @@ def main():
         held_count = torch.zeros(n, device=dev)
         timer = torch.zeros(n, device=dev)
         did_regrasp = torch.zeros(n, dtype=torch.bool, device=dev)
+        unk = torch.zeros(n, dtype=torch.bool, device=dev)  # the piece in the gripper was "unknown": it is put back in the box, not carried out
         place_xy = torch.zeros(n, 2, device=dev)
         regrasp_off = torch.zeros(n, 2, device=dev)  # horizontal offset of the piece from the pads' centre, from the tactile footprint of the first grasp
         picked = torch.zeros(n, dtype=torch.long, device=dev)
@@ -175,7 +176,8 @@ def main():
             from robotiq_rl.shape_pick import recognizer as recog_lib
 
             recognize = joblib.load(args_cli.recognizer)
-            confusion = torch.zeros(6, 6, dtype=torch.long)
+            confusion = torch.zeros(6, 7, dtype=torch.long)  # rows: the piece, columns: the six answers, then "unknown"
+            events = []  # (env, slot, step, true class, answer or -1): every time a piece is held and read
         if args_cli.record_grasps or recognize is not None or args_cli.regrasp:
             from robotiq_rl.shape_pick import mdp as shape_mdp
             from robotiq_rl.shape_pick.env_cfg import SLOT_TYPES
@@ -206,20 +208,31 @@ def main():
             # --- the hand-over logic (sensor-based) and the scripted phases
             held_count = torch.where((phase == PICK) & sensed_hold, held_count + 1, torch.zeros_like(held_count))
             start_carry = (phase == PICK) & (held_count >= args_cli.hold_steps)
+            unk_now = torch.zeros(n, dtype=torch.bool, device=dev)
             regrasp_done = (phase == REGRASP) & (timer >= 45)
             trigger = regrasp_done if args_cli.regrasp else start_carry
             if (args_cli.record_grasps or recognize is not None) and bool(trigger.any()):
                 ids = trigger.nonzero().flatten()
                 nearest = torch.linalg.norm(s.sphere_pos[ids] - s.tcp[ids, None], dim=-1).argmin(-1)  # the piece in the gripper
                 if recognize is not None:
-                    guess = recog_lib.predict(recognize, hist_maps[ids].cpu().numpy(), hist_closure[ids].cpu().numpy()).argmax(1)
+                    guess, proba = recog_lib.decide(recognize, hist_maps[ids].cpu().numpy(), hist_closure[ids].cpu().numpy())
                     truth = slot_type[nearest].cpu().numpy()
-                    for g, tr in zip(guess, truth):
-                        confusion[int(tr), int(g)] += 1
+                    for k, (g, tr) in enumerate(zip(guess, truth)):
+                        confusion[int(tr), 6 if g < 0 else int(g)] += 1
+                        events.append((int(ids[k]), int(nearest[k]), t, int(tr), int(g)))
+                    if not args_cli.regrasp:  # "unknown": not carried out, put back in the box (released where it is, above the box)
+                        unknown_ids = ids[torch.tensor(guess < 0, device=dev)]
+                        unk_now[unknown_ids] = True
+                        unk |= unk_now
                     if bool(trigger[0]):
                         e0 = int((ids == 0).nonzero()[0])
-                        caption["text"] = f"recognised: {recog_lib.CLASSES[int(guess[e0])]}"
-                        print(f"t={t:5d} env0: recognised {recog_lib.CLASSES[int(guess[e0])]} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
+                        best = recog_lib.CLASSES[int(proba[e0].argmax())]
+                        if guess[e0] < 0:
+                            caption["text"] = f"unknown ({best} {proba[e0].max():.0%}): put back"
+                            print(f"t={t:5d} env0: unknown (best guess {best} {proba[e0].max():.0%}; it is a {recog_lib.CLASSES[int(truth[e0])]}): put back in the box")
+                        else:
+                            caption["text"] = f"recognised: {best}"
+                            print(f"t={t:5d} env0: recognised {best} {proba[e0].max():.0%} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
                 if True:
                     off_now = (s.sphere_pos[ids, nearest] - s.tcp[ids]).cpu()
                     loaded = (f_sph[ids].sum((-1, -2)) > 1.0).cpu()
@@ -241,6 +254,8 @@ def main():
                 w = m.sum((2, 3))
                 regrasp_off[ids] = ((off[..., :2] * w[..., None]).sum(1) / (w.sum(1, keepdim=True) + 1e-6)).clamp(-0.03, 0.03)
             phase = torch.where(start_carry, torch.full_like(phase, CARRY), phase)
+            phase = torch.where(unk_now, torch.full_like(phase, RELEASE), phase)  # an unknown piece is let go at once
+            timer = torch.where(unk_now, torch.zeros_like(timer), timer)
             did_regrasp = did_regrasp & ~start_carry
             target = drop_point(picked, *((0.11, 0.14) if args_cli.regrasp else (0.07, 0.07)))
             to_target = torch.cat([target - tcp[:, :2], torch.zeros(n, 1, device=dev)], dim=-1)
@@ -311,17 +326,18 @@ def main():
             phase = torch.where(regrasp_done, torch.full_like(phase, RELEASE), phase)  # after reading the maps: let go
             did_regrasp = did_regrasp | regrasp_done
             timer = torch.where(regrasp_done, torch.zeros_like(timer), timer)
-            done_release_count = done_release.long()
+            done_release_count = (done_release & ~unk).long()  # a piece put back in the box does not count
             picked = picked + done_release_count  # the sphere is dropped: count it
             done_back = back & (timer >= 15)
             phase = torch.where(done_back, torch.full_like(phase, RETURN), phase)
             timer = torch.where(done_back, torch.zeros_like(timer), timer)
             home = ((centre - tcp[:, :2]).norm(dim=-1) < 0.05) & ((tcp[:, 2] - HOME_Z).abs() < 0.04)
             done_return = ret & (home | (timer >= 200))
-            last_pick = torch.where(done_return, torch.full_like(last_pick, float(t)), last_pick)
+            last_pick = torch.where(done_return & ~unk, torch.full_like(last_pick, float(t)), last_pick)  # only a piece carried out is progress
+            unk = unk & ~done_return
             phase = torch.where(done_return, torch.full_like(phase, PICK), phase)
             timer = torch.where(done_return, torch.zeros_like(timer), timer)
-            if bool(done_release[0]):
+            if bool(done_release[0]) and not bool(unk[0]):
                 print(f"t={t:5d} env0: sphere {int(picked[0])} dropped; {int(spheres_in_box()[0])} left in the box")
             giving_up = active & (phase == PICK) & ((t - last_pick) > args_cli.give_up)
             if giving_up.any():
@@ -379,10 +395,24 @@ def main():
                   f"median |estimated offset| {(dd[:, 4:].norm(dim=-1).median() * 100):.2f} cm")
         if recognize is not None:
             total = int(confusion.sum())
-            correct = int(confusion.diag().sum())
-            print(f"RESULT recognition: {correct} of {total} lifted pieces named correctly ({100 * correct / max(total, 1):.1f} %)")
+            answered = int(confusion[:, :6].sum())
+            correct = int(confusion[:, :6].diag().sum())
+            print(f"RESULT recognition: {total} pieces held and read; {answered} named ({100 * answered / max(total, 1):.1f} %), {total - answered} unknown and put back; "
+                  f"of the {answered} named, {correct} correctly ({100 * correct / max(answered, 1):.1f} %); counting unknown as wrong: {100 * correct / max(total, 1):.1f} %")
+            print("RESULT                 " + " ".join(f"{n[:5]:>5s}" for n in recog_lib.CLASSES) + "  unkn")
             for i, name in enumerate(recog_lib.CLASSES):
-                print(f"RESULT   {name:10s} " + " ".join(f"{int(v):4d}" for v in confusion[i]) + f"   recall {int(confusion[i, i]) / max(int(confusion[i].sum()), 1):.2f}")
+                print(f"RESULT   {name:10s} " + " ".join(f"{int(v):5d}" for v in confusion[i]) + f"   recall when answered {int(confusion[i, i]) / max(int(confusion[i, :6].sum()), 1):.2f}, unknown {int(confusion[i, 6]) / max(int(confusion[i].sum()), 1):.0%}")
+            # what happens to a piece that was put back: is it held again, and named?
+            seq = {}
+            for e, sl, tt, tr, g in events:
+                seq.setdefault((e, sl), []).append((tt, tr, g))
+            back = [v for v in seq.values() if v[0][2] < 0]
+            again = [v for v in back if len(v) > 1]
+            if back:
+                outcome = [v[1][2] for v in again]
+                right = sum(1 for v in again if v[1][2] == v[1][1])
+                print(f"RESULT put back: {len(back)} pieces were put back; {len(again)} of them were held and read again; of those, {right} named correctly, "
+                      f"{sum(1 for o in outcome if o >= 0) - right} named wrongly, {sum(1 for o in outcome if o < 0)} unknown again")
         if args_cli.record_grasps:
             import numpy as np
 

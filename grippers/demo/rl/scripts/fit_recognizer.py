@@ -20,6 +20,7 @@ spec.loader.exec_module(rec)
 ap = argparse.ArgumentParser()
 ap.add_argument("data", nargs="+")
 ap.add_argument("--out", default=None)
+ap.add_argument("--target", type=float, default=0.85, help="accuracy wanted on the pieces the recogniser answers; below the confidence this needs, it says unknown")
 ap.add_argument("--min_force", type=float, default=1.0, help="drop recordings whose pads carry less than this [N] in total (not a grasp)")
 args = ap.parse_args()
 
@@ -50,5 +51,8 @@ for i, name in enumerate(rec.CLASSES):
 if args.out:
     import joblib
 
-    joblib.dump(rec.fit(maps, closure, y), args.out, compress=3)
+    model = rec.fit_model(maps, closure, y, target_accuracy=args.target)
+    print(f"calibrated (temperature {model['temperature']:.2f}); unknown below a confidence of {model['threshold']:.2f}: cross-validated, it answers "
+          f"{model['cv_coverage']:.1%} of the pieces with {model['cv_accuracy_answered']:.1%} accuracy (target {args.target:.0%}; without abstaining {model['cv_accuracy']:.1%})")
+    joblib.dump(model, args.out, compress=3)
     print("saved", args.out, f"{Path(args.out).stat().st_size / 1e6:.1f} MB")
