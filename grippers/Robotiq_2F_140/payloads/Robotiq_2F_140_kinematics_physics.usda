@@ -145,8 +145,9 @@ def Xform "Robotiq_2F_140"
                 float state:angular:physics:velocity = 0
             }
 
-            # inner_finger / inner_finger_knuckle limits: CAD collision sweep from
+            # inner_finger_knuckle limits: CAD collision sweep from
             # gripper_joint_limits_report, rounded inward. The right side mirrors the left.
+            # inner_finger: tuned on the compliant variants (#174).
             def PhysicsRevoluteJoint "left_inner_finger_joint" (
                 prepend apiSchemas = ["PhysicsJointStateAPI:angular"]
             )
