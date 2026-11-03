@@ -68,6 +68,11 @@ def reset_spheres_in_box(
     num_active_range: tuple[int, int] | None = None,
     p_zone_only: float = 0.0,
     park_xy: tuple[float, float] = (0.3, 0.95),
+    active_mask: torch.Tensor | None = None,
+    random_orientation: bool = False,
+    drop_height: float = 0.045,
+    park_z: float = 0.3,
+    park_spacing: float = 0.05,
 ):
     """Put the spheres at random, non-overlapping spots on the box floor (dart throwing, per env).
 
@@ -75,7 +80,13 @@ def reset_spheres_in_box(
     can reach) sphere 0 is placed inside it first, so there is always at least one sphere to pick. A share
     ``p_zone_only`` of the envs puts all spheres in that zone: every sphere can be picked, as when emptying the box.
     With ``num_active_range`` only a random number of spheres (sphere 0 first) stays in the box, the others are
-    parked on the ground beside the table: the policy meets boxes with few spheres left, as when emptying one."""
+    parked on the ground beside the table: the policy meets boxes with few spheres left, as when emptying one.
+
+    ``active_mask`` ``(n, NUM_SPHERES)`` (bool) overrides ``num_active_range``: exactly those objects are in the box.
+    ``random_orientation`` drops each object from ``drop_height`` above the floor with a uniformly random orientation (for
+    objects that are not spheres: they settle on a face of their own). The objects that are not in the box are parked at
+    ``park_xy`` (spaced ``park_spacing`` apart) at height ``park_z``: 0.3 m above the ground beside the table by default, they
+    fall; with ``park_z`` just above the ground they are at rest and nothing falls in view."""
     if isinstance(env_ids, slice):
         env_ids = torch.arange(env.num_envs, device=env.device)[env_ids]
     n = len(env_ids)
@@ -98,7 +109,9 @@ def reset_spheres_in_box(
     origins = env.scene.env_origins[env_ids]
     quat = torch.tensor([0.0, 0.0, 0.0, 1.0], device=dev).repeat(n, 1)
     zero = torch.zeros(n, 6, device=dev)
-    if num_active_range is not None:
+    if active_mask is not None:
+        k = None
+    elif num_active_range is not None:
         k = torch.randint(num_active_range[0], num_active_range[1] + 1, (n,), device=dev)
     else:
         k = torch.full((n,), NUM_SPHERES, device=dev)
@@ -107,15 +120,18 @@ def reset_spheres_in_box(
             [
                 origins[:, 0] + box_center[0] + placed[:, i, 0],
                 origins[:, 1] + box_center[1] + placed[:, i, 1],
-                origins[:, 2] + floor_z + radius + 0.002 + torch.zeros(n, device=dev),
+                origins[:, 2] + floor_z + (drop_height if random_orientation else radius + 0.002) + torch.zeros(n, device=dev),
             ],
             dim=-1,
         )
         parked = torch.stack(
-            [origins[:, 0] + park_xy[0] + 0.05 * i, origins[:, 1] + park_xy[1], origins[:, 2] + 0.3 + torch.zeros(n, device=dev)],
+            [origins[:, 0] + park_xy[0] + park_spacing * i, origins[:, 1] + park_xy[1], origins[:, 2] + park_z + torch.zeros(n, device=dev)],
             dim=-1,
         )
-        pos = torch.where((i < k)[:, None], in_box, parked)
+        active = active_mask[:, i] if active_mask is not None else (i < k)
+        pos = torch.where(active[:, None], in_box, parked)
+        if random_orientation:
+            quat = torch.nn.functional.normalize(torch.randn(n, 4, device=dev), dim=-1)  # uniform on SO(3), (x, y, z, w)
         sphere = env.scene[f"sphere_{i}"]
         sphere.write_root_pose_to_sim_index(root_pose=torch.cat([pos, quat], dim=-1), env_ids=env_ids)
         sphere.write_root_velocity_to_sim_index(root_velocity=zero, env_ids=env_ids)
