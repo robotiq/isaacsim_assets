@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2026 Robotiq.
+"""Extract the deformable sensing pad of the TSF-85 into ``parts/TSF_85_pad.usd``.
+
+Source: the TSF-85 Isaac Sim model of the Control and Robotics Laboratory (CoRo) of the Ecole de technologie
+superieure (Montreal), ``assets/TSF_85.usd`` of github.com/Lab-CORO/TSF-85, used under agreement with Robotiq.
+De la Cruz Sanchez & Roberge, Front. Robot. AI 12:1639524 (2025), doi:10.3389/frobt.2025.1639524.
+
+Keeps ``/World/Deformable`` (the 432-node tetrahedral mesh, its material and its APIs) and drops its attachment to
+the rigid case, which is authored on the gripper instead. Two changes, both needed for the pad to carry a grip in
+Isaac Sim 6.2 (see tactile/PRECISE_PLAN.md): the material density is raised from the schema default (a 3 g pad, which the
+position-based solver cannot hold under a gripper's load) to ``PAD_DENSITY``, and the solver position iteration
+count is set to ``SOLVER_ITERATIONS``. The pad is also given the colour of the real sensor's pad, and the auto-cook APIs of the body are dropped (see main()). Needs Isaac Sim's ``pxr``:
+
+    python3 tools/extract_tsf85_pad.py /path/to/TSF_85.usd
+"""
+
+import sys
+from pathlib import Path
+
+from pxr import Sdf, Usd
+
+PAD_DENSITY = 4.0e4  # kg/m^3
+# Young's modulus. The lab's file says 1.289 MPa (the bulk elastomer), but a 3 mm layer bonded to its backing then thins by only
+# 10-30 um under a flat grasp of tens of newtons, while the lab's network has a full scale of 1.6 mm: the pad of the lab's own
+# simulation was much softer (about 25-75 kPa effective, measured in tactile/PRECISE_PLAN.md spike 2), and the network was
+# trained on its displacements. 50 kPa puts a flat grasp at a few hundred um, in the network's range.
+PAD_YOUNGS = 5.0e4  # Pa
+# The render material of the lab's pad is a red OmniPBR; the real sensor's pad is the near-black rubber of the
+# ``TactilePad`` material of parts/TSF_85_case.usd (diffuseColor 0.05, 0.05, 0.055).
+PAD_COLOR = (0.05, 0.05, 0.055)
+SOLVER_ITERATIONS = 64
+OUT = Path(__file__).resolve().parents[1] / "parts" / "TSF_85_pad.usd"
+
+
+def main(src: str) -> None:
+    src_layer = Sdf.Layer.FindOrOpen(src)
+    out = Sdf.Layer.CreateNew(str(OUT))
+    out.defaultPrim = "Pad"
+    out.metersPerUnit = 1.0
+    out.upAxis = "Z"
+    root = Sdf.CreatePrimInLayer(out, "/Pad")
+    root.specifier = Sdf.SpecifierDef
+    Sdf.CopySpec(src_layer, "/World/Deformable", out, "/Pad")
+    # the attachment to the case (authored on the gripper instead)
+    parent = out.GetPrimAtPath("/Pad")
+    del parent.nameChildren["attachment"]
+    mat = out.GetPrimAtPath("/Pad/Looks/Deformable_Material")
+    # not authored upstream (the schema default is used), so create it
+    density = mat.attributes.get("omniphysics:density") or Sdf.AttributeSpec(
+        mat, "omniphysics:density", Sdf.ValueTypeNames.Float)
+    density.default = PAD_DENSITY
+    # The lab's body carries the auto-cook APIs (PhysxAutoDeformableBodyAPI, mesh simplification, hexahedral mesh): PhysX
+    # then re-cooks the simulation mesh from the 8-point source box when it decides its inputs changed. In a scene where the
+    # gripper hangs on a robot (the teleop demo) it does so at the first play and replaces the 432-node mesh by a different
+    # one (972 / 908 nodes), which breaks the attachments and the reader. The file already has the cooked meshes, so the
+    # body keeps only the schemas that simulate it.
+    parent.SetInfo("apiSchemas", Sdf.TokenListOp.CreateExplicit(
+        ["OmniPhysicsDeformableBodyAPI", "PhysxBaseDeformableBodyAPI", "MaterialBindingAPI"]))
+    for name in ("physxDeformableBody:resolution", "physxDeformableBody:deformableBodyDataCrc"):
+        if name in parent.attributes:
+            parent.RemoveProperty(parent.attributes[name])
+    if "physxDeformableBody:cookingSourceMesh" in parent.relationships:
+        parent.RemoveProperty(parent.relationships["physxDeformableBody:cookingSourceMesh"])
+    mat.attributes["omniphysics:youngsModulus"].default = PAD_YOUNGS
+    shader = out.GetPrimAtPath("/Pad/Looks/Deformable_Material/Shader")
+    shader.attributes["inputs:diffuse_color_constant"].default = PAD_COLOR
+    shader.attributes["inputs:diffuse_tint"].default = (1.0, 1.0, 1.0)
+    iters = Sdf.AttributeSpec(parent, "physxDeformableBody:solverPositionIterationCount", Sdf.ValueTypeNames.Int)
+    iters.default = SOLVER_ITERATIONS
+    gravity = Sdf.AttributeSpec(parent, "physxDeformableBody:disableGravity", Sdf.ValueTypeNames.Bool)
+    gravity.default = True
+    out.Save()
+    stage = Usd.Stage.Open(str(OUT))
+    for p in stage.Traverse():
+        print(p.GetPath(), p.GetTypeName())
+    print("Wrote", OUT, OUT.stat().st_size, "bytes")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
