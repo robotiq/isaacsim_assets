@@ -33,7 +33,11 @@ SHAPE_TASK = {
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "shape_sorter"
 PIECES = ["rectangle", "pentagon", "cross", "cylinder", "star", "square"]  # the class names, in class order
-NUM_SLOTS = 18  # three pieces of each type; every reset puts 8 to 16 of them in the box
+# three pieces of each type; every reset puts 8 to 16 of them in the box. SHAPE_SLOTS / SHAPE_ACTIVE / SHAPE_MIN_GAP change that for a denser box
+# (e.g. SHAPE_SLOTS=36 SHAPE_ACTIVE=16,32 SHAPE_MIN_GAP=0.04: twice the pieces; pieces may then touch and stack)
+NUM_SLOTS = int(os.environ.get("SHAPE_SLOTS", 18))
+ACTIVE_RANGE = tuple(int(v) for v in os.environ.get("SHAPE_ACTIVE", "8,16").split(","))
+MIN_GAP = float(os.environ.get("SHAPE_MIN_GAP", 0.058))
 SLOT_TYPES = [i % len(PIECES) for i in range(NUM_SLOTS)]  # piece type of each slot
 
 
@@ -99,7 +103,8 @@ class EventCfg(base.EventCfg):
         mode="reset",
         params={
             "slot_types": SLOT_TYPES,
-            "num_active_range": (8, 16),
+            "num_active_range": ACTIVE_RANGE,
+            "min_gap": MIN_GAP,
             **{k: v for k, v in base.EventCfg().reset_spheres.params.items() if k not in ("num_active_range", "p_zone_only")},
             "p_zone_only": 0.0,  # 16 pieces do not fit in the tool tip's reach: they are spread over the whole floor
         },
