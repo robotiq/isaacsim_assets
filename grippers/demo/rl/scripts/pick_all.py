@@ -31,6 +31,7 @@ parser.add_argument("--gate", type=float, default=None, help="tactile max_contac
 parser.add_argument("--measure_gate", action="store_true", help="count how often the contact-distance gate / the old taxel geometry change the tactile map")
 parser.add_argument("--env_completes_picks", action="store_true", help="leave the task's own pick completion on (it teleports a sphere held out of the box and homes the arm); off by default, the supervisor does the carry itself")
 parser.add_argument("--regrasp", action="store_true", help="shape task: put the carried piece down, release it and grasp it again, centred, at the same place; the tactile maps of that second grasp are what --recognizer / --record_grasps use")
+parser.add_argument("--lift_first", action="store_true", help="the policy only finds and grasps: at a confirmed grasp (both pads press, gripper closed on something) the supervisor takes over, lifts the piece straight up, reads the maps there and then carries it out (named) or puts it back (unknown)")
 parser.add_argument("--putback_speed", type=float, default=2.0, help="speed [rad/s] of every joint when an unknown piece is taken to the put-back poses")
 parser.add_argument("--no_centre", action="store_true", help="--regrasp: do not shift the second grasp by the offset of the piece on the pads, estimated from the tactile maps of the first")
 parser.add_argument("--recognizer", default=None, help="shape task: a recogniser (joblib, scripts/fit_recognizer.py) that names every piece the policy lifts; the accuracy is printed and the name shown in --hq_video")
@@ -55,7 +56,9 @@ from robotiq_rl.tactile_pick import mdp as tp  # noqa: E402
 from robotiq_rl.tactile_pick.overlay import overlay_lower_left, pressure_panel  # noqa: E402
 from robotiq_rl.tactile_pick.env_cfg import BOX_CENTER, BOX_INNER, REACH_HALF, RIM_Z, TASK  # noqa: E402
 
-PICK, CARRY, RELEASE, BACK, RETURN, PLACE, ADJUST, REGRASP, PUTBACK = 0, 1, 2, 3, 4, 5, 6, 7, 8
+PICK, CARRY, RELEASE, BACK, RETURN, PLACE, ADJUST, REGRASP, PUTBACK, LIFT = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+Z_READ = 0.20  # m: tool-tip height of the scripted vertical lift (--lift_first), where the tactile maps are read (a held piece clears the rim by 5 cm)
+LIFT_SPEED = 0.5  # action units: 5 mm per step, 0.15 m/s
 # Putting an unknown piece back in the box: the arm goes to a fixed joint pose, then to a second one, and lets go there. Joint angles
 # [rad] of shoulder_pan, shoulder_lift, elbow, wrist_1, wrist_2, wrist_3 for the tool tip at (x, y, z) in the env frame, pointing down
 # (from tactile_pick/start_poses.npz; the box centre is (0.5, 0)).
@@ -147,6 +150,9 @@ def main():
         n, dev = env.num_envs, env.device
         phase = torch.full((n,), PICK, device=dev)
         held_count = torch.zeros(n, device=dev)
+        lift_xy = torch.zeros(n, 2, device=dev)  # where the vertical lift stays (--lift_first)
+        ready_count = torch.zeros(n, device=dev)  # steps spent at the reading height
+        lost_count = torch.zeros(n, device=dev)  # steps in a row with a pad not pressing during the lift
         timer = torch.zeros(n, device=dev)
         did_regrasp = torch.zeros(n, dtype=torch.bool, device=dev)
         pb_stage = torch.zeros(n, dtype=torch.long, device=dev)  # 0: going to PUT_BACK_ABOVE, 1: going to PUT_BACK_RELEASE
@@ -227,7 +233,11 @@ def main():
             s = tp.get_state(env, TASK)
             f_sph, _ = tp.contact_forces(env, "pad_spheres")
             pad = f_sph.sum(-1)  # (n, 2)
-            sensed_hold = (pad > 1.0).all(-1) & (s.tcp[:, 2] > RIM_Z + 0.06)
+            if args_cli.lift_first:  # a grasp: both pads press and the gripper is closed on something, wherever the tool is
+                closure = robot.data.joint_pos.torch[:, s.finger_id] / TASK["closed_pos"]
+                sensed_hold = (pad > 1.0).all(-1) & (closure > TASK["min_closure"])
+            else:
+                sensed_hold = (pad > 1.0).all(-1) & (s.tcp[:, 2] > RIM_Z + 0.06)
             with torch.inference_mode():
                 act = policy(obs["policy"]).clone()
             tcp = s.tcp
@@ -236,6 +246,19 @@ def main():
             # --- the hand-over logic (sensor-based) and the scripted phases
             held_count = torch.where((phase == PICK) & sensed_hold, held_count + 1, torch.zeros_like(held_count))
             start_carry = (phase == PICK) & (held_count >= args_cli.hold_steps)
+            if args_cli.lift_first:
+                start_lift = start_carry  # the grasp is confirmed: the supervisor lifts
+                lifting = phase == LIFT
+                at_height = lifting & (s.tcp[:, 2] >= Z_READ - 0.005)
+                ready_count = torch.where(at_height, ready_count + 1, torch.zeros_like(ready_count))
+                lost_count = torch.where(lifting & (pad < 0.3).any(-1), lost_count + 1, torch.zeros_like(lost_count))
+                start_carry = lifting & (ready_count >= 8)  # 8 steps at the height: the maps are steady, read them and decide
+                slipped = lifting & (lost_count >= 6)  # the piece slipped out: let go, nothing is counted
+                lift_xy = torch.where(start_lift[:, None], s.tcp[:, :2], lift_xy)
+                phase = torch.where(start_lift, torch.full_like(phase, LIFT), phase)
+                phase = torch.where(slipped, torch.full_like(phase, RELEASE), phase)
+                unk |= slipped
+                ready_count = torch.where(start_carry | start_lift | slipped, torch.zeros_like(ready_count), ready_count)
             unk_now = torch.zeros(n, dtype=torch.bool, device=dev)
             regrasp_done = (phase == REGRASP) & (timer >= 45)
             trigger = regrasp_done if args_cli.regrasp else start_carry
@@ -306,6 +329,11 @@ def main():
             back_act = torch.zeros_like(act)
             back_act[:, 2] = 0.5
             back_act[:, 6] = -1.0
+            lift = phase == LIFT
+            lift_act = torch.zeros_like(act)
+            lift_act[:, 0:2] = (GAIN * (lift_xy - tcp[:, :2])).clamp(-1, 1)
+            lift_act[:, 2] = torch.where(tcp[:, 2] < Z_READ, torch.full_like(tcp[:, 2], LIFT_SPEED), torch.zeros_like(tcp[:, 2]))
+            lift_act[:, 6] = 1.0  # closed
             putback = phase == PUTBACK
             pb_act = torch.zeros_like(act)
             pb_act[:, 6] = 1.0  # the piece stays held; the joint targets are set by write_with_joint_goal
@@ -330,6 +358,7 @@ def main():
             act = torch.where(use(carry), scripted, act)
             act = torch.where(use(release), rel_act, act)
             act = torch.where(use(back), back_act, act)
+            act = torch.where(use(lift), lift_act, act)
             act = torch.where(use(putback), pb_act, act)
             act = torch.where(use(place), place_act, act)
             act = torch.where(use(adjust), adjust_act, act)

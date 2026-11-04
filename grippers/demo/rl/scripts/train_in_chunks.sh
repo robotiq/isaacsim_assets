@@ -30,19 +30,28 @@ PY=.venv/bin/python
 LOGS=logs/rsl_rl/${EXPERIMENT:-tactile_sphere_pick}
 
 for k in $(seq 1 "$CHUNKS"); do
-  args=(--rl_library rsl_rl --task $TASK --num_envs "$ENVS" --max_iterations "$CHUNK" --run_name "${NAME}_c$k")
+  args=(--rl_library rsl_rl --task $TASK --num_envs "$ENVS" --max_iterations "$CHUNK")
   [ -n "$CKPT" ] && args+=(--checkpoint "$CKPT")
   # TRAIN_ARGS: extra train.py / hydra overrides, e.g. "agent.algorithm.entropy_coef=0.0"
   # shellcheck disable=SC2206
   args+=(${TRAIN_ARGS:-})
   # a run directory of this name from an earlier run would be picked up below as this chunk's result
   [ -n "$(ls -d $LOGS/*_"${NAME}_c$k" 2>/dev/null)" ] && { echo "run name ${NAME}_c$k already exists under $LOGS, use another NAME"; exit 1; }
-  echo "[$(date +%T)] chunk $k: training ${args[*]}"
-  locked "tactile-$NAME-train-c$k" $PY scripts/reinforcement_learning/train.py "${args[@]}" > "$LOGDIR/tp-$NAME-c$k.log" 2>&1
-  run=$(ls -td $LOGS/*_"${NAME}_c$k" 2>/dev/null | head -1)
-  [ -z "$run" ] && { echo "chunk $k: no run directory, stopping"; exit 1; }
-  CKPT=$(ls -v "$run"/model_*.pt 2>/dev/null | tail -1)
-  [ -z "$CKPT" ] && { echo "chunk $k: training left no checkpoint (see the log), stopping"; exit 1; }
+  # a chunk that fails to start (a GPU out-of-memory error at the start, for instance) is tried again, twice, under another run name
+  RESUME=$CKPT
+  for attempt in 1 2 3; do
+    rn="${NAME}_c$k"; [ "$attempt" -gt 1 ] && rn="${NAME}r${attempt}_c$k"
+    try=("${args[@]}" --run_name "$rn")
+    [ "$attempt" -gt 1 ] && [ -n "$RESUME" ] && try+=(--checkpoint "$RESUME")
+    echo "[$(date +%T)] chunk $k (attempt $attempt): training ${try[*]}"
+    locked "tactile-$NAME-train-c$k" $PY scripts/reinforcement_learning/train.py "${try[@]}" > "$LOGDIR/tp-$rn.log" 2>&1
+    run=$(ls -td $LOGS/*_"$rn" 2>/dev/null | head -1)
+    CKPT=$(ls -v "$run"/model_*.pt 2>/dev/null | tail -1)
+    [ -n "$CKPT" ] && break
+    echo "[$(date +%T)] chunk $k attempt $attempt left no checkpoint (see $LOGDIR/tp-$rn.log)"; sleep 60
+  done
+  [ -z "$CKPT" ] && { echo "chunk $k: training left no checkpoint after 3 attempts, stopping"; exit 1; }
+  cp "$LOGDIR/tp-$rn.log" "$LOGDIR/tp-$NAME-c$k.log"
   echo "[$(date +%T)] chunk $k done: $CKPT"
   grep -E "Mean reward|Mean episode length|Episode_Reward/(enter|coverage|touch|grasp|stable|lift|success)" "$LOGDIR/tp-$NAME-c$k.log" | tail -10 | sed 's/^ *//' | tee "$run/train_tail.txt"
   # export the policy (play.py writes it at start, then loops: stop it after the export)
