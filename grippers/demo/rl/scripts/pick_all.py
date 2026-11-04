@@ -282,7 +282,7 @@ def main():
                         e0 = int((ids == 0).nonzero()[0])
                         best = recog_lib.CLASSES[int(proba[e0].argmax())]
                         if guess[e0] < 0:
-                            caption["text"] = f"UNKNOWN ({best} {proba[e0].max():.0%}): put back in the box"
+                            caption["text"] = f"UNKNOWN ({best} {proba[e0].max():.0%}): put back"
                             caption["color"] = (255, 140, 60)  # orange
                             print(f"t={t:5d} env0: unknown (best guess {best} {proba[e0].max():.0%}; it is a {recog_lib.CLASSES[int(truth[e0])]}): put back in the box")
                         else:
