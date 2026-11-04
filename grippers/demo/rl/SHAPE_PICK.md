@@ -107,6 +107,32 @@ What did not work: putting the carried piece down, releasing it and grasping it 
 the second grasp holds the piece in only 40 % of the attempts, because the piece lies beside the open fingers, not between them; the
 footprint of the first grasp is nearly always centred on the pad, so it cannot say where the piece is.
 
+## Final results: 30 000 grasps, lift-first protocol
+
+The numbers above were measured on 3037 grasps of an earlier policy. The final recogniser is trained on 30 132 grasps of the policy
+(`pick_all.py --lift_first --record_putback --record_grasps`: the supervisor lifts straight up, reads the maps, and puts every piece back so that the
+next grasp can be recorded; 10 runs of 1024 envs, about 4.5 min each), plus two runs of the final policy; the policy was trained 1000 more iterations
+(2 chunks) with the reward of that recogniser.
+
+| | 3037 grasps (earlier) | 30 000 grasps (final) |
+|---|---|---|
+| cross-validated accuracy, always answering | 62.5 % | 74.2 % (74.4 % with the final policy's grasps added) |
+| share of pieces answered at 85 % accuracy (cross-validated) | 52 % | 76 - 77 % (threshold 0.51 on the calibrated probability) |
+| recall per class (cross-validated) | 0.44 - 0.73 | 0.56 (rectangle) - 0.83 (cylinder) |
+| policy: pieces lifted per 64 envs x 20 s | 126 - 142 | 133, then 155 (91 % of the envs lift one) |
+| live, 128 envs x 8000 steps, 8 - 16 pieces | 54 % named, 84.9 % of those correct | 664 pieces read, **79.8 % named, 89.4 % of those correct** (474 of 530); 71.4 % counting unknown as wrong |
+
+Live put-back: 134 of 134 pieces are still in the gripper at the release pose; 104 are put back, 65 of them held and read again (37 named correctly, 8 wrongly, 20 unknown again).
+Recall when answered: rectangle 0.74, pentagon 0.90, cross 0.75, cylinder 0.90, star 0.95, square 0.88; unknown for 31, 28, 37, 22, 7 and 26 % of them.
+
+The policy and the recogniser are trained one after the other: the frozen recogniser's probability of the true class is part of the policy's reward, and the
+recogniser is refit on the new policy's grasps. Data was the limit: 3037 -> 30 132 grasps gave +12 points of accuracy and +24 points of coverage at 85 %.
+
+Twice the pieces (16 to 32 in the box, `SHAPE_SLOTS=36 SHAPE_ACTIVE=16,32 SHAPE_MIN_GAP=0.04`, pieces may touch and stack), same policy and recogniser, one env,
+150 s: [`docs/double_pieces_demo.mp4`](docs/double_pieces_demo.mp4) (540p; the render is 1080p, 60 fps). Pieces recognised in green, UNKNOWN in orange when a piece is put back.
+
+<video src="docs/double_pieces_demo.mp4" controls width="800"></video>
+
 ## Video
 
 <video src="docs/recognition_demo.mp4" controls width="800"></video>
