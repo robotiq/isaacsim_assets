@@ -74,6 +74,43 @@ class ShapePickSceneCfg(base.TactilePickSceneCfg):
     sphere_15 = _piece(15)
     sphere_16 = _piece(16)
     sphere_17 = _piece(17)
+    # slots 18 .. 35: only with SHAPE_SLOTS (a denser box)
+    if NUM_SLOTS > 18:
+        sphere_18 = _piece(18)
+    if NUM_SLOTS > 19:
+        sphere_19 = _piece(19)
+    if NUM_SLOTS > 20:
+        sphere_20 = _piece(20)
+    if NUM_SLOTS > 21:
+        sphere_21 = _piece(21)
+    if NUM_SLOTS > 22:
+        sphere_22 = _piece(22)
+    if NUM_SLOTS > 23:
+        sphere_23 = _piece(23)
+    if NUM_SLOTS > 24:
+        sphere_24 = _piece(24)
+    if NUM_SLOTS > 25:
+        sphere_25 = _piece(25)
+    if NUM_SLOTS > 26:
+        sphere_26 = _piece(26)
+    if NUM_SLOTS > 27:
+        sphere_27 = _piece(27)
+    if NUM_SLOTS > 28:
+        sphere_28 = _piece(28)
+    if NUM_SLOTS > 29:
+        sphere_29 = _piece(29)
+    if NUM_SLOTS > 30:
+        sphere_30 = _piece(30)
+    if NUM_SLOTS > 31:
+        sphere_31 = _piece(31)
+    if NUM_SLOTS > 32:
+        sphere_32 = _piece(32)
+    if NUM_SLOTS > 33:
+        sphere_33 = _piece(33)
+    if NUM_SLOTS > 34:
+        sphere_34 = _piece(34)
+    if NUM_SLOTS > 35:
+        sphere_35 = _piece(35)
 
     # the tactile sensor filters on every piece, then on the box parts (the order ``num_objects`` relies on)
     tactile = replace(
