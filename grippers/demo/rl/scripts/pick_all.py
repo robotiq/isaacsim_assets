@@ -35,6 +35,7 @@ parser.add_argument("--lift_first", action="store_true", help="the policy only f
 parser.add_argument("--putback_speed", type=float, default=2.0, help="speed [rad/s] of every joint when an unknown piece is taken to the put-back poses")
 parser.add_argument("--no_centre", action="store_true", help="--regrasp: do not shift the second grasp by the offset of the piece on the pads, estimated from the tactile maps of the first")
 parser.add_argument("--recognizer", default=None, help="shape task: a recogniser (joblib, scripts/fit_recognizer.py) that names every piece the policy lifts; the accuracy is printed and the name shown in --hq_video")
+parser.add_argument("--record_putback", action="store_true", help="with --record_grasps and no recogniser: every grasped piece is put back in the box after the reading (more grasps per run than carrying it out)")
 parser.add_argument("--record_grasps", default=None, help="shape task: save the tactile history and the true class of every piece the policy lifts (for the recogniser) to this .npz")
 parser.add_argument("--video", default=None, help="record env 0 into this directory")
 parser.add_argument("--hq_video", default=None, help="record env 0 to this .mp4 with an RTX camera, 1920 x 1080")
@@ -289,6 +290,9 @@ def main():
                             caption["text"] = f"recognised: {best} ({proba[e0].max():.0%})"
                             caption["color"] = (130, 230, 140)  # green
                             print(f"t={t:5d} env0: recognised {best} {proba[e0].max():.0%} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
+                if recognize is None and args_cli.record_putback and not args_cli.regrasp:  # data collection: every piece goes back into the box
+                    unk_now[ids] = True
+                    unk |= unk_now
                 if True:
                     off_now = (s.sphere_pos[ids, nearest] - s.tcp[ids]).cpu()
                     loaded = (f_sph[ids].sum((-1, -2)) > 1.0).cpu()
