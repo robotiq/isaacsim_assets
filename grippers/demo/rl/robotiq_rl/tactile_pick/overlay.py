@@ -31,8 +31,8 @@ def _pad_image(force: np.ndarray) -> Image.Image:
     return Image.fromarray(img)
 
 
-def pressure_panel(taxel_force: np.ndarray, title: str = "TSF pressure map", caption: str = "") -> Image.Image:
-    """RGBA panel for both pads: ``taxel_force`` is ``(2, rows, cols)`` [N], left pad first. ``caption``: a line under the title."""
+def pressure_panel(taxel_force: np.ndarray, title: str = "TSF pressure map", caption: str = "", caption_color=(255, 214, 102)) -> Image.Image:
+    """RGBA panel for both pads: ``taxel_force`` is ``(2, rows, cols)`` [N], left pad first. ``caption``: a line under the title, in ``caption_color``."""
     font = ImageFont.load_default(size=15)
     small = ImageFont.load_default(size=12)
     pads = [_pad_image(f) for f in taxel_force]
@@ -44,7 +44,7 @@ def pressure_panel(taxel_force: np.ndarray, title: str = "TSF pressure map", cap
     draw = ImageDraw.Draw(panel)
     draw.text((margin, 8), title, fill=(235, 235, 235, 255), font=font)
     if caption:
-        draw.text((margin, 30), caption, fill=(255, 214, 102, 255), font=font)
+        draw.text((margin, 30), caption, fill=(*caption_color, 255), font=font)
     for k, (name, pad) in enumerate(zip(("left pad", "right pad"), pads)):
         x = margin + k * (pw + pad_gap)
         panel.paste(pad.convert("RGBA"), (x, head))

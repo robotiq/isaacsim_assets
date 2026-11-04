@@ -87,7 +87,7 @@ def shape_mdp_maps(env):
 
 
 def main():
-    caption = {"text": "", "phase": None}  # what the video panel shows: the recogniser's last answer while the piece is carried
+    caption = {"text": "", "phase": None, "color": (255, 214, 102)}  # what the video panel shows: the recogniser's last answer, until the next grasp
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, overrides=hydra_overrides)
     env_cfg.episode_length_s = 3600.0  # no time-out reset: this is one long run
     if args_cli.seed is not None:
@@ -135,8 +135,10 @@ def main():
                         taxels = shape_mdp_maps(env)[0].reshape(2, 7, 4).cpu().numpy()
                     else:
                         taxels = env.scene["tactile"].taxel_force[0].cpu().numpy()  # (2, 7, 4) N, after the sensor's contact-distance gate
-                    show = "feeling the piece ..." if caption["phase"] in (ADJUST, REGRASP) and args_cli.regrasp else (caption["text"] if caption["phase"] in (CARRY, RELEASE, BACK, PLACE) else "")
-                    frame = overlay_lower_left(frame, pressure_panel(taxels, caption=show))
+                    feeling = caption["phase"] in (LIFT, ADJUST, REGRASP)  # the grasp is confirmed and the piece is being felt
+                    answer = caption["phase"] in (CARRY, PUTBACK, RELEASE, BACK, RETURN, PLACE)  # the answer stays until the next grasp
+                    show = "feeling the piece ..." if feeling else (caption["text"] if answer else "")
+                    frame = overlay_lower_left(frame, pressure_panel(taxels, caption=show, caption_color=(255, 214, 102) if feeling else caption["color"]))
                 hq_writer.append_data(frame)
                 return out
 
@@ -280,10 +282,12 @@ def main():
                         e0 = int((ids == 0).nonzero()[0])
                         best = recog_lib.CLASSES[int(proba[e0].argmax())]
                         if guess[e0] < 0:
-                            caption["text"] = f"unknown ({best} {proba[e0].max():.0%}): put back"
+                            caption["text"] = f"UNKNOWN ({best} {proba[e0].max():.0%}): put back in the box"
+                            caption["color"] = (255, 140, 60)  # orange
                             print(f"t={t:5d} env0: unknown (best guess {best} {proba[e0].max():.0%}; it is a {recog_lib.CLASSES[int(truth[e0])]}): put back in the box")
                         else:
-                            caption["text"] = f"recognised: {best}"
+                            caption["text"] = f"recognised: {best} ({proba[e0].max():.0%})"
+                            caption["color"] = (130, 230, 140)  # green
                             print(f"t={t:5d} env0: recognised {best} {proba[e0].max():.0%} (it is a {recog_lib.CLASSES[int(truth[e0])]})")
                 if True:
                     off_now = (s.sphere_pos[ids, nearest] - s.tcp[ids]).cpu()
