@@ -70,6 +70,28 @@ class TactileSensor(ContactSensor):
         spec = self.cfg.mount.spec
         return taxel.view(-1, 2, spec.rows, spec.cols)
 
+    def taxel_force_of(self, objects: slice | list[int]) -> torch.Tensor:
+        """The Gaussian taxel map (as ``taxel_force``) of only some of the filtered objects, ``(num_envs, 2, rows, cols)``.
+
+        For a task that models some objects itself (e.g. with their shape) and leaves the rest to the Gaussian model."""
+        data = self.data
+        matrix = data.normal_force_matrix_w.torch
+        keep = torch.zeros(matrix.shape[2], dtype=torch.bool, device=matrix.device)
+        keep[objects] = True
+        taxel = taxel_force_map(
+            data.pos_w.torch,
+            data.quat_w.torch,
+            matrix * keep[None, None, :, None],
+            data.contact_pos_w.torch,
+            self._taxels_local,
+            self._pad_order,
+            self.cfg.force_floor,
+            self.cfg.sigma,
+            self.cfg.max_contact_distance,
+        )
+        spec = self.cfg.mount.spec
+        return taxel.view(-1, 2, spec.rows, spec.cols)
+
     @property
     def pad_force(self) -> torch.Tensor:
         return self.taxel_force.sum(dim=(-1, -2))

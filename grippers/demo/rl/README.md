@@ -11,6 +11,8 @@ pick spheres out of an open box **without seeing them**, from proprioception and
 | `robotiq_rl/tactile_pick/` | The task: scene and MDP (`env_cfg.py`, `mdp.py`), PPO settings (`agents.py`), random start poses (`start_poses.npz`). |
 | `scripts/` | `train_in_chunks.sh`, `eval_tactile.py`, `pick_all.py`, and scripted checks (`probe_*.py`, `show_scene.py`). |
 
+A second demo on the same robot, with the pieces of a wooden shape sorter in the box and a recogniser that names the piece it holds from the tactile maps: [SHAPE_PICK.md](SHAPE_PICK.md).
+
 ## The task
 
 `Robotiq-Tactile-Sphere-Pick-UR5e-2F85`: the 2F-85 on `Tactile_TSF85` fingertips (`SensorSim=EffectiveResponse`) has to

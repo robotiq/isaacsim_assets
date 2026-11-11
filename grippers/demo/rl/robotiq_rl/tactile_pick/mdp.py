@@ -23,7 +23,14 @@ from robotiq_tactile_sensors.isaaclab import tactile_map
 if TYPE_CHECKING:  # importing isaaclab.envs pulls in pxr, which must not happen before Kit starts
     from isaaclab.envs import ManagerBasedRLEnv
 
-NUM_SPHERES = 10
+NUM_SPHERES = 10  # the sphere task's number of objects; ``num_objects(env)`` counts what the scene really has
+
+
+def num_objects(env) -> int:
+    """Number of ``sphere_i`` objects in the scene (10 for the sphere task, more for the shape task)."""
+    if not hasattr(env, "_num_objects"):
+        env._num_objects = sum(1 for name in env.scene.keys() if name.startswith("sphere_"))
+    return env._num_objects
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -37,7 +44,8 @@ def contact_forces(env: ManagerBasedRLEnv, sensor: str, floor_n: float = 0.05):
 
     Returns ``(force, None)``: the second value is kept for the callers that used to get the contact points too."""
     force = env.scene["tactile"].object_force
-    return (force[..., :NUM_SPHERES] if sensor == "pad_spheres" else force[..., NUM_SPHERES:]), None
+    k = num_objects(env)
+    return (force[..., :k] if sensor == "pad_spheres" else force[..., k:]), None
 
 
 def tactile_maps(env: ManagerBasedRLEnv, log_scale: bool = True) -> torch.Tensor:
@@ -68,6 +76,11 @@ def reset_spheres_in_box(
     num_active_range: tuple[int, int] | None = None,
     p_zone_only: float = 0.0,
     park_xy: tuple[float, float] = (0.3, 0.95),
+    active_mask: torch.Tensor | None = None,
+    random_orientation: bool = False,
+    drop_height: float = 0.045,
+    park_z: float = 0.3,
+    park_spacing: float = 0.05,
 ):
     """Put the spheres at random, non-overlapping spots on the box floor (dart throwing, per env).
 
@@ -75,17 +88,24 @@ def reset_spheres_in_box(
     can reach) sphere 0 is placed inside it first, so there is always at least one sphere to pick. A share
     ``p_zone_only`` of the envs puts all spheres in that zone: every sphere can be picked, as when emptying the box.
     With ``num_active_range`` only a random number of spheres (sphere 0 first) stays in the box, the others are
-    parked on the ground beside the table: the policy meets boxes with few spheres left, as when emptying one."""
+    parked on the ground beside the table: the policy meets boxes with few spheres left, as when emptying one.
+
+    ``active_mask`` ``(n, number of objects)`` (bool) overrides ``num_active_range``: exactly those objects are in the box.
+    ``random_orientation`` drops each object from ``drop_height`` above the floor with a uniformly random orientation (for
+    objects that are not spheres: they settle on a face of their own). The objects that are not in the box are parked at
+    ``park_xy`` (spaced ``park_spacing`` apart) at height ``park_z``: 0.3 m above the ground beside the table by default, they
+    fall; with ``park_z`` just above the ground they are at rest and nothing falls in view."""
     if isinstance(env_ids, slice):
         env_ids = torch.arange(env.num_envs, device=env.device)[env_ids]
     n = len(env_ids)
     dev = env.device
-    placed = torch.zeros(n, NUM_SPHERES, 2, device=dev)
+    n_obj = num_objects(env)
+    placed = torch.zeros(n, n_obj, 2, device=dev)
     zone = torch.tensor(zone_half_xy if zone_half_xy is not None else half_xy, device=dev)
     whole = torch.tensor(half_xy, device=dev)
     zone_only = torch.rand(n, device=dev) < p_zone_only
     half_env = torch.where(zone_only[:, None], zone, whole)  # (n, 2)
-    for i in range(NUM_SPHERES):
+    for i in range(n_obj):
         half = zone[None] if (i == 0 and zone_half_xy is not None) else half_env
         cand = (torch.rand(n, candidates, 2, device=dev) * 2 - 1) * half[:, None, :]
         if i == 0:
@@ -98,24 +118,29 @@ def reset_spheres_in_box(
     origins = env.scene.env_origins[env_ids]
     quat = torch.tensor([0.0, 0.0, 0.0, 1.0], device=dev).repeat(n, 1)
     zero = torch.zeros(n, 6, device=dev)
-    if num_active_range is not None:
+    if active_mask is not None:
+        k = None
+    elif num_active_range is not None:
         k = torch.randint(num_active_range[0], num_active_range[1] + 1, (n,), device=dev)
     else:
-        k = torch.full((n,), NUM_SPHERES, device=dev)
-    for i in range(NUM_SPHERES):
+        k = torch.full((n,), n_obj, device=dev)
+    for i in range(n_obj):
         in_box = torch.stack(
             [
                 origins[:, 0] + box_center[0] + placed[:, i, 0],
                 origins[:, 1] + box_center[1] + placed[:, i, 1],
-                origins[:, 2] + floor_z + radius + 0.002 + torch.zeros(n, device=dev),
+                origins[:, 2] + floor_z + (drop_height if random_orientation else radius + 0.002) + torch.zeros(n, device=dev),
             ],
             dim=-1,
         )
         parked = torch.stack(
-            [origins[:, 0] + park_xy[0] + 0.05 * i, origins[:, 1] + park_xy[1], origins[:, 2] + 0.3 + torch.zeros(n, device=dev)],
+            [origins[:, 0] + park_xy[0] + park_spacing * i, origins[:, 1] + park_xy[1], origins[:, 2] + park_z + torch.zeros(n, device=dev)],
             dim=-1,
         )
-        pos = torch.where((i < k)[:, None], in_box, parked)
+        active = active_mask[:, i] if active_mask is not None else (i < k)
+        pos = torch.where(active[:, None], in_box, parked)
+        if random_orientation:
+            quat = torch.nn.functional.normalize(torch.randn(n, 4, device=dev), dim=-1)  # uniform on SO(3), (x, y, z, w)
         sphere = env.scene[f"sphere_{i}"]
         sphere.write_root_pose_to_sim_index(root_pose=torch.cat([pos, quat], dim=-1), env_ids=env_ids)
         sphere.write_root_velocity_to_sim_index(root_velocity=zero, env_ids=env_ids)
@@ -195,7 +220,8 @@ class TaskState:
         self.was_stable = torch.zeros(n, dtype=torch.bool, device=dev)
         self.success_given = torch.zeros(n, dtype=torch.bool, device=dev)
         self.out_count = torch.zeros(n, device=dev)
-        self.prev_in_zone = torch.zeros(n, NUM_SPHERES, dtype=torch.bool, device=dev)
+        self.n_obj = num_objects(env)
+        self.prev_in_zone = torch.zeros(n, self.n_obj, dtype=torch.bool, device=dev)
         self.fresh = torch.ones(n, dtype=torch.bool, device=dev)
         self.n_picked = torch.zeros(n, device=dev)
         self.phi_prev = torch.zeros(n, device=dev)
@@ -208,7 +234,8 @@ class TaskState:
         self.new_cells = self.touch = self.held = self.stable = self.success = self.dropped = zeros
         self.lift_progress = self.sym = self.wall_force = self.enter = self.approach = self.out_now = self.out_centred = zeros
         self.tcp = torch.zeros(n, 3, device=dev)
-        self.sphere_pos = torch.zeros(n, NUM_SPHERES, 3, device=dev)
+        self.sphere_pos = torch.zeros(n, self.n_obj, 3, device=dev)
+        self.near = torch.zeros(n, dtype=torch.long, device=dev)
 
     def reset(self, env_ids):
         self.visited[env_ids] = False
@@ -230,7 +257,7 @@ class TaskState:
         origins = env.scene.env_origins[ids]
         quat = torch.tensor([0.0, 0.0, 0.0, 1.0], device=env.device).repeat(len(ids), 1)
         zero = torch.zeros(len(ids), 6, device=env.device)
-        for i in range(NUM_SPHERES):
+        for i in range(self.n_obj):
             sel = near[ids] == i
             if not sel.any():
                 continue
@@ -262,7 +289,7 @@ class TaskState:
         link_quat = robot.data.body_quat_w.torch[:, self.body_id]
         self.tcp = link_pos + quat_apply(link_quat, self.offset) - origins  # env frame
         self.sphere_pos = (
-            torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch for i in range(NUM_SPHERES)], dim=1)
+            torch.stack([env.scene[f"sphere_{i}"].data.root_pos_w.torch for i in range(self.n_obj)], dim=1)
             - origins[:, None]
         )
         rel = self.tcp[:, :2] - torch.tensor(c["box_center"], device=env.device)
@@ -292,6 +319,7 @@ class TaskState:
         # --- phase 3: the sphere nearest the TCP is the one in the gripper
         d = torch.linalg.norm(self.sphere_pos - self.tcp[:, None], dim=-1)  # (E, S)
         dmin, near = d.min(-1)
+        self.near = near  # the object nearest the tool point (the one in the gripper, when one is held)
         near_z = self.sphere_pos[torch.arange(env.num_envs, device=env.device), near, 2]
         closure = (robot.data.joint_pos.torch[:, self.finger_id] / c["closed_pos"]).clamp(0, 1)
         held = both & (dmin < c["hold_dist"]) & (closure > c["min_closure"])
@@ -306,12 +334,12 @@ class TaskState:
         rel_s = self.sphere_pos[..., :2] - torch.tensor(c["box_center"], device=env.device)
         in_zone = (rel_s.abs() < half).all(-1) & on_floor
         out_zone = (rel_s.abs() < c["box_inner_half"]).all(-1) & on_floor & ~in_zone
-        is_held = held[:, None] & (torch.arange(NUM_SPHERES, device=env.device)[None] == near[:, None])
+        is_held = held[:, None] & (torch.arange(self.n_obj, device=env.device)[None] == near[:, None])
         event = self.prev_in_zone & out_zone & ~is_held & ~self.fresh[:, None]
         self.disturb = event.sum(-1).float()
         self.prev_in_zone = in_zone
         self.fresh[:] = False
-        vel = torch.stack([env.scene[f"sphere_{i}"].data.root_lin_vel_w.torch for i in range(NUM_SPHERES)], dim=1)
+        vel = torch.stack([env.scene[f"sphere_{i}"].data.root_lin_vel_w.torch for i in range(self.n_obj)], dim=1)
         speed = torch.linalg.norm(vel, dim=-1)
         self.speed_excess = ((speed - c["gentle_speed"]).clamp(min=0) * (on_floor & ~is_held)).sum(-1)
         # --- phase 4: lift
@@ -346,6 +374,8 @@ class TaskState:
             + w["grasp"] * self.held * (0.5 + 0.5 * self.sym)
             + w["stable"] * self.stable
             + w["lift"] * self.lift_progress
+            # optional (0 for the spheres): a grasp that holds the object's centre near the tool point, 1 within 1.5 cm, 0 beyond 5.5 cm
+            + w.get("centre", 0.0) * self.held * (1.0 - ((dmin - 0.015) / 0.04).clamp(0, 1))
         )
         self.shaping = torch.where(was_fresh, torch.zeros_like(phi), c["gamma"] * phi - self.phi_prev)
         self.phi_prev = phi

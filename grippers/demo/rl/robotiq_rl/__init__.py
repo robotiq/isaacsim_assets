@@ -2,4 +2,4 @@
 
 Importing this package registers the tasks with gymnasium."""
 
-from . import tactile_pick  # noqa: F401
+from . import shape_pick, tactile_pick  # noqa: F401

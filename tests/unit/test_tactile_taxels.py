@@ -10,7 +10,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from robotiq_tactile_sensors.mounts import ROBOTIQ_2F_85, ROBOTIQ_2F_140  # noqa: E402
-from robotiq_tactile_sensors.spread import spread_forces  # noqa: E402
+from robotiq_tactile_sensors.spread import spread_forces, spread_forces_by_distance  # noqa: E402
 from robotiq_tactile_sensors.tsf import TSF85, FingertipMounts, PadMount, taxel_positions  # noqa: E402
 from robotiq_tactile_sensors.sensing import (  # noqa: E402
     pad_object_forces,
@@ -233,3 +233,40 @@ def test_a_force_on_the_back_of_the_finger_reads_nothing_by_default():
     ids = torch.tensor([0, 1])
     assert taxel_force_map(pos, quat, f, c, local, ids).abs().max() == 0
     assert taxel_force_map(pos, quat, f, c, local, ids, max_distance=None).sum() > 5.99  # the gate can be turned off
+
+
+def test_distance_spread_flat_face_loads_every_taxel_it_covers_cylinder_only_a_strip():
+    """A flat face (distance 0 over its footprint) shares the force over the footprint; a cylinder (distance grows with the
+    square of the offset from its line of contact) over a strip. The taxels of a pad sum to the object's force."""
+    cols = torch.linspace(-0.009, 0.009, 4)  # 4 columns, 6 mm pitch
+    rows = torch.linspace(0.0, 0.033, 7)
+    r, c = torch.meshgrid(rows, cols, indexing="ij")
+    flat = torch.zeros(1, 1, 1, 28)  # the whole array is on the face
+    force = torch.tensor([[[6.0]]])
+    out = spread_forces_by_distance(flat, force)
+    assert torch.allclose(out.sum(), torch.tensor(6.0))
+    assert torch.allclose(out, torch.full((1, 1, 28), 6.0 / 28))
+    radius = 0.025
+    cyl = (c.flatten() ** 2 / (2 * radius)).view(1, 1, 1, 28)  # a cylinder's surface above the pad, line contact at c = 0
+    out = spread_forces_by_distance(cyl, force).view(7, 4)
+    assert torch.allclose(out.sum(), torch.tensor(6.0))
+    assert out[:, 1:3].sum() > 0.7 * 6.0  # the two middle columns (c = +-3 mm) carry most, the outer ones (9 mm) much less
+    assert (out[:, 1] > 2.5 * out[:, 0]).all()
+
+
+def test_distance_spread_ignores_an_offset_and_objects_without_force():
+    dist = torch.tensor([[[[0.0, 0.001, 0.01, 0.01], [0.0, 0.0, 0.0, 0.0]]]])  # (1, 1, 2, 4): two objects
+    force = torch.tensor([[[2.0, 0.0]]])
+    a = spread_forces_by_distance(dist, force)
+    b = spread_forces_by_distance(dist + 0.005, force)  # the taxel plane 5 mm off the surface
+    assert torch.allclose(a, b)
+    assert torch.allclose(a.sum(), torch.tensor(2.0))  # the object with no force adds nothing
+    assert a[0, 0, 2] == 0 and a[0, 0, 3] == 0  # the far taxels read nothing
+
+
+def test_distance_spread_drops_an_object_that_does_not_touch_the_sensing_area():
+    dist = torch.tensor([[[[0.02, 0.025, 0.03, 0.03], [0.0, 0.0, 0.0, 0.0]]]])  # object 0 is 2 cm from every taxel, object 1 on them
+    force = torch.tensor([[[3.0, 1.0]]])
+    gated = spread_forces_by_distance(dist, force, max_distance=0.006)
+    assert torch.allclose(gated.sum(), torch.tensor(1.0))  # only object 1
+    assert torch.allclose(spread_forces_by_distance(dist, force).sum(), torch.tensor(4.0))
