@@ -1,14 +1,14 @@
 {
   "version": 1,
   "scope": "Robotiq_2F_85",
-  "input_hash": "47a9800555692851e577a0863fff9bfc94632cb2783f8e20313fa1fcfaa195d9",
-  "commit": "4d8a609d1f320088b54d1f8598e6e41fac520df2",
-  "author": "l-t.schreiber@robotiq.com",
-  "date": "2026-11-03T16:25:49Z",
+  "input_hash": "3a6cf54cbfca7e4f69beb7a8f44c2c890ca7599ef597a6e97886a2721824aadb",
+  "commit": "55c522b5e3279f1fbfa96dcce8d097067e69df52",
+  "author": "m-a.begin@robotiq.com",
+  "date": "2026-11-11T19:09:43Z",
   "environment": {
     "isaac_sim": "6.2.0-rc.14+release.52805.02189a84.gl",
-    "gpu": "NVIDIA RTX 2000 Ada Generation Laptop GPU, 595.99.02",
-    "os": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35"
+    "gpu": "Tesla T4, 580.178.04",
+    "os": "Linux-6.8.0-1073-gcp-x86_64-with-glibc2.35"
   },
   "result": {
     "passed": 69,
