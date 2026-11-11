@@ -47,6 +47,34 @@ the other shared code changes the hash of every scope: every open PR that needs 
 
 A PR that touches none of this needs no stamp. The check runs on the PR and again in the merge queue.
 
+## Parallel runs and cloud runs
+
+`stamp.py --root DIR --shards SCOPE=N` runs the scope's tests in N pytest processes at once (each with its own ROS
+domain). There is no separate collection (it would boot Isaac Sim once more): each shard loads the
+`ci/runtime/stamp_shard.py` plugin (`-p stamp_shard`, with `PYTHONPATH` set to that folder only; a single-shard
+run has neither), collects the whole scope, writes the sorted ids to `<log-dir>/<scope>-<k>.collected` and runs
+those whose index is `k` modulo N. All shards of a scope must have collected the same list ("shards collected
+different tests" otherwise) and the merged reports must cover exactly that list, or there is no stamp. A shard
+that exits with a code other than 0 or 1 (interrupted, internal or usage error) means no stamp either, failures or
+not; an empty shard's 5 is fine. `--no-skips` refuses a stamp when a test was skipped; `--log-dir` keeps the
+per-shard reports, collected lists and logs.
+
+A test that passes on any machine is a pass: the stamp does not need one machine to run everything. When a run
+(typically on a cloud GPU) has failures, `--keep-partial DIR` writes `DIR/<scope>-<hash16>.partial.json` instead
+of nothing: the stamp it would have written, plus `"partial": true` and `"failed"` (the failed or errored test
+ids), and `"no_skips": true` with `--no-skips`. Only a run whose sole fault is failed tests gets one: a shard
+problem, or a skip under `--no-skips`, writes nothing. A partial is never accepted by `verify.py`. To finish it
+on a machine that can run the failures:
+
+    ci/runtime/stamp.py --complete DIR/<scope>-<hash16>.partial.json    # repeatable
+
+It refuses a file that is not a partial with failed tests, an unknown scope, uncommitted changes in the scope's
+files and a partial whose scope content differs from `--root` at HEAD ("describes other content"), re-runs only
+the failed ids in one process, and, if each passes or xfails, writes the stamp with the counts recomputed, the
+partial's `environment` and a `rerun` key (`environment` of this machine, `tests` re-run). This machine's Isaac Sim
+version must be an accepted one. If a test still fails, or the partial was made with `--no-skips` and the result
+has skips, nothing is written.
+
 ## Configuration
 
 | File | Content |
@@ -63,8 +91,9 @@ a PR may **add** a scope. To add a gripper, add its scope to `scopes.json` in th
 It catches the realistic mistakes: tests not run, files changed after the run, a combination of PRs that was
 never tested. It does not prove the run happened: the stamp is a plain JSON file, so anyone who can commit can
 write one. It records the author, Isaac Sim version, GPU and every test id so a reviewer can see what was run,
-but nothing re-runs it or authenticates it. If that ever matters (outside contributors), the stamp can be signed with `ssh-keygen -Y sign` and checked against an
-`allowed_signers` file read from the base branch. Protect `ci/runtime/` and `.github/workflows/runtime-stamp.yml` with CODEOWNERS: the gate runs the
-head's copy of `verify.py`.
+but nothing re-runs it or authenticates it. If that ever matters (outside contributors), the stamp can be signed
+with `ssh-keygen -Y sign` and checked against an `allowed_signers` file read from the base branch. Protect
+`ci/runtime/` and `.github/workflows/runtime-stamp.yml` with CODEOWNERS: the gate runs the head's copy of
+`verify.py`.
 
 The tests of this tooling run without Isaac: `python3 -m pytest ci/runtime`.
