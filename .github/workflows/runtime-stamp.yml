@@ -42,4 +42,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install pytest
-      - run: python3 -m pytest ci/runtime -q
+      - run: python3 -m pytest ci/runtime ci/cloud -q
