@@ -11,6 +11,8 @@ Writes, under ``grippers/<gripper>/payloads/``:
   (``tactile_zone_visuals/zone_r<row>_c<col>``), shared by both methods;
 * ``<gripper>_tactile_raycast.usda``: ``SensorSim = "Raycast"``, the compliant pad and the
   raycast parameters;
+* ``<gripper>_tactile_precise.usda`` (2F-85 only): ``SensorSim = "Precise"``, the deformable TSF-85 pad of the ETS CoRo
+  lab (``Robotiq_2F_85/parts/TSF_85_pad.usd``, see Robotiq_2F_85/tools/extract_tsf85_pad.py) on a rigid backing;
 * ``<gripper>_tactile_effective_response.usda``: ``SensorSim = "EffectiveResponse"``, the
   Eq. 1 parameters and the articulation kept awake.
 
@@ -20,6 +22,7 @@ The markers do not collide; the readers in this folder only use their poses. Std
     python3 grippers/tactile/generate_tactile_zones.py Robotiq_2F_140   # one
 """
 
+import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,6 +54,22 @@ MOUNTS = {
     # stands 1.9 mm proud of it, so objects stop at the body face and the markers sit flush with that.
     "Robotiq_2F_140": Mount(center_x=-0.00017, center_z=0.18751, pad_y=0.06807 + ZONE_THICKNESS / 2),
 }
+
+# SensorSim=Precise (2F-85): the deformable pad of github.com/Lab-CORO/TSF-85 (ETS CoRo lab) on each fingertip, placed in the
+# inner_finger frame (the links sit at the identity with the gripper open) where the lab mounts it: outer face at
+# y = +-38.4 mm, z = 112.5 .. 152.5 mm. The rigid backing is the sensor's housing behind it.
+PRECISE = ("Robotiq_2F_85",)
+PRECISE_PAD_T = (-0.0142, 0.06271, 0.11042)  # m, right pad origin; the left pad is turned 180 deg about Z
+PRECISE_PAD_T_LEFT = (0.0142, -0.0628, 0.11042)
+PRECISE_BACKING_MASS = 0.003  # kg
+# The rigid backing collides as the real sensor does: the convex hull of the CAD housing (parts/TSF_85_case.usd) cut at the
+# deformable's back face; Robotiq_2F_85/tools/extract_tsf85_backing.py writes it, one hull per finger.
+PRECISE_HULL = GRIPPERS / "Robotiq_2F_85" / "tools" / "tsf85_backing_hull.json"
+# pad nodes this close to the backing are attached to it: the 216 back-layer nodes (PhysX simplifies the backing hull to 64
+# vertices, which recesses its face near the edges by up to ~1 mm); the lab's 4 mm would attach the whole 3 mm pad
+PRECISE_ATTACH_OFFSET = 0.001  # m
+# the attachment PhysX cooks for those pads: tools/capture_tsf85_pad_attachment.py
+PRECISE_ATTACHMENT = GRIPPERS / "Robotiq_2F_85" / "tools" / "tsf85_pad_attachment.usda"
 
 # The TSF-85 soft layer is 3 mm of E = 1.289 MPa, nu = 0.173 (ETS CoRo lab model,
 # github.com/Lab-CORO/TSF-85, doi:10.3389/frobt.2025.1639524).
@@ -150,7 +169,7 @@ def Xform "{gripper}"
 """
 
 
-def method_layer(gripper, title, body, attrs, inner_meta=""):
+def method_layer(gripper, title, body, attrs, inner_meta="", root_body=""):
     """A layer over the grid: ``robotiq:tactile:*`` attributes on each finger's ``tactile_zone_visuals``."""
     lines = "".join(f"                {a}\n" for a in attrs)
     fingers = "".join(f"""\
@@ -177,7 +196,7 @@ over "{gripper}"
     over "{gripper}"{inner_meta}
     {{
 {body}{fingers}    }}
-}}
+{root_body}}}
 """
 
 
@@ -219,6 +238,125 @@ def effective_layer(gripper):
                         body, attrs, meta)
 
 
+def precise_attachment(gripper, side):
+    """The attachment of the pad to its backing: the data PhysX cooked (tools/capture_tsf85_pad_attachment.py), or, until
+    it is captured, the bare auto attachment (which PhysX cooks at the first play, without the pad/backing collision filter)."""
+    if PRECISE_ATTACHMENT.is_file():
+        text = PRECISE_ATTACHMENT.read_text()
+        start = text.index(f'def Scope "{side}_pad_attachment"')
+        end = text.find('def Scope "', start + 1)
+        block = text[start:end if end > 0 else len(text)].rstrip() + "\n"
+        return "\n" + "".join(f"    {line}\n" if line else "\n" for line in block.splitlines())
+    return f"""\
+
+    def Scope "{side}_pad_attachment" (
+        prepend apiSchemas = ["PhysxAutoDeformableAttachmentAPI"]
+    )
+    {{
+        rel physxAutoDeformableAttachment:attachable0 = </{gripper}/{side}_tsf_pad>
+        rel physxAutoDeformableAttachment:attachable1 = </{gripper}/{gripper}/{side}_pad_backing>
+        float physxAutoDeformableAttachment:deformableVertexOverlapOffset = {f(PRECISE_ATTACH_OFFSET)}
+    }}
+"""
+
+
+def precise_side(gripper, side, sgn):
+    """The inner-prim part (case collider off, backing) and the root part (pad, attachment) of one finger."""
+    inner = f"/{gripper}/{gripper}"
+    hull = json.loads(PRECISE_HULL.read_text())[side]
+    pts = ", ".join("(%s, %s, %s)" % tuple(f(v) for v in p) for p in hull["points"])
+    faces = ", ".join(str(i) for tri in hull["faces"] for i in tri)
+    lo = [min(p[i] for p in hull["points"]) for i in range(3)]
+    hi = [max(p[i] for p in hull["points"]) for i in range(3)]
+    tx, ty, tz = PRECISE_PAD_T if sgn > 0 else PRECISE_PAD_T_LEFT
+    rot = "" if sgn > 0 else "        float xformOp:rotateZ = 180\n"
+    order = '["xformOp:translate"]' if sgn > 0 else '["xformOp:translate", "xformOp:rotateZ"]'
+    body = f"""\
+        # The rigid TSF-85 case collider is off, and so is its rigid tactile pad (drawn transparent): the deformable pad
+        # and the backing (the housing, below) take their place. The housing, engraving and screws stay as they are.
+        over "{side}_fingertip"
+        {{
+            over "visuals" (
+                instanceable = false
+            )
+            {{
+                over "tip_tsf85"
+                {{
+                    over "TSF_85_case"
+                    {{
+                        bool physics:collisionEnabled = 0
+                    }}
+                    over "Looks"
+                    {{
+                        over "TactilePad"
+                        {{
+                            over "Shader"
+                            {{
+                                float inputs:opacity = 0
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        }}
+
+        # The sensor's housing: a rigid backing fixed to the fingertip, which the pad is attached to. It collides as the
+        # real housing does (its CAD hull, cut where the pad starts) and is not drawn (the real mesh above is).
+        def Xform "{side}_pad_backing" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {{
+            float physics:mass = {f(PRECISE_BACKING_MASS)}
+
+            def Mesh "collider" (
+                prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "PhysxConvexHullCollisionAPI"]
+            )
+            {{
+                float3[] extent = [({f(lo[0])}, {f(lo[1])}, {f(lo[2])}), ({f(hi[0])}, {f(hi[1])}, {f(hi[2])})]
+                int[] faceVertexCounts = [{", ".join(["3"] * len(hull["faces"]))}]
+                int[] faceVertexIndices = [{faces}]
+                uniform token physics:approximation = "convexHull"
+                int physxConvexHullCollision:hullVertexLimit = 64
+                point3f[] points = [{pts}]
+                uniform token purpose = "guide"
+                uniform token subdivisionScheme = "none"
+            }}
+
+            def PhysicsFixedJoint "FixedJoint"
+            {{
+                rel physics:body0 = <{inner}/{side}_fingertip>
+                rel physics:body1 = <{inner}/{side}_pad_backing>
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+            }}
+        }}
+
+"""
+    root_body = f"""\
+
+    # The deformable pad of the ETS CoRo lab's TSF-85 (parts/TSF_85_pad.usd), in the {side} inner_finger frame.
+    def Xform "{side}_tsf_pad" (
+        prepend references = @../parts/TSF_85_pad.usd@
+    )
+    {{
+        double3 xformOp:translate = ({f(tx)}, {f(ty)}, {f(tz)})
+{rot}        uniform token[] xformOpOrder = {order}
+    }}
+{precise_attachment(gripper, side)}"""
+    return body, root_body
+
+
+def precise_layer(gripper):
+    parts = [precise_side(gripper, side, sgn) for side, sgn in (("left", -1.0), ("right", 1.0))]
+    body = "".join(b for b, _ in parts)
+    root_body = "".join(r for _, r in parts)
+    attrs = ['custom token robotiq:tactile:method = "precise"']
+    return method_layer(gripper, "SensorSim=Precise: the deformable TSF-85 pad of the ETS CoRo lab and its CNN (PhysX only).",
+                        body, attrs, root_body=root_body)
+
+
 def main(grippers):
     unknown = [g for g in grippers if g not in MOUNTS]
     if unknown:  # before writing anything, so a typo does not leave a partial regeneration
@@ -228,6 +366,8 @@ def main(grippers):
         layers = {f"{gripper}_tactile_zones.usda": grid_layer(gripper),
                   f"{gripper}_tactile_raycast.usda": raycast_layer(gripper),
                   f"{gripper}_tactile_effective_response.usda": effective_layer(gripper)}
+        if gripper in PRECISE:
+            layers[f"{gripper}_tactile_precise.usda"] = precise_layer(gripper)
         for name, text in layers.items():
             (payloads / name).write_text(text)
         print("Wrote", ", ".join(f"{gripper}/payloads/{n}" for n in layers))
