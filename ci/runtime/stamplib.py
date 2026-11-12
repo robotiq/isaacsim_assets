@@ -130,6 +130,10 @@ def stamp_path(scope: str, digest: str) -> str:
     return f"{STAMPS_DIR}/{scope}-{digest[:16]}.json"
 
 
+def isaac_version_accepted(version: str, allowed: list[str]) -> bool:
+    return any(version == prefix or version.startswith(prefix + ".") for prefix in allowed)
+
+
 def check_result(stamp: dict, cfg: dict) -> list[str]:
     """Why the recorded run does not count, if it does not."""
     problems = []
@@ -140,6 +144,6 @@ def check_result(stamp: dict, cfg: dict) -> list[str]:
         problems.append("the run has no passing test")
     allowed = cfg["isaac_sim_versions"]
     version = str(env.get("isaac_sim", ""))
-    if not any(version == prefix or version.startswith(prefix + ".") for prefix in allowed):
+    if not isaac_version_accepted(version, allowed):
         problems.append(f"Isaac Sim {version or '?'} is not one of the accepted versions {allowed}")
     return problems

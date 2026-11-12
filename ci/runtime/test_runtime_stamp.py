@@ -237,6 +237,14 @@ def test_a_stamp_of_a_bad_run_is_refused(repo, override):
     assert verify(root, base).returncode == 1
 
 
+@pytest.mark.parametrize("version, ok", [
+    ("6.2", True), ("6.2.0", True), ("6.2.0-rc.14+test", True), ("6.20.0", False), ("6.3.0", False), ("6", False), ("", False),
+    ("unknown", False),
+])
+def test_isaac_version_accepted(version, ok):
+    assert stamplib.isaac_version_accepted(version, ["6.2"]) is ok
+
+
 def test_not_enforced_before_the_config_exists(tmp_path):
     root = tmp_path / "repo"
     (root / "ci/runtime").mkdir(parents=True)
