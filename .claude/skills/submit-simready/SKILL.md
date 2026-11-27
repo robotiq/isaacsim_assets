@@ -35,7 +35,7 @@ of this procedure, and the reasons behind each extra check, are in
   every Robotiq gripper has been accepted with) and let the user confirm.
 - **Dataset:** `Robotiq-Official/simready-assets`; it is already public, under
   `cc-by-4.0`.
-- **Organisation / contact:** `Robotiq` / the submitter's git `user.email`.
+- **Organisation / contact:** `Robotiq` / `github@robotiq.com` (shared inbox; never a personal address).
 - **`<SimreadyDir>`:** ask; it is passed to the scripts as `SIMREADY_DIR`.
 - Submit from an up-to-date `origin/main` with no local changes under `grippers/`.
 

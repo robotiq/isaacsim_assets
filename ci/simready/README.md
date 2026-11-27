@@ -93,6 +93,8 @@ carry a **bill of materials** and the **validation + benchmark** sidecars
   in its card (must match `--license`).
 - **GitHub:** write access to `NVIDIA-Omniverse/simready-central` (NVIDIA OEM
   onboarding) and `gh auth login`.
+- **Robotiq contact** NVIDIA has on file: `github@robotiq.com` (Google Group;
+  keep it that way, never a personal address).
 - **NVIDIA contact** for the program: John Kosnik (`@jkosnik11` on the
   simready-central pull requests).
 
@@ -151,8 +153,9 @@ exported as `SIMREADY_DIR`. It creates **two** venvs (several GB):
    Runs `simready-manage submit` for all of them: validation, the Isaac benchmark
    (roughly 6-15 min per gripper), packaging, the Hugging Face upload and the
    SimReady Central pull request, which keeps every earlier version listed and
-   adds the new ones. The pull request contact/author default to your git
-   identity (`OEM_CONTACT`, `COMMIT_AUTHOR_NAME`, `COMMIT_AUTHOR_EMAIL` override).
+   adds the new ones. The pull request's primary contact is the shared
+   `github@robotiq.com` (`OEM_CONTACT` overrides); the commit author defaults to
+   your git identity (`COMMIT_AUTHOR_NAME`, `COMMIT_AUTHOR_EMAIL` override).
    Where the Isaac lock (`~/robotiq/devel/isaac-lock`) is installed, the run
    queues for the GPU instead of starting next to another Isaac.
 6. **Reviewer notes.** Replace the pull request's *"Notes for reviewers"*
