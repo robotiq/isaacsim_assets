@@ -37,8 +37,8 @@
 # Environment:
 #   SIMREADY_DIR   the directory NVIDIA's one-time setup filled (.venv-submit,
 #                  .venv-isaac, workspace/project_config.toml). Required.
-#   OEM_CONTACT    contact written into the pull request
-#                  (default: git config user.email)
+#   OEM_CONTACT    contact written into the pull request (default:
+#                  github@robotiq.com, a shared inbox that outlives any submitter)
 #   COMMIT_AUTHOR_NAME / COMMIT_AUTHOR_EMAIL  Signed-off-by identity
 #                  (default: git config user.name / user.email)
 #   GITHUB_TOKEN   write access to NVIDIA-Omniverse/simready-central. If unset,
@@ -219,7 +219,7 @@ if [ -z "${GITHUB_TOKEN:-}" ]; then
 fi
 [ -n "$GITHUB_TOKEN" ] || { echo "no GITHUB_TOKEN (set it, or log in with gh)" >&2; exit 2; }
 export GITHUB_TOKEN
-CONTACT="${OEM_CONTACT:-$(git config user.email)}"
+CONTACT="${OEM_CONTACT:-github@robotiq.com}"
 AUTHOR_NAME="${COMMIT_AUTHOR_NAME:-$(git config user.name)}"
 AUTHOR_EMAIL="${COMMIT_AUTHOR_EMAIL:-$(git config user.email)}"
 URL_FILE="$SIMREADY_DIR/submission-$VERSION.txt"
